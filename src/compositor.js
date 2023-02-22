@@ -4,10 +4,10 @@ AFRAME.registerSystem('compositor', {
     init: function() {
         const sceneEl = this.sceneEl;
 
-        if (!sceneEl.hasLoaded) {
-            sceneEl.addEventListener('renderstart', this.init.bind(this));
-            return;
-        }
+        // if (!sceneEl.hasLoaded) {
+        //     sceneEl.addEventListener('renderstart', this.init.bind(this));
+        //     return;
+        // }
 
         const renderer = sceneEl.renderer;
 
@@ -24,51 +24,28 @@ AFRAME.registerSystem('compositor', {
         this.renderTarget.depthTexture.format = THREE.DepthFormat;
         this.renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-        this.onResize();
+        // this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));
         renderer.xr.addEventListener('sessionstart', this.onResize.bind(this));
         renderer.xr.addEventListener('sessionend', this.onResize.bind(this));
     },
 
-    handleRemoteTrack(stream) {
-        this.remoteVideo = document.getElementById('remoteVideo');
-        if (!this.remoteVideo) {
-            this.remoteVideo = document.createElement('video');
-            this.remoteVideo.id = 'remoteVideo';
-            this.remoteVideo.setAttribute('muted', 'false');
-            this.remoteVideo.setAttribute('autoplay', 'true');
-            this.remoteVideo.setAttribute('playsinline', 'true');
-            this.remoteVideo.addEventListener('loadedmetadata', this.onRemoteVideoLoaded.bind(this), true);
-
-            this.remoteVideo.style.position = 'absolute';
-            this.remoteVideo.style.zIndex = '9999';
-            this.remoteVideo.style.top = '15px';
-            this.remoteVideo.style.left = '15px';
-            this.remoteVideo.style.width = '640px';
-            this.remoteVideo.style.height = '180px';
-            if (!AFRAME.utils.device.isMobile()) {
-                document.body.appendChild(this.remoteVideo);
-            }
-        }
-        this.remoteVideo.style.display = 'block';
-        this.remoteVideo.srcObject = stream;
-    },
-
-    onRemoteVideoLoaded() {
-        // console.log('[render-client], remote video loaded!');
+    handleRemoteTexture(remoteRenderTarget, remoteScene, remoteCamera) {
         const sceneEl = this.sceneEl;
         const renderer = sceneEl.renderer;
 
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
 
-        this.pass = new CompositorPass(scene, camera, this.remoteVideo);
+        this.remoteRenderTarget = remoteRenderTarget;
+        this.remoteScene = remoteScene;
+        this.remoteCamera = remoteCamera;
+        this.pass = new CompositorPass(scene, camera, remoteRenderTarget, remoteScene, remoteCamera);
 
         this.t = 0;
         this.dt = 0;
 
         this.onResize();
-        this.remoteVideo.play();
 
         this.bind();
     },
@@ -81,9 +58,7 @@ AFRAME.registerSystem('compositor', {
         renderer.getSize(rendererSize);
         const pixelRatio = renderer.getPixelRatio();
         this.renderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-        if (this.pass) {
-            this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-        }
+        if (this.pass) this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
     },
 
     tick: function(t, dt) {
@@ -146,6 +121,11 @@ AFRAME.registerSystem('compositor', {
                     system.renderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
 
+                // console.log(arguments, system.remoteScene, system.remoteCamera);
+                // this.setRenderTarget(system.remoteRenderTarget);
+                // render.call(system.remoteScene, system.remoteCamera);
+                // this.setRenderTarget(currentRenderTarget);
+
                 // store "normal" rendering output to this.renderTarget
                 this.setRenderTarget(system.renderTarget);
                 render.apply(this, arguments);
@@ -194,12 +174,12 @@ AFRAME.registerSystem('compositor', {
 
                 system.pass.setHasDualCameras(hasDualCameras);
 
-                AFRAME.utils.entity.setComponentProperty(mainCamera, 'render-client', {
-                    hasDualCameras: hasDualCameras,
-                    ipd: ipd,
-                    leftProj: leftProj,
-                    rightProj, rightProj
-                });
+                // AFRAME.utils.entity.setComponentProperty(mainCamera, 'render-client', {
+                //     hasDualCameras: hasDualCameras,
+                //     ipd: ipd,
+                //     leftProj: leftProj,
+                //     rightProj, rightProj
+                // });
 
                 // call this part of the conditional again on the next call to render()
                 isDigest = false;
@@ -213,6 +193,5 @@ AFRAME.registerSystem('compositor', {
         const renderer = this.sceneEl.renderer;
         renderer.render = this.originalRenderFunc;
         this.sceneEl.object3D.onBeforeRender = () => {};
-        this.remoteVideo.style.display = 'none';
     },
 });

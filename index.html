@@ -8,28 +8,16 @@
     <script src="dist/index.js"></script>
 </head>
 <body>
-    <a-scene stats>
-        <a-assets>
-            <!-- <img id="my-image" src="color2.png"> -->
-        </a-assets>
-
+    <a-scene stats background="color: #ECECEC">
         <a-entity id="cameraSpinner" name="PerspectiveCamera" position="0 0 0" tag="MainCamera">
             <a-camera id="my-camera"
                         near="0.1" far="10000"
                         look-controls="reverseMouseDrag: true" look-controls-arrow
-                        wasd-controls="enabled: false; acceleration: 100">
-                <a-entity id="dummy" position="0 1 -60"></a-entity>
+                        wasd-controls="enabled: true; acceleration: 60">
+                <a-entity id="dummy" position="0 1 -67"></a-entity>
             </a-camera>
         </a-entity>
-        <a-box id="red-box" position="0 1.6 -11" scale="5 5 5" color="red"></a-box>
-
-        <!-- <a-image id="plane" src="#my-image" position="0 2 -100" width="288" height="180"></a-image> -->
-
-        <!-- <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-        <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-        <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane> -->
-        <a-sky color="#ECECEC"></a-sky>
+        <a-box id="red-box" position="0 1.6 -10" scale="5 5 5" color="red"></a-box>
     </a-scene>
 </body>
 </html>

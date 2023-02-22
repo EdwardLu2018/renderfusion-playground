@@ -9,6 +9,9 @@ export const CompositorShader = {
         tDepth: {
             type: 't', value: new THREE.Texture(),
         },
+        tDepthStream: {
+            type: 't', value: new THREE.Texture(),
+        },
         windowSize: {
             type: 'i2', value: [0, 0],
         },

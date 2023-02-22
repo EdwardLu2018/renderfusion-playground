@@ -2,12 +2,12 @@ import {FullScreenQuad, Pass} from './pass';
 import {CompositorShader} from './compositor-shader';
 
 export class CompositorPass extends Pass {
-    constructor(scene, camera, videoSource) {
+    constructor(scene, camera, remoteRenderTarget, remoteScene, remoteCamera) {
         super();
 
-        this.scene = scene;
-        this.camera = camera;
-        this.videoSource = videoSource;
+        this.remoteRenderTarget = remoteRenderTarget;
+        this.remoteScene = remoteScene;
+        this.remoteCamera = remoteCamera;
 
         this.uniforms = THREE.UniformsUtils.clone(CompositorShader.uniforms);
         this.material = new THREE.ShaderMaterial({
@@ -17,16 +17,11 @@ export class CompositorPass extends Pass {
             fragmentShader: CompositorShader.fragmentShader,
         });
 
-        const videoTexture = new THREE.VideoTexture(this.videoSource);
-        // LinearFilter looks better?
-        videoTexture.minFilter = THREE.LinearFilter;
-        videoTexture.magFilter = THREE.LinearFilter;
-        videoTexture.encoding = THREE.sRGBEncoding;
-
-        this.material.uniforms.tStream.value = videoTexture;
-        this.material.uniforms.streamSize.value = [this.videoSource.videoWidth, this.videoSource.videoHeight];
-        this.material.uniforms.cameraNear.value = this.camera.near;
-        this.material.uniforms.cameraFar.value = this.camera.far;
+        this.material.uniforms.tStream.value = this.remoteRenderTarget.texture;
+        this.material.uniforms.tDepthStream.value = this.remoteRenderTarget.depthTexture;
+        this.material.uniforms.streamSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
+        this.material.uniforms.cameraNear.value = camera.near;
+        this.material.uniforms.cameraFar.value = camera.far;
 
         this.needsSwap = false;
 
@@ -65,6 +60,9 @@ export class CompositorPass extends Pass {
     render(renderer, writeBuffer, readBuffer /* , deltaTime, maskActive */) {
         this.material.uniforms.tDiffuse.value = readBuffer.texture;
         this.material.uniforms.tDepth.value = readBuffer.depthTexture;
+
+        renderer.setRenderTarget(this.remoteRenderTarget);
+        renderer.render(this.remoteScene, this.remoteCamera);
 
         renderer.setRenderTarget( writeBuffer );
         this.fsQuad.render( renderer );
