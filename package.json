@@ -1,0 +1,19 @@
+{
+    "name": "atw-test",
+    "description": "",
+    "version": "0.1.0",
+    "license": "MIT",
+    "scripts": {
+        "serve": "python3 -m http.server 8000",
+        "watch": "parcel watch src/index.js",
+        "build": "parcel build src/index.js --public-url ./dist"
+    },
+    "dependencies": {
+        "aframe": "^1.4.1",
+        "parcel": "^2.8.3",
+        "three": "^0.149.0"
+    },
+    "devDependencies": {
+        "@parcel/transformer-glsl": "^2.8.3"
+    }
+}
