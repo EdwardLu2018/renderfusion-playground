@@ -39,6 +39,13 @@ export class CompositorPass extends Pass {
         this.material.uniforms.hasDualCameras.value = hasDualCameras;
     }
 
+    setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight) {
+        this.material.uniforms.remoteViewPortTopLeft.value  = vectorTopLeft;
+        this.material.uniforms.remoteViewPortTopRight.value = vectorTopRight;
+        this.material.uniforms.remoteViewPortBotLeft.value  = vectorBotLeft;
+        this.material.uniforms.remoteViewPortBotRight.value = vectorBotRight;
+    }
+
     getHasDualCameras() {
         return this.material.uniforms.hasDualCameras.value;
     }

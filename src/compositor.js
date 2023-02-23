@@ -73,6 +73,8 @@ AFRAME.registerSystem('compositor', {
         const system = this;
         let isDigest = false;
 
+        const camera = this.sceneEl.camera;
+
         this.originalRenderFunc = render;
 
         this.sceneEl.object3D.onBeforeRender = function(renderer, scene, camera) {
@@ -158,6 +160,26 @@ AFRAME.registerSystem('compositor', {
                     hasDualCameras = false;
                 }
 
+                var vectorTopLeft = new THREE.Vector3( -1, 1, 1 )
+                                            .unproject( system.remoteCamera )
+                                            // .sub(system.remoteCamera.position)
+                                            .project(camera);
+                var vectorTopRight = new THREE.Vector3( 1, 1, 1 )
+                                            .unproject( system.remoteCamera )
+                                            // .sub(system.remoteCamera.position)
+                                            .project(camera);
+                var vectorBotLeft = new THREE.Vector3( -1, -1, 1 )
+                                            .unproject( system.remoteCamera )
+                                            // .sub(system.remoteCamera.position)
+                                            .project(camera);
+                var vectorBotRight = new THREE.Vector3( 1, -1, 1 )
+                                            .unproject( system.remoteCamera )
+                                            // .sub(system.remoteCamera.position)
+                                            .project(camera);
+
+                system.pass.setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight);
+                system.pass.setHasDualCameras(hasDualCameras);
+
                 // render with custom shader (local-remote compositing):
                 // this will internally call renderer.render(), which will execute the code within
                 // the isDigest conditional above (render normally). this will copy the result of
@@ -171,8 +193,6 @@ AFRAME.registerSystem('compositor', {
                 this.setRenderTarget(currentRenderTarget);
                 this.xr.enabled = currentXREnabled;
                 this.shadowMap.autoUpdate = currentShadowAutoUpdate;
-
-                system.pass.setHasDualCameras(hasDualCameras);
 
                 // AFRAME.utils.entity.setComponentProperty(mainCamera, 'render-client', {
                 //     hasDualCameras: hasDualCameras,

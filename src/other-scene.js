@@ -45,7 +45,7 @@ AFRAME.registerSystem('other-scene', {
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
         const box1 = new THREE.Mesh(boxGeometry, boxMaterial);
         const box2 = new THREE.Mesh(boxGeometry, boxMaterial);
-        box1.position.x = 6; box2.position.x = -6;
+        box1.position.x = 10; box2.position.x = -10;
         box1.position.y = box2.position.y = 1.6;
         box1.position.z = box2.position.z = -10;
         this.otherScene.add(box1);
@@ -132,6 +132,19 @@ AFRAME.registerSystem('other-scene', {
             // update other camera
             this.otherCamera.rotation.setFromRotationMatrix(pose);
             this.otherCamera.position.setFromMatrixPosition(pose);
+
+            // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.otherCamera ).sub(this.otherCamera.position);
+            // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.otherCamera ).sub(this.otherCamera.position);
+            // var vectorBotLeft = new THREE.Vector3( -1, -1, 1 ).unproject( this.otherCamera ).sub(this.otherCamera.position);
+            // var vectorBotRight = new THREE.Vector3( 1, -1, 1 ).unproject( this.otherCamera ).sub(this.otherCamera.position);
+
+            // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
+            // var points = [];
+            // points.push(this.otherCamera.position);
+            // points.push(vectorBotRight.add(this.otherCamera.position));
+            // var geometry = new THREE.BufferGeometry().setFromPoints( points );
+            // var line = new THREE.Line( geometry, material );
+            // this.otherScene.add( line );
 
             if (data.doAsyncTimeWarp) {
                 const dummyPose = this.dummyPoses.shift();

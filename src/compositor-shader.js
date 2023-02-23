@@ -33,6 +33,18 @@ export const CompositorShader = {
         vrMode: {
             type: 'bool', value: false,
         },
+        remoteViewPortTopLeft: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
+        remoteViewPortTopRight: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
+        remoteViewPortBotLeft: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
+        remoteViewPortBotRight: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
     },
 
     vertexShader: require('./shaders/vert.glsl'),
