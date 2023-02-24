@@ -18,8 +18,6 @@ AFRAME.registerSystem('other-scene', {
             return;
         }
 
-        this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
-
         const renderer = sceneEl.renderer;
 
         const scene = sceneEl.object3D;
@@ -87,6 +85,12 @@ AFRAME.registerSystem('other-scene', {
         this.otherRenderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
 
         this.otherCamera.copy(camera);
+    },
+
+    updateFPS() {
+        const data = this.data;
+
+        this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
     },
 
     tick: function () {
