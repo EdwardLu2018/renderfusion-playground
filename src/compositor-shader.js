@@ -33,6 +33,9 @@ export const CompositorShader = {
         vrMode: {
             type: 'bool', value: false,
         },
+        doAsyncTimeWarp: {
+            type: 'bool', value: true,
+        },
         remoteViewPortTopLeft: {
             type: 'vec3', value: new THREE.Vector3(),
         },
@@ -44,6 +47,18 @@ export const CompositorShader = {
         },
         remoteViewPortBotRight: {
             type: 'vec3', value: new THREE.Vector3(),
+        },
+        cameraProjectionMatrix: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        cameraMatrixWorld: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteCameraProjectionMatrix: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteCameraMatrixWorld: {
+            type: 'mat4', value: new THREE.Matrix4(),
         },
     },
 

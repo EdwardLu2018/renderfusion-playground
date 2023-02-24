@@ -1,6 +1,10 @@
 import {CompositorPass} from './compositor-pass';
 
 AFRAME.registerSystem('compositor', {
+    schema: {
+        doAsyncTimeWarp: {type: 'bool', default: true},
+    },
+
     init: function() {
         const sceneEl = this.sceneEl;
 
@@ -67,6 +71,8 @@ AFRAME.registerSystem('compositor', {
     },
 
     bind: function() {
+        const data = this.data;
+
         const renderer = this.sceneEl.renderer;
         const render = renderer.render;
         const mainCamera = document.getElementById('my-camera');
@@ -160,24 +166,26 @@ AFRAME.registerSystem('compositor', {
                     hasDualCameras = false;
                 }
 
-                var vectorTopLeft = new THREE.Vector3( -1, 1, 1 )
-                                            .unproject( system.remoteCamera )
-                                            // .sub(system.remoteCamera.position)
-                                            .project(camera);
-                var vectorTopRight = new THREE.Vector3( 1, 1, 1 )
-                                            .unproject( system.remoteCamera )
-                                            // .sub(system.remoteCamera.position)
-                                            .project(camera);
-                var vectorBotLeft = new THREE.Vector3( -1, -1, 1 )
-                                            .unproject( system.remoteCamera )
-                                            // .sub(system.remoteCamera.position)
-                                            .project(camera);
-                var vectorBotRight = new THREE.Vector3( 1, -1, 1 )
-                                            .unproject( system.remoteCamera )
-                                            // .sub(system.remoteCamera.position)
-                                            .project(camera);
+                system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
+                if (data.doAsyncTimeWarp) {
+                    var vectorTopLeft = new THREE.Vector3( -1, 1, 1 )
+                                                .unproject(system.remoteCamera)
+                                                .project(camera);
+                    var vectorTopRight = new THREE.Vector3( 1, 1, 1 )
+                                                .unproject(system.remoteCamera)
+                                                .project(camera);
+                    var vectorBotLeft = new THREE.Vector3( -1, -1, 1 )
+                                                .unproject(system.remoteCamera)
+                                                .project(camera);
+                    var vectorBotRight = new THREE.Vector3( 1, -1, 1 )
+                                                .unproject(system.remoteCamera)
+                                                .project(camera);
 
-                system.pass.setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight);
+                    system.pass.setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight);
+                    system.pass.setCameraMats(camera.projectionMatrix, camera.matrixWorld,
+                                            system.remoteCamera.projectionMatrix, system.remoteCamera.matrixWorld);
+                }
+
                 system.pass.setHasDualCameras(hasDualCameras);
 
                 // render with custom shader (local-remote compositing):

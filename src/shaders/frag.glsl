@@ -13,6 +13,7 @@ uniform float cameraFar;
 uniform bool hasDualCameras;
 uniform bool arMode;
 uniform bool vrMode;
+uniform bool doAsyncTimeWarp;
 
 uniform ivec2 windowSize;
 uniform ivec2 streamSize;
@@ -22,9 +23,29 @@ uniform vec3 remoteViewPortTopRight;
 uniform vec3 remoteViewPortBotLeft;
 uniform vec3 remoteViewPortBotRight;
 
+uniform mat4 cameraProjectionMatrix;
+uniform mat4 cameraMatrixWorld;
+uniform mat4 remoteCameraProjectionMatrix;
+uniform mat4 remoteCameraMatrixWorld;
+
+vec3 homogenize(vec2 coord) {
+    return vec3(coord, 1.0);
+}
+
+vec2 unhomogenize(vec3 coord) {
+    return coord.xy / coord.z;
+}
+
+vec2 image2NDC(vec2 imageCoords) {
+    return 2.0 * imageCoords - 1.0;
+}
+
+vec2 NDC2image(vec2 ndcCoords) {
+    return (ndcCoords + 1.0) / 2.0;
+}
+
 vec2 get2DPoint(vec3 point3D) {
-    point3D /= point3D.z;
-    vec2 point2D = vec2((point3D.x + 1.0) / 2.0, (point3D.y + 1.0) / 2.0);
+    vec2 point2D = NDC2image(unhomogenize(point3D));
     return point2D;
 }
 
@@ -48,10 +69,6 @@ bool isInQuad(vec2 q0, vec2 q1, vec2 q2, vec2 q3, vec2 p) {
     return isInTriangle(q0, q1, q2, p) || isInTriangle(q3, q1, q2, p);
 }
 
-vec2 lerp(vec2 a, vec2 b, float t1) {
-	return (a + t1 * (b - a));
-}
-
 float readDepth(sampler2D depthSampler, vec2 coord) {
     float depth = texture2D( depthSampler, coord ).x;
     return depth;
@@ -62,42 +79,52 @@ void main() {
     vec2 frameSizeF = vec2(frameSize);
     vec2 windowSizeF = vec2(windowSize);
 
-    vec2 coordDestNormalized = vUv;
-    vec2 coordStreamNormalized = vUv;
-
-    vec2 coordDiffuseColor = coordDestNormalized;
-    vec2 coordDiffuseDepth = coordDestNormalized;
+    vec2 coordDiffuseColor = vUv;
+    vec2 coordDiffuseDepth = vUv;
 
     vec4 diffuseColor  = texture2D( tDiffuse, coordDiffuseColor );
     float diffuseDepth = readDepth( tDepth, coordDiffuseDepth );
 
-    vec2 topLeftUV  = get2DPoint(remoteViewPortTopLeft);
-    vec2 topRightUV = get2DPoint(remoteViewPortTopRight);
-    vec2 botLeftUV  = get2DPoint(remoteViewPortBotLeft);
-    vec2 botRightUV = get2DPoint(remoteViewPortBotRight);
+    vec4 streamColor;
+    float streamDepth;
 
-    // vec2 coordStreamColor = coordStreamNormalized;
-    // vec2 coordStreamDepth = coordStreamNormalized;
+    if (doAsyncTimeWarp) {
+        vec2 topLeftUV  = get2DPoint(remoteViewPortTopLeft);
+        vec2 topRightUV = get2DPoint(remoteViewPortTopRight);
+        vec2 botLeftUV  = get2DPoint(remoteViewPortBotLeft);
+        vec2 botRightUV = get2DPoint(remoteViewPortBotRight);
 
-    // vec4 streamColor  = texture2D( tStream, coordStreamColor );
-    // float streamDepth = readDepth( tDepthStream, coordStreamDepth );
+        if (isInQuad(topLeftUV, topRightUV, botLeftUV, botRightUV, vUv)) {
+            // uv -> xyz_cam
+            vec4 vUv3DHomo = cameraMatrixWorld * inverse(cameraProjectionMatrix) * vec4(image2NDC(vUv), 1.0, 1.0);
+            // xyz_cam -> uv_remote_cam
+            vec4 vUvRemoteCamera2DHomo = remoteCameraProjectionMatrix * inverse(remoteCameraMatrixWorld) * vUv3DHomo;
+            vec2 vUvRemoteCamera2D = NDC2image(unhomogenize(vUvRemoteCamera2DHomo.xyz / vUvRemoteCamera2DHomo.w));
+
+            vec2 coordStreamColor = vUvRemoteCamera2D;
+            vec2 coordStreamDepth = coordStreamColor;
+
+            streamColor = texture2D( tStream, coordStreamColor );
+            streamDepth = readDepth( tDepthStream, coordStreamDepth );
+        }
+        else {
+            streamColor = vec4(0.0, 0.0, 0.0, 1.0);
+            streamDepth = 0.0;
+            // TODO: grab nearest color
+            // vec4 streamColor = texture2D( tStream, vUv );
+            // color = streamColor;
+        }
+    }
+    else {
+        streamColor = texture2D( tStream, vUv );
+        streamDepth = readDepth( tDepthStream, vUv );
+    }
 
     vec4 color;
-    // color = streamColor;
-    // color = diffuseDepth * streamColor + streamDepth * diffuseColor;
-
-    if (isInQuad(topLeftUV, topRightUV, botLeftUV, botRightUV, vUv)) {
-        vec2 coordStreamColor = lerp(lerp(topLeftUV, topRightUV, vUv.x), lerp(botLeftUV, botRightUV, vUv.x), 1.0f - vUv.y);
-        vec2 coordStreamDepth = coordStreamColor;
-
-        vec4 streamColor = texture2D( tStream, coordStreamColor );
-        float streamDepth = readDepth( tDepthStream, coordStreamDepth );
-
-        if (streamDepth <= diffuseDepth)
-            color = vec4(streamColor.rgb, 1.0);
-        else
-            color = diffuseColor;
-    }
+    if (streamDepth <= diffuseDepth)
+        color = vec4(streamColor.rgb, 1.0);
+    else
+        color = diffuseColor;
 
     // color = vec4(streamColor.rgb, 1.0);
     // color = vec4(diffuseColor.rgb, 1.0);

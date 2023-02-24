@@ -39,11 +39,23 @@ export class CompositorPass extends Pass {
         this.material.uniforms.hasDualCameras.value = hasDualCameras;
     }
 
+    setDoAsyncTimeWarp(doAsyncTimeWarp) {
+        this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
+    }
+
     setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight) {
         this.material.uniforms.remoteViewPortTopLeft.value  = vectorTopLeft;
         this.material.uniforms.remoteViewPortTopRight.value = vectorTopRight;
         this.material.uniforms.remoteViewPortBotLeft.value  = vectorBotLeft;
         this.material.uniforms.remoteViewPortBotRight.value = vectorBotRight;
+    }
+
+    setCameraMats(cameraProjectionMatrix, cameraMatrixWorld,
+                  remoteCameraProjectionMatrix, remoteCameraMatrixWorld) {
+        this.material.uniforms.cameraProjectionMatrix.value  = cameraProjectionMatrix;
+        this.material.uniforms.cameraMatrixWorld.value = cameraMatrixWorld;
+        this.material.uniforms.remoteCameraProjectionMatrix.value  = remoteCameraProjectionMatrix;
+        this.material.uniforms.remoteCameraMatrixWorld.value = remoteCameraMatrixWorld;
     }
 
     getHasDualCameras() {
