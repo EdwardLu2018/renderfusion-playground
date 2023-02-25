@@ -168,26 +168,10 @@ AFRAME.registerSystem('compositor', {
 
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
                 if (data.doAsyncTimeWarp) {
-                    var vectorTopLeft = new THREE.Vector3( -1, 1, 1 )
-                                                .unproject(system.remoteCamera)
-                                                // .sub(system.remoteCamera.position)
-                                                // .project(camera);
-                    var vectorTopRight = new THREE.Vector3( 1, 1, 1 )
-                                                .unproject(system.remoteCamera)
-                                                // .sub(system.remoteCamera.position)
-                                                // .project(camera);
-                    var vectorBotLeft = new THREE.Vector3( -1, -1, 1 )
-                                                .unproject(system.remoteCamera)
-                                                // .sub(system.remoteCamera.position)
-                                                // .project(camera);
-                    var vectorBotRight = new THREE.Vector3( 1, -1, 1 )
-                                                .unproject(system.remoteCamera)
-                                                // .sub(system.remoteCamera.position)
-                                                // .project(camera);
-
-                    system.pass.setRemoteViewPort3D(vectorTopLeft, vectorTopRight, vectorBotLeft, vectorBotRight);
-                    system.pass.setCameraMats(camera.projectionMatrix, camera.matrixWorld,
-                                            system.remoteCamera.projectionMatrix, system.remoteCamera.matrixWorld);
+                    system.pass.setCameraMats(
+                        camera.projectionMatrix, camera.matrixWorld, camera.position,
+                        system.remoteCamera.projectionMatrix, system.remoteCamera.matrixWorld, system.remoteCamera.position
+                    );
                 }
 
                 system.pass.setHasDualCameras(hasDualCameras);

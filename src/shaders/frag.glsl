@@ -18,15 +18,13 @@ uniform bool doAsyncTimeWarp;
 uniform ivec2 windowSize;
 uniform ivec2 streamSize;
 
-uniform vec3 remoteViewPortTopLeft;
-uniform vec3 remoteViewPortTopRight;
-uniform vec3 remoteViewPortBotLeft;
-uniform vec3 remoteViewPortBotRight;
-
 uniform mat4 cameraProjectionMatrix;
 uniform mat4 cameraMatrixWorld;
 uniform mat4 remoteCameraProjectionMatrix;
 uniform mat4 remoteCameraMatrixWorld;
+
+uniform vec3 cameraPos;
+uniform vec3 remoteCameraPos;
 
 vec3 homogenize(vec2 coord) {
     return vec3(coord, 1.0);
@@ -44,24 +42,17 @@ vec2 NDC2image(vec2 ndcCoords) {
     return (ndcCoords + 1.0) / 2.0;
 }
 
-bool isInTriangle(vec2 t0, vec2 t1, vec2 t2, vec2 p) {
-    vec2 v0 = t1 - t0;
-    vec2 v1 = t2 - t0;
-    vec2 v2 = p - t0;
-    float d00 = dot(v0, v0);
-    float d01 = dot(v0, v1);
-    float d11 = dot(v1, v1);
-    float d20 = dot(v2, v0);
-    float d21 = dot(v2, v1);
-    float invDenom = 1.0 / (d00 * d11 - d01 * d01);
-    float u = (d11 * d20 - d01 * d21) * invDenom;
-    float v = (d00 * d21 - d01 * d20) * invDenom;
-
-    return (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0 && u + v <= 1.0);
-}
-
-bool isInQuad(vec2 q0, vec2 q1, vec2 q2, vec2 q3, vec2 p) {
-    return isInTriangle(q0, q1, q2, p) || isInTriangle(q3, q1, q2, p);
+vec2 intersectQuad(vec3 p0, vec3 n, vec3 l0, vec3 l) {
+    n = normalize(n);
+    l = normalize(l);
+    float t = 0.0;
+    float denom = dot(n, l);
+    if (denom > 1e-6) {
+        vec3 p0l0 = p0 - l0;
+        t = dot(p0l0, n) / denom;
+        return vec2(t >= 0.0, t);
+    }
+    return vec2(0.0, t);
 }
 
 float readDepth(sampler2D depthSampler, vec2 coord) {
@@ -71,6 +62,40 @@ float readDepth(sampler2D depthSampler, vec2 coord) {
 
 vec3 lerp(vec3 a, vec3 b, float t) {
 	return (a + t * (b - a));
+}
+
+vec3 unprojectCamera(vec2 uv) {
+    vec4 uv4 = cameraMatrixWorld * inverse(cameraProjectionMatrix) * vec4(image2NDC(uv), 1.0, 1.0);
+    vec3 uv3 = uv4.xyz / uv4.w;
+    return uv3;
+}
+
+vec2 projectCamera(vec3 pt) {
+    vec4 uv4 = cameraProjectionMatrix * inverse(cameraMatrixWorld) * vec4(pt, 1.0);
+    vec2 uv2 = unhomogenize(uv4.xyz / uv4.w);
+    return NDC2image(uv2);
+}
+
+vec3 unprojectRemoteCamera(vec2 uv) {
+    vec4 uv4 = remoteCameraMatrixWorld * inverse(remoteCameraProjectionMatrix) * vec4(image2NDC(uv), 1.0, 1.0);
+    vec3 uv3 = uv4.xyz / uv4.w;
+    return uv3;
+}
+
+vec2 projectRemoteCamera(vec3 pt) {
+    vec4 uv4 = remoteCameraProjectionMatrix * inverse(remoteCameraMatrixWorld) * vec4(pt, 1.0);
+    vec2 uv2 = unhomogenize(uv4.xyz / uv4.w);
+    return NDC2image(uv2);
+}
+
+// linePnt - point the line passes through
+// lineDir - unit vector in direction of line, either direction works
+// pnt - the point to find nearest on line for
+vec3 nearestPointOnLine(vec3 linePnt, vec3 lineDir, vec3 pnt) {
+    lineDir = normalize(lineDir);
+    vec3 v = pnt - linePnt;
+    float d = dot(v, lineDir);
+    return linePnt + lineDir * d;
 }
 
 void main() {
@@ -88,42 +113,38 @@ void main() {
     float streamDepth;
 
     if (doAsyncTimeWarp) {
-        vec2 topLeft  = remoteViewPortTopLeft;
-        vec2 topRight = remoteViewPortTopRight;
-        vec2 botLeft  = remoteViewPortBotLeft;
-        vec2 botRight = remoteViewPortBotRight;
+        vec3 cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0));
+        vec3 cameraTopRight = unprojectCamera(vec2(1.0, 1.0));
+        vec3 cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0));
+        vec3 cameraBotRight = unprojectCamera(vec2(1.0, 0.0));
 
-        vec3 cameraVector = lerp(lerp(topLeft, topRight, vUv.x), lerp(botLeft, botRight, vUv.x), 1.0 - vUv.y);
+        vec3 remoteTopLeft  = unprojectRemoteCamera(vec2(0.0, 1.0));
+        vec3 remoteTopRight = unprojectRemoteCamera(vec2(1.0,1.0));
+        vec3 remoteBotLeft  = unprojectRemoteCamera(vec2(0.0, 0.0));
+        vec3 remoteBotRight = unprojectRemoteCamera(vec2(1.0, 0.0));
 
-        // if (distance(topLeftUV, vUv)  < 0.02) streamColor = vec4(1.0, 0.0, 0.0, 1.0);
-        // if (distance(topRightUV, vUv) < 0.02) streamColor = vec4(0.0, 1.0, 0.0, 1.0);
-        // if (distance(botLeftUV, vUv)  < 0.02) streamColor = vec4(0.0, 0.0, 1.0, 1.0);
-        // if (distance(botRightUV, vUv) < 0.02) streamColor = vec4(1.0, 1.0, 0.0, 1.0);
+        vec3 cameraVector = lerp(lerp(cameraTopLeft, cameraTopRight, vUv.x), lerp(cameraBotLeft, cameraBotRight, vUv.x), 1.0 - vUv.y);
+        // vec3 remoteCameraVector = lerp(lerp(remoteTopLeft, remoteTopRight, vUv.x), lerp(remoteBotLeft, remoteBotRight, vUv.x), 1.0 - vUv.y);
 
-        if (isInQuad(topLeftUV, topRightUV, botLeftUV, botRightUV, cameraVector)) {
-
+        vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
+        vec2 res = intersectQuad(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);
+        if (res.x == 1.0) {
+            float t = res.y;
+            vec3 hitPt = cameraPos + cameraVector * t;
+            vec2 uv3 = projectRemoteCamera(hitPt);
+            if ((uv3.x < 0.0 || uv3.y < 0.0 || uv3.x > 1.0 || uv3.y > 1.0)) {
+                streamColor = vec4(0.0, 0.0, 0.0, 1.0);
+                streamDepth = 1.0;
+            }
+            else {
+                streamColor = texture2D( tStream, uv3 );
+                streamDepth = readDepth( tDepthStream, uv3 );
+            }
         }
-
-        // if (isInQuad(topLeftUV, topRightUV, botLeftUV, botRightUV, vUv)) {
-        //     // uv -> xyz_cam
-        //     vec4 vUv3DHomo = cameraMatrixWorld * inverse(cameraProjectionMatrix) * vec4(image2NDC(vUv), 1.0, 1.0);
-        //     // xyz_cam -> uv_remote_cam
-        //     vec4 vUvRemoteCamera2DHomo = remoteCameraProjectionMatrix * inverse(remoteCameraMatrixWorld) * vUv3DHomo;
-        //     vec2 vUvRemoteCamera2D = NDC2image(unhomogenize(vUvRemoteCamera2DHomo.xyz / vUvRemoteCamera2DHomo.w));
-
-        //     vec2 coordStreamColor = vUvRemoteCamera2D;
-        //     vec2 coordStreamDepth = coordStreamColor;
-
-        //     streamColor = texture2D( tStream, coordStreamColor );
-        //     streamDepth = readDepth( tDepthStream, coordStreamDepth );
-        // }
-        // else {
-        //     streamColor = vec4(0.0, 0.0, 0.0, 1.0);
-        //     streamDepth = 0.0;
-        //     // TODO: grab nearest color
-        //     // vec4 streamColor = texture2D( tStream, vUv );
-        //     // color = streamColor;
-        // }
+        else {
+            streamColor = vec4(0.0, 0.0, 0.0, 1.0);
+            streamDepth = 1.0;
+        }
     }
     else {
         streamColor = texture2D( tStream, vUv );
