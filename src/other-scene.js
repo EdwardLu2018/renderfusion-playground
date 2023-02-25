@@ -120,7 +120,10 @@ AFRAME.registerSystem('other-scene', {
 
             // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
             // var points = [];
-            // points.push(this.otherCamera.position);
+            // points.push(vectorTopLeft);
+            // points.push(vectorTopRight);
+            // points.push(vectorBotRight);
+            // points.push(vectorBotLeft);
             // points.push(vectorTopLeft);
             // var geometry = new THREE.BufferGeometry().setFromPoints( points );
             // var line = new THREE.Line( geometry, material );

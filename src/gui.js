@@ -27,9 +27,10 @@ AFRAME.registerSystem('gui', {
                 _this.otherScene.updateFPS();
             }
         )
-        gui.add(options, 'latency', 0, 1000).onChange(
+        gui.add(options, 'latency', 0, 100000000).onChange(
             function() {
                 _this.otherScene.data.latency = this.getValue();
+                _this.otherScene.poses = [];
             }
         )
         gui.add(options, 'doAsyncTimeWarp').onChange(
