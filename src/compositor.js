@@ -45,6 +45,7 @@ AFRAME.registerSystem('compositor', {
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
         this.pass = new CompositorPass(scene, camera, remoteRenderTarget, remoteScene, remoteCamera);
+        // this.pass.setTextureSize(window.innerWidth, window.innerHeight);
 
         this.t = 0;
         this.dt = 0;
@@ -62,7 +63,9 @@ AFRAME.registerSystem('compositor', {
         renderer.getSize(rendererSize);
         const pixelRatio = renderer.getPixelRatio();
         this.renderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-        if (this.pass) this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
+        if (this.pass) {
+            this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
+        }
     },
 
     tick: function(t, dt) {

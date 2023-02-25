@@ -47,16 +47,16 @@ AFRAME.registerSystem('other-scene', {
         this.otherScene.add(box1);
         this.otherScene.add(box2);
 
-        // const texture = new THREE.TextureLoader().load('./color.png');
-        // const geometry = new THREE.PlaneGeometry(192, 108, 1, 1);
-        // const material = new THREE.MeshBasicMaterial( { map: texture } );
-        // const mesh = new THREE.Mesh(geometry, material);
-        // mesh.position.x = -6;
-        // mesh.position.y = 1.6;
-        // mesh.position.z = -100;
+        const texture = new THREE.TextureLoader().load('./color.png');
+        const geometry = new THREE.PlaneGeometry(1920, 1080, 1, 1);
+        const material = new THREE.MeshBasicMaterial( { map: texture } );
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.x = -6;
+        mesh.position.y = 1.6;
+        mesh.position.z = -50;
         // mesh.rotation.x = -Math.PI / 8;
         // mesh.rotation.z = -Math.PI / 8;
-        // this.otherScene.add(mesh);
+        this.otherScene.add(mesh);
 
         this.dummy = document.getElementById('dummy').object3D;
 

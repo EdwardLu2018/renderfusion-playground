@@ -35,6 +35,10 @@ export class CompositorPass extends Pass {
         this.material.uniforms.windowSize.value = [width, height];
     }
 
+    setTextureSize(width, height) {
+        this.material.uniforms.streamSize.value = [width, height];
+    }
+
     setHasDualCameras(hasDualCameras) {
         this.material.uniforms.hasDualCameras.value = hasDualCameras;
     }

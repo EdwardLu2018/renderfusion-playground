@@ -103,8 +103,36 @@ void main() {
     vec2 frameSizeF = vec2(frameSize);
     vec2 windowSizeF = vec2(windowSize);
 
-    vec2 coordDiffuseColor = vUv;
-    vec2 coordDiffuseDepth = vUv;
+    // calculate new dimensions, maintaining aspect ratio
+    float aspect = frameSizeF.x / frameSizeF.y;
+    int newHeight = windowSize.y;
+    int newWidth = int(float(newHeight) * aspect);
+
+    // calculate left and right padding offset
+    int totalPad = abs(windowSize.x - newWidth);
+    float padding = float(totalPad / 2);
+    float paddingLeft = padding / windowSizeF.x;
+    float paddingRight = 1.0 - paddingLeft;
+
+    bool targetWidthGreater = windowSize.x > newWidth;
+
+    vec2 coordDestNormalized = vUv;
+    vec2 coordStreamNormalized;
+    if (targetWidthGreater) {
+        coordStreamNormalized = vec2(
+            ( (vUv.x * windowSizeF.x - padding) / float(windowSize.x - totalPad) ) / 2.0,
+            vUv.y
+        );
+    }
+    else {
+        coordStreamNormalized = vec2(
+            ( (vUv.x * windowSizeF.x + padding) / float(newWidth) ) / 2.0,
+            vUv.y
+        );
+    }
+
+    vec2 coordDiffuseColor = coordDestNormalized;
+    vec2 coordDiffuseDepth = coordDestNormalized;
 
     vec4 diffuseColor  = texture2D( tDiffuse, coordDiffuseColor );
     float diffuseDepth = readDepth( tDepth, coordDiffuseDepth );
@@ -124,38 +152,58 @@ void main() {
         vec3 remoteBotRight = unprojectRemoteCamera(vec2(1.0, 0.0));
 
         vec3 cameraVector = lerp(lerp(cameraTopLeft, cameraTopRight, vUv.x), lerp(cameraBotLeft, cameraBotRight, vUv.x), 1.0 - vUv.y);
-        // vec3 remoteCameraVector = lerp(lerp(remoteTopLeft, remoteTopRight, vUv.x), lerp(remoteBotLeft, remoteBotRight, vUv.x), 1.0 - vUv.y);
 
         vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
         vec2 res = intersectQuad(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);
-        if (res.x == 1.0) {
-            float t = res.y;
-            vec3 hitPt = cameraPos + cameraVector * t;
-            vec2 uv3 = projectRemoteCamera(hitPt);
-            if ((uv3.x < 0.0 || uv3.y < 0.0 || uv3.x > 1.0 || uv3.y > 1.0)) {
-                streamColor = vec4(0.0, 0.0, 0.0, 1.0);
-                streamDepth = 1.0;
-            }
-            else {
-                streamColor = texture2D( tStream, uv3 );
-                streamDepth = readDepth( tDepthStream, uv3 );
-            }
-        }
-        else {
-            streamColor = vec4(0.0, 0.0, 0.0, 1.0);
-            streamDepth = 1.0;
-        }
+        // if (res.x == 1.0) {
+        //     float t = res.y;
+        //     vec3 hitPt = cameraPos + cameraVector * t;
+        //     vec2 uv3 = projectRemoteCamera(hitPt);
+        //     if ((uv3.x < 0.0 || uv3.y < 0.0 || uv3.x > 1.0 || uv3.y > 1.0)) {
+        //         streamColor = vec4(0.0, 0.0, 0.0, 1.0);
+        //         streamDepth = 1.0;
+        //     }
+        //     else {
+        //         streamColor = texture2D( tStream, uv3 );
+        //         streamDepth = readDepth( tDepthStream, uv3 );
+        //     }
+        // }
+        // else {
+        //     streamColor = vec4(0.0, 0.0, 0.0, 1.0);
+        //     streamDepth = 1.0;
+        // }
+        float t = res.y;
+        vec3 hitPt = cameraPos + cameraVector * t;
+        vec2 uv3 = projectRemoteCamera(hitPt);
+        streamColor = texture2D( tStream, uv3 );
+        streamDepth = readDepth( tDepthStream, uv3 );
     }
     else {
-        streamColor = texture2D( tStream, vUv );
-        streamDepth = readDepth( tDepthStream, vUv );
+        streamColor = texture2D( tStream, coordDestNormalized );
+        streamDepth = readDepth( tDepthStream, coordDestNormalized );
     }
 
     vec4 color;
-    if (streamDepth <= diffuseDepth)
-        color = vec4(streamColor.rgb, 1.0);
-    else
-        color = diffuseColor;
+    // if (!targetWidthGreater ||
+    //     (targetWidthGreater && paddingLeft <= vUv.x && vUv.x <= paddingRight)) {
+        // color = streamColor;
+        // color = diffuseDepth * streamColor + streamDepth * diffuseColor;
+
+        if (arMode) {
+            color = vec4(streamColor.rgb, 1.0);
+            // if (streamDepth >= 0.99) {
+                // color = vec4(0.0);
+            // }
+        }
+        else
+        if (streamDepth <= diffuseDepth)
+            color = vec4(streamColor.rgb, 1.0);
+        else
+            color = diffuseColor;
+    // }
+    // else {
+    //     color = diffuseColor;
+    // }
 
     // color = vec4(streamColor.rgb, 1.0);
     // color = vec4(diffuseColor.rgb, 1.0);
