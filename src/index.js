@@ -1,4 +1,5 @@
 import 'aframe';
-import './other-scene';
+import './local-scene';
+import './remote-scene';
 import './compositor';
 import './gui'

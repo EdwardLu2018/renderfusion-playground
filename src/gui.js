@@ -10,7 +10,7 @@ AFRAME.registerSystem('gui', {
             return;
         }
 
-        this.otherScene = el.sceneEl.systems['other-scene'];
+        this.remoteScene = el.sceneEl.systems['remote-scene'];
         this.compositor = el.sceneEl.systems['compositor'];
 
         const options = {
@@ -23,14 +23,14 @@ AFRAME.registerSystem('gui', {
         const gui = new GUI()
         gui.add(options, 'fps', 1, 90).onChange(
             function() {
-                _this.otherScene.data.fps = this.getValue();
-                _this.otherScene.updateFPS();
+                _this.remoteScene.data.fps = this.getValue();
+                _this.remoteScene.updateFPS();
             }
         )
         gui.add(options, 'latency', 0, 1000).onChange(
             function() {
-                _this.otherScene.data.latency = this.getValue();
-                _this.otherScene.poses = [];
+                _this.remoteScene.data.latency = this.getValue();
+                _this.remoteScene.poses = [];
             }
         )
         gui.add(options, 'doAsyncTimeWarp').onChange(
