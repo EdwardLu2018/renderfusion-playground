@@ -8,16 +8,28 @@ AFRAME.registerSystem('compositor', {
     init: function() {
         const sceneEl = this.sceneEl;
 
-        // if (!sceneEl.hasLoaded) {
-        //     sceneEl.addEventListener('renderstart', this.init.bind(this));
-        //     return;
-        // }
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener('renderstart', this.init.bind(this));
+            return;
+        }
+
+        const scene = sceneEl.object3D;
+        const camera = sceneEl.camera;
 
         const renderer = sceneEl.renderer;
 
         this.cameras = [];
 
         this.originalRenderFunc = null;
+
+        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1,1);
+        this.remoteRenderTarget.texture.name = 'RemoteScene.rtLeft';
+        this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
+        this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
+        this.remoteRenderTarget.stencilBuffer = false;
+        this.remoteRenderTarget.depthTexture = new THREE.DepthTexture();
+        this.remoteRenderTarget.depthTexture.format = THREE.DepthFormat;
+        this.remoteRenderTarget.depthTexture.type = THREE.UnsignedShortType;
 
         this.renderTarget = new THREE.WebGLRenderTarget(1,1);
         this.renderTarget.texture.name = 'EffectComposer.rt1';
@@ -28,29 +40,21 @@ AFRAME.registerSystem('compositor', {
         this.renderTarget.depthTexture.format = THREE.DepthFormat;
         this.renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-        // this.onResize();
+        this.remoteScene = sceneEl.systems['remote-scene'].remoteScene;
+        this.remoteCamera = sceneEl.systems['remote-scene'].remoteCamera;
+        this.pass = new CompositorPass(
+                        scene, camera,
+                        this.remoteScene, this.remoteCamera,
+                        this.remoteRenderTarget
+                    );
+
+        this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));
         renderer.xr.addEventListener('sessionstart', this.onResize.bind(this));
         renderer.xr.addEventListener('sessionend', this.onResize.bind(this));
-    },
-
-    handleRemoteTexture(remoteRenderTarget, remoteScene, remoteCamera) {
-        const sceneEl = this.sceneEl;
-        const renderer = sceneEl.renderer;
-
-        const scene = sceneEl.object3D;
-        const camera = sceneEl.camera;
-
-        this.remoteRenderTarget = remoteRenderTarget;
-        this.remoteScene = remoteScene;
-        this.remoteCamera = remoteCamera;
-        this.pass = new CompositorPass(scene, camera, remoteRenderTarget, remoteScene, remoteCamera);
-        // this.pass.setTextureSize(window.innerWidth, window.innerHeight);
 
         this.t = 0;
         this.dt = 0;
-
-        this.onResize();
 
         this.bind();
     },
@@ -63,9 +67,8 @@ AFRAME.registerSystem('compositor', {
         renderer.getSize(rendererSize);
         const pixelRatio = renderer.getPixelRatio();
         this.renderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-        if (this.pass) {
-            this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-        }
+        this.remoteRenderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
+        this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
     },
 
     tick: function(t, dt) {
@@ -78,7 +81,7 @@ AFRAME.registerSystem('compositor', {
 
         const renderer = this.sceneEl.renderer;
         const render = renderer.render;
-        const mainCamera = document.getElementById('my-camera');
+
         const system = this;
         let isDigest = false;
 
@@ -94,22 +97,11 @@ AFRAME.registerSystem('compositor', {
             }
         }
 
-        function decomposeProj(projMat) {
-            const elements = projMat.elements;
-            const x = elements[0] / 2;
-            const a = elements[2] / 2;
-            const y = elements[5];
-            const b = elements[6];
-            const c = elements[10];
-            const d = elements[11];
-            const e = elements[14];
-            return [x,a,y,b,c,d,e];
-        }
-
-        let hasDualCameras, ipd, leftProj, rightProj;
+        let hasDualCameras, ipd;
 
         let currentXREnabled = renderer.xr.enabled;
         let currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
+        // renderer.xr.cameraAutoUpdate = false;
 
         const isWebXRViewer = navigator.userAgent.includes('WebXRViewer');
 
@@ -124,33 +116,19 @@ AFRAME.registerSystem('compositor', {
             } else {
                 isDigest = true;
 
-                // save render state (1)
+                // save render state
                 const currentRenderTarget = this.getRenderTarget();
                 if (currentRenderTarget != null) {
                     // resize if an existing rendertarget exists (usually in webxr mode)
                     system.pass.setSize(currentRenderTarget.width, currentRenderTarget.height);
                     system.renderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
+                    system.remoteRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
-
-                // console.log(arguments, system.remoteScene, system.remoteCamera);
-                // this.setRenderTarget(system.remoteRenderTarget);
-                // render.call(system.remoteScene, system.remoteCamera);
-                // this.setRenderTarget(currentRenderTarget);
 
                 // store "normal" rendering output to this.renderTarget
                 this.setRenderTarget(system.renderTarget);
                 render.apply(this, arguments);
                 this.setRenderTarget(currentRenderTarget);
-
-                // save render state (2)
-                currentXREnabled = this.xr.enabled;
-                currentShadowAutoUpdate = this.shadowMap.autoUpdate;
-
-                // disable xr
-                if (this.xr.enabled === true) {
-                    this.xr.enabled = false;
-                }
-                this.shadowMap.autoUpdate = false;
 
                 if (system.cameras.length > 1) {
                     // we have two cameras here (vr mode or headset ar mode)
@@ -161,23 +139,10 @@ AFRAME.registerSystem('compositor', {
                     cameraLPos.setFromMatrixPosition( cameraL.matrixWorld );
                     cameraRPos.setFromMatrixPosition( cameraR.matrixWorld );
                     ipd = cameraLPos.distanceTo( cameraRPos );
-
-                    leftProj = decomposeProj(cameraL.projectionMatrix.transpose());
-                    rightProj = decomposeProj(cameraR.projectionMatrix.transpose());
                 } else {
                     // we just have a single camera here
                     hasDualCameras = false;
                 }
-
-                system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
-                if (data.doAsyncTimeWarp) {
-                    system.pass.setCameraMats(
-                        camera.projectionMatrix, camera.matrixWorld, camera.position,
-                        system.remoteCamera.projectionMatrix, system.remoteCamera.matrixWorld, system.remoteCamera.position
-                    );
-                }
-
-                system.pass.setHasDualCameras(hasDualCameras);
 
                 // render with custom shader (local-remote compositing):
                 // this will internally call renderer.render(), which will execute the code within
@@ -186,19 +151,15 @@ AFRAME.registerSystem('compositor', {
                 // will use for the "local" frame.
                 // the composer will take the "local" frame and merge it with the "remote" frame from
                 // the video by calling the compositor pass and executing the shaders.
+                system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
+                if (data.doAsyncTimeWarp) {
+                    system.pass.setCameraMats(camera, system.remoteCamera);
+                }
+                system.pass.setHasDualCameras(hasDualCameras);
                 system.pass.render(this, currentRenderTarget, system.renderTarget);
 
                 // restore render state
                 this.setRenderTarget(currentRenderTarget);
-                this.xr.enabled = currentXREnabled;
-                this.shadowMap.autoUpdate = currentShadowAutoUpdate;
-
-                // AFRAME.utils.entity.setComponentProperty(mainCamera, 'render-client', {
-                //     hasDualCameras: hasDualCameras,
-                //     ipd: ipd,
-                //     leftProj: leftProj,
-                //     rightProj, rightProj
-                // });
 
                 // call this part of the conditional again on the next call to render()
                 isDigest = false;

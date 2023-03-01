@@ -2,8 +2,11 @@ import {FullScreenQuad, Pass} from './pass';
 import {CompositorShader} from './compositor-shader';
 
 export class CompositorPass extends Pass {
-    constructor(scene, camera, remoteRenderTarget, remoteScene, remoteCamera) {
+    constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget) {
         super();
+
+        this.scene = scene;
+        this.camera = camera;
 
         this.remoteRenderTarget = remoteRenderTarget;
         this.remoteScene = remoteScene;
@@ -47,14 +50,14 @@ export class CompositorPass extends Pass {
         this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
     }
 
-    setCameraMats(cameraProjectionMatrix, cameraMatrixWorld, cameraPos,
-                  remoteCameraProjectionMatrix, remoteCameraMatrixWorld, remoteCameraPos) {
-        this.material.uniforms.cameraProjectionMatrix.value  = cameraProjectionMatrix;
-        this.material.uniforms.cameraMatrixWorld.value = cameraMatrixWorld;
-        this.material.uniforms.cameraPos.value = cameraPos;
-        this.material.uniforms.remoteCameraProjectionMatrix.value  = remoteCameraProjectionMatrix;
-        this.material.uniforms.remoteCameraMatrixWorld.value = remoteCameraMatrixWorld;
-        this.material.uniforms.remoteCameraPos.value = remoteCameraPos;
+    setCameraMats(camera, remoteCamera) {
+        this.material.uniforms.cameraProjectionMatrix.value = camera.projectionMatrix;
+        this.material.uniforms.cameraMatrixWorld.value = camera.matrixWorld;
+        this.material.uniforms.cameraPos.value = camera.position;
+
+        this.material.uniforms.remoteCameraProjectionMatrix.value = remoteCamera.projectionMatrix;
+        this.material.uniforms.remoteCameraMatrixWorld.value = remoteCamera.matrixWorld;
+        this.material.uniforms.remoteCameraPos.value = remoteCamera.position;
     }
 
     getHasDualCameras() {
@@ -82,7 +85,10 @@ export class CompositorPass extends Pass {
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);
 
-        renderer.setRenderTarget( writeBuffer );
-        this.fsQuad.render( renderer );
+        const currentXREnabled = renderer.xr.enabled;
+        renderer.xr.enabled = false;
+        renderer.setRenderTarget(writeBuffer);
+        this.fsQuad.render(renderer);
+        renderer.xr.enabled = currentXREnabled;
     }
 }

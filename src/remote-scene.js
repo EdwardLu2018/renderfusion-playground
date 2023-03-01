@@ -20,15 +20,6 @@ AFRAME.registerSystem('remote-scene', {
 
         const renderer = sceneEl.renderer;
 
-        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1,1);
-        this.remoteRenderTarget.texture.name = 'EffectComposer.rt1';
-        this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
-        this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
-        this.remoteRenderTarget.stencilBuffer = false;
-        this.remoteRenderTarget.depthTexture = new THREE.DepthTexture();
-        this.remoteRenderTarget.depthTexture.format = THREE.DepthFormat;
-        this.remoteRenderTarget.depthTexture.type = THREE.UnsignedShortType;
-
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
 
@@ -36,6 +27,12 @@ AFRAME.registerSystem('remote-scene', {
 
         this.remoteScene = new THREE.Scene();
         this.remoteCamera = camera.clone();
+
+        this.cameraRig = new THREE.Group();
+        this.cameraSpinner = new THREE.Group();
+        this.remoteScene.add(this.cameraRig);
+        this.cameraRig.add(this.cameraSpinner);
+        this.cameraSpinner.add(this.remoteCamera);
 
         this.remoteScene.background = new THREE.Color(0xF06565);
 
@@ -48,6 +45,7 @@ AFRAME.registerSystem('remote-scene', {
         box1.position.z = box2.position.z = -10;
         this.remoteScene.add(box1); // add to remote scene
         this.remoteScene.add(box2);
+        this.box1 = box1;
 
         const texture = new THREE.TextureLoader().load('./color.png');
         const geometry = new THREE.PlaneGeometry(1920, 1080, 1, 1);
@@ -62,13 +60,7 @@ AFRAME.registerSystem('remote-scene', {
 
         // End of remote scene init //
 
-        this.dummy = document.getElementById('dummy').object3D;
-
         this.poses = [];
-        this.dummyPoses = [];
-        this.box1 = box1;
-
-        sceneEl.systems['compositor'].handleRemoteTexture(this.remoteRenderTarget, this.remoteScene, this.remoteCamera);
 
         this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));
@@ -82,11 +74,6 @@ AFRAME.registerSystem('remote-scene', {
         const renderer = sceneEl.renderer;
 
         const camera = sceneEl.camera;
-
-        var rendererSize = new THREE.Vector2();
-        renderer.getSize(rendererSize);
-        const pixelRatio = renderer.getPixelRatio();
-        this.remoteRenderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
 
         this.remoteCamera.copy(camera);
     },
@@ -114,8 +101,8 @@ AFRAME.registerSystem('remote-scene', {
         if (this.poses.length > data.latency / FPS_PERIOD_60Hz) {
             const pose = this.poses.shift();
             // update remote camera
-            this.remoteCamera.rotation.setFromRotationMatrix(pose);
-            this.remoteCamera.position.setFromMatrixPosition(pose);
+            this.cameraRig.position.setFromMatrixPosition(pose);
+            this.cameraSpinner.quaternion.setFromRotationMatrix(pose);
 
             // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
             // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
