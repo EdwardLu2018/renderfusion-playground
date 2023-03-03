@@ -30,7 +30,7 @@ AFRAME.registerSystem('gui', {
         gui.add(options, 'latency', 0, 1000).onChange(
             function() {
                 _this.remoteScene.data.latency = this.getValue();
-                _this.remoteScene.poses = [];
+                _this.remoteScene.clearPoses();
             }
         )
         gui.add(options, 'doAsyncTimeWarp').onChange(
