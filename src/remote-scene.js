@@ -101,8 +101,9 @@ AFRAME.registerSystem('remote-scene', {
         if (this.poses.length > data.latency / FPS_PERIOD_60Hz) {
             const pose = this.poses.shift();
             // update remote camera
-            this.cameraRig.position.setFromMatrixPosition(pose);
-            this.cameraSpinner.quaternion.setFromRotationMatrix(pose);
+            // this.cameraRig.position.setFromMatrixPosition(pose);
+            // this.cameraSpinner.quaternion.setFromRotationMatrix(pose);
+            // pose.decompose( this.cameraRig.position, this.cameraSpinner.quaternion, this.remoteCamera.scale );
 
             // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
             // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
@@ -120,9 +121,9 @@ AFRAME.registerSystem('remote-scene', {
             // var line = new THREE.Line( geometry, material );
             // this.remoteScene.add( line );
 
-            this.box1.rotation.x += 0.01;
-            this.box1.rotation.y += 0.01;
-            this.box1.rotation.z += 0.01;
+            // this.box1.rotation.x += 0.01;
+            // this.box1.rotation.y += 0.01;
+            // this.box1.rotation.z += 0.01;
         }
     }
 });
