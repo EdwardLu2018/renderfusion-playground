@@ -10,7 +10,7 @@ AFRAME.registerSystem('gui', {
             return;
         }
 
-        this.remoteScene = el.sceneEl.systems['remote-scene'];
+        this.remoteScene = el.sceneEl.systems['remote-local'];
         this.compositor = el.sceneEl.systems['compositor'];
 
         const options = {

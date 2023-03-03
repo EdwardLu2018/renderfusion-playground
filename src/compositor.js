@@ -40,8 +40,8 @@ AFRAME.registerSystem('compositor', {
         this.renderTarget.depthTexture.format = THREE.DepthFormat;
         this.renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-        this.remoteScene = sceneEl.systems['remote-scene'].remoteScene;
-        this.remoteCamera = sceneEl.systems['remote-scene'].remoteCamera;
+        this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
+        this.remoteCamera = sceneEl.systems['remote-local'].remoteCamera;
         this.pass = new CompositorPass(
                         scene, camera,
                         this.remoteScene, this.remoteCamera,
