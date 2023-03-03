@@ -20,24 +20,16 @@ AFRAME.registerSystem('local-scene', {
 
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
-        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.x = -10;
-        this.box.position.y = 1.6;
-        this.box.position.z = -10;
-        this.box.scale.y *= 1.5;
-        scene.add(this.box); // add to local scene
-
-        this.box2 = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box2.position.x = 10;
-        this.box2.position.y = 1.6;
-        this.box2.position.z = -10;
-        this.box2.scale.y *= 1.5;
-        scene.add(this.box2); // add to local scene
+        this.box1 = new THREE.Mesh(boxGeometry, boxMaterial);
+        this.box1.position.x = 0;
+        this.box1.position.y = 1.6;
+        this.box1.position.z = -10;
+        scene.add(this.box1); // add to local scene
     },
 
     tick: function () {
-        // this.box.rotation.x -= 0.01;
-        // this.box.rotation.y -= 0.01;
-        // this.box.rotation.z -= 0.01;
+        this.box1.rotation.x -= 0.01;
+        this.box1.rotation.y -= 0.01;
+        this.box1.rotation.z -= 0.01;
     }
 });
