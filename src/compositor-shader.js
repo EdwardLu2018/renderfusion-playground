@@ -27,6 +27,9 @@ export const CompositorShader = {
         hasDualCameras: {
             type: 'bool', value: false,
         },
+        stretchBorders: {
+            type: 'bool', value: false,
+        },
         arMode: {
             type: 'bool', value: false,
         },

@@ -42,6 +42,10 @@ export class CompositorPass extends Pass {
         this.material.uniforms.hasDualCameras.value = hasDualCameras;
     }
 
+    setStretchBorders(stretchBorders) {
+        this.material.uniforms.stretchBorders.value = stretchBorders;
+    }
+
     setDoAsyncTimeWarp(doAsyncTimeWarp) {
         this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
     }

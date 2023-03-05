@@ -102,7 +102,7 @@ AFRAME.registerSystem('remote-local', {
 
             const pose = [];
             let prevPose = system.poses.length > 0 ? system.poses[0] : null;
-            if (system.poses.length > data.latency / FPS_PERIOD_60Hz) {
+            if (data.latency != -1 && system.poses.length > data.latency / FPS_PERIOD_60Hz) {
                 prevPose = system.poses.shift();
             }
 
@@ -190,7 +190,7 @@ AFRAME.registerSystem('remote-local', {
             camPose.copy(camera.matrixWorld);
             this.poses.push(camPose);
 
-            if (this.poses.length > data.latency / FPS_PERIOD_60Hz) {
+            if (data.latency != -1 && this.poses.length > data.latency / FPS_PERIOD_60Hz) {
                 const prevPose = this.poses.shift();
                 // update remote camera
                 this.remoteCamera.matrixWorld.copy( prevPose );

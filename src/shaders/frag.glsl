@@ -13,7 +13,9 @@ uniform float cameraFar;
 uniform bool hasDualCameras;
 uniform bool arMode;
 uniform bool vrMode;
+
 uniform bool doAsyncTimeWarp;
+uniform bool stretchBorders;
 
 uniform ivec2 windowSize;
 uniform ivec2 streamSize;
@@ -123,209 +125,138 @@ void main() {
     float remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
 
     if (doAsyncTimeWarp) {
+        vec3 cameraTopLeft, cameraTopRight, cameraBotLeft, cameraBotRight;
+        vec3 remoteTopLeft, remoteTopRight, remoteBotLeft, remoteBotRight;
+
         if (!hasDualCameras) {
-            vec3 cameraLTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-            vec3 cameraLTopRight = unprojectCamera(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-            vec3 cameraLBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-            vec3 cameraLBotRight = unprojectCamera(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+            cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+            cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+            cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+            cameraBotRight = unprojectCamera(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
 
-            vec3 remoteLTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-            vec3 remoteLTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-            vec3 remoteLBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-            vec3 remoteLBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+            remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+            remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+            remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+            remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
 
-            vec3 cameraVector = mix( mix(cameraLTopLeft, cameraLTopRight, vUv.x),
-                                     mix(cameraLBotLeft, cameraLBotRight, vUv.x),
+            vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, vUv.x),
+                                     mix(cameraBotLeft, cameraBotRight, vUv.x),
                                      1.0 - vUv.y );
             vec3 cameraPos = matrixWorldToPosition(cameraLMatrixWorld);
 
-            vec3 remotePlaneNormal = cross(remoteLTopRight - remoteLTopLeft, remoteLBotLeft - remoteLTopLeft);
-            float t = intersectPlane(remoteLTopLeft, remotePlaneNormal, cameraPos, cameraVector);
+            vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
+            float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);
             vec3 hitPt = cameraPos + cameraVector * t;
             vec2 uv3 = projectCamera(hitPt, remoteLProjectionMatrix, remoteLMatrixWorld);
 
             coordRemoteNormalized = uv3;
-            coordRemoteNormalized.x = max(coordRemoteNormalized.x, 0.0);
-            coordRemoteNormalized.x = min(coordRemoteNormalized.x, 1.0);
-            coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);
-            coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);
 
             remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
             remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
-
-            // if (coordRemoteNormalized.x < 0.0) remoteColor = vec4(0.0);
-            // if (coordRemoteNormalized.x > 1.0) remoteColor = vec4(0.0);
-            // if (coordRemoteNormalized.y < 0.0) remoteColor = vec4(0.0);
-            // if (coordRemoteNormalized.y > 1.0) remoteColor = vec4(0.0);
-
-            // vec2 a = projectCamera(remoteLTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-            // vec2 b = projectCamera(remoteLTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-            // vec2 c = projectCamera(remoteLBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-            // vec2 d = projectCamera(remoteLBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-
-            // if (distance(vUv, a) < 0.01) {
-            //     remoteColor = vec4(1.0, 0.0, 0.0, 1.0);
-            // }
-            // if (distance(vUv, b) < 0.01) {
-            //     remoteColor = vec4(0.0, 1.0, 0.0, 1.0);
-            // }
-            // if (distance(vUv, c) < 0.01) {
-            //     remoteColor = vec4(0.0, 0.0, 1.0, 1.0);
-            // }
-            // if (distance(vUv, d) < 0.01) {
-            //     remoteColor = vec4(1.0, 1.0, 0.0, 1.0);
-            // }
         }
         else {
             if (vUv.x < 0.5) {
                 float x = 2.0 * vUv.x;
-                vec3 cameraLTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec3 cameraLTopRight = unprojectCamera(vec2(0.5, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec3 cameraLBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec3 cameraLBotRight = unprojectCamera(vec2(0.5, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+                cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+                cameraTopRight = unprojectCamera(vec2(0.5, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+                cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+                cameraBotRight = unprojectCamera(vec2(0.5, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
 
-                vec3 remoteLTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-                vec3 remoteLTopRight = unprojectCamera(vec2(0.5, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-                vec3 remoteLBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-                vec3 remoteLBotRight = unprojectCamera(vec2(0.5, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+                remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+                remoteTopRight = unprojectCamera(vec2(0.5, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+                remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+                remoteBotRight = unprojectCamera(vec2(0.5, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
 
-                vec3 cameraLVector = mix( mix(cameraLTopLeft, cameraLTopRight, x),
-                                          mix(cameraLBotLeft, cameraLBotRight, x),
-                                          1.0 - vUv.y );
-                vec3 cameraLPos = matrixWorldToPosition(cameraLMatrixWorld);
+                vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
+                                         mix(cameraBotLeft, cameraBotRight, x),
+                                         1.0 - vUv.y );
+                vec3 cameraPos = matrixWorldToPosition(cameraLMatrixWorld);
 
-                vec3 remotePlaneNormal = cross(remoteLTopRight - remoteLTopLeft, remoteLBotLeft - remoteLTopLeft);
-                float t = intersectPlane(remoteLTopLeft, remotePlaneNormal, cameraLPos, cameraLVector);
-                vec3 hitPt = cameraLPos + cameraLVector * t;
+                vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
+                float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);
+                vec3 hitPt = cameraPos + cameraVector * t;
                 vec2 uv3 = projectCamera(hitPt, remoteLProjectionMatrix, remoteLMatrixWorld);
 
                 coordRemoteNormalized = uv3;
-                // coordRemoteNormalized.x = max(coordRemoteNormalized.x, 0.0);
-                // coordRemoteNormalized.x = min(coordRemoteNormalized.x, 0.5);
-                // coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);
-                // coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);
 
                 remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
                 remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
-
-                if (coordRemoteNormalized.x < 0.0 ||
-                    coordRemoteNormalized.x > 0.5 ||
-                    coordRemoteNormalized.y < 0.0 ||
-                    coordRemoteNormalized.y > 1.0) {
-                    remoteColor = vec4(0.0);
-                }
-
-                vec2 a = projectCamera(remoteLTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 b = projectCamera(remoteLTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 c = projectCamera(remoteLBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 d = projectCamera(remoteLBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-
-                vec2 e = projectCamera(cameraLTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 f = projectCamera(cameraLTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 g = projectCamera(cameraLBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
-                vec2 h = projectCamera(cameraLBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);
-
-                if (distance(vUv, a) < 0.01) {
-                    remoteColor = vec4(1.0, 0.0, 0.0, 1.0);
-                }
-                if (distance(vUv, b) < 0.01) {
-                    remoteColor = vec4(0.0, 1.0, 0.0, 1.0);
-                }
-                if (distance(vUv, c) < 0.01) {
-                    remoteColor = vec4(0.0, 0.0, 1.0, 1.0);
-                }
-                if (distance(vUv, d) < 0.01) {
-                    remoteColor = vec4(1.0, 1.0, 0.0, 1.0);
-                }
-
-                if (distance(vUv, e) < 0.02) {
-                    remoteColor = vec4(0.5, 0.0, 1.0, 1.0);
-                }
-                if (distance(vUv, f) < 0.02) {
-                    remoteColor = vec4(0.5, 0.0, 0.0, 1.0);
-                }
-                if (distance(vUv, g) < 0.02) {
-                    remoteColor = vec4(0.0, 0.5, 0.0, 1.0);
-                }
-                if (distance(vUv, h) < 0.02) {
-                    remoteColor = vec4(0.0, 0.0, 0.5, 1.0);
-                }
             }
             else {
                 float x = 2.0 * (vUv.x - 0.5);
-                vec3 cameraRTopLeft  = unprojectCamera(vec2(0.5, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec3 cameraRTopRight = unprojectCamera(vec2(1.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec3 cameraRBotLeft  = unprojectCamera(vec2(0.5, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec3 cameraRBotRight = unprojectCamera(vec2(1.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+                cameraTopLeft  = unprojectCamera(vec2(0.5, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+                cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+                cameraBotLeft  = unprojectCamera(vec2(0.5, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+                cameraBotRight = unprojectCamera(vec2(1.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
 
-                vec3 remoteLTopLeft  = unprojectCamera(vec2(0.5, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
-                vec3 remoteLTopRight = unprojectCamera(vec2(1.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
-                vec3 remoteLBotLeft  = unprojectCamera(vec2(0.5, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
-                vec3 remoteLBotRight = unprojectCamera(vec2(1.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+                remoteTopLeft  = unprojectCamera(vec2(0.5, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+                remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+                remoteBotLeft  = unprojectCamera(vec2(0.5, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+                remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
 
-                vec3 cameraRVector = mix( mix(cameraRTopLeft, cameraRTopRight, x),
-                                          mix(cameraRBotLeft, cameraRBotRight, x),
+                vec3 cameraRVector = mix( mix(cameraTopLeft, cameraTopRight, x),
+                                          mix(cameraBotLeft, cameraBotRight, x),
                                           1.0 - vUv.y );
                 vec3 cameraRPos = matrixWorldToPosition(cameraRMatrixWorld);
 
-                vec3 remotePlaneNormal = cross(remoteLTopRight - remoteLTopLeft, remoteLBotLeft - remoteLTopLeft);
-                float t = intersectPlane(remoteLTopLeft, remotePlaneNormal, cameraRPos, cameraRVector);
+                vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
+                float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraRPos, cameraRVector);
                 vec3 hitPt = cameraRPos + cameraRVector * t;
                 vec2 uv3 = projectCamera(hitPt, remoteRProjectionMatrix, remoteRMatrixWorld);
 
                 coordRemoteNormalized = uv3;
-                // coordRemoteNormalized.x = max(coordRemoteNormalized.x, 0.0);
-                // coordRemoteNormalized.x = min(coordRemoteNormalized.x, 0.5);
-                // coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);
-                // coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);
 
                 remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
                 remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
-
-                if (coordRemoteNormalized.x <= 0.5 ||
-                    coordRemoteNormalized.x > 1.0 ||
-                    coordRemoteNormalized.y < 0.0 ||
-                    coordRemoteNormalized.y > 1.0) {
-                    remoteColor = vec4(0.0);
-                }
-
-                vec2 a = projectCamera(remoteLTopLeft, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 b = projectCamera(remoteLTopRight, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 c = projectCamera(remoteLBotLeft, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 d = projectCamera(remoteLBotRight, cameraRProjectionMatrix, cameraRMatrixWorld);
-
-                vec2 e = projectCamera(cameraRTopLeft, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 f = projectCamera(cameraRTopRight, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 g = projectCamera(cameraRBotLeft, cameraRProjectionMatrix, cameraRMatrixWorld);
-                vec2 h = projectCamera(cameraRBotRight, cameraRProjectionMatrix, cameraLMatrixWorld);
-
-                if (distance(vUv, a) < 0.01) {
-                    remoteColor = vec4(1.0, 0.0, 0.0, 1.0);
-                }
-                if (distance(vUv, b) < 0.01) {
-                    remoteColor = vec4(0.0, 1.0, 0.0, 1.0);
-                }
-                if (distance(vUv, c) < 0.01) {
-                    remoteColor = vec4(0.0, 0.0, 1.0, 1.0);
-                }
-                if (distance(vUv, d) < 0.01) {
-                    remoteColor = vec4(1.0, 1.0, 0.0, 1.0);
-                }
-
-                if (distance(vUv, e) < 0.02) {
-                    remoteColor = vec4(0.5, 0.0, 1.0, 1.0);
-                }
-                if (distance(vUv, f) < 0.02) {
-                    remoteColor = vec4(0.5, 0.0, 0.0, 1.0);
-                }
-                if (distance(vUv, g) < 0.02) {
-                    remoteColor = vec4(0.0, 0.5, 0.0, 1.0);
-                }
-                if (distance(vUv, h) < 0.02) {
-                    remoteColor = vec4(0.0, 0.0, 0.5, 1.0);
-                }
             }
         }
+
+        float xMin = (!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5;
+        float xMax = (!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5;
+        if (!stretchBorders) {
+            if (coordRemoteNormalized.x < xMin ||
+                coordRemoteNormalized.x > xMax ||
+                coordRemoteNormalized.y < 0.0 ||
+                coordRemoteNormalized.y > 1.0) {
+                remoteColor = vec4(0.0);
+            }
+        }
+
+        // vec2 a = projectCamera(remoteTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 b = projectCamera(remoteTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 c = projectCamera(remoteBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 d = projectCamera(remoteBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);
+
+        // vec2 e = projectCamera(cameraTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 f = projectCamera(cameraTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 g = projectCamera(cameraBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);
+        // vec2 h = projectCamera(cameraBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);
+
+        // if (distance(vUv, a) < 0.01) {
+        //     remoteColor = vec4(1.0, 0.0, 0.0, 1.0);
+        // }
+        // if (distance(vUv, b) < 0.01) {
+        //     remoteColor = vec4(0.0, 1.0, 0.0, 1.0);
+        // }
+        // if (distance(vUv, c) < 0.01) {
+        //     remoteColor = vec4(0.0, 0.0, 1.0, 1.0);
+        // }
+        // if (distance(vUv, d) < 0.01) {
+        //     remoteColor = vec4(1.0, 1.0, 0.0, 1.0);
+        // }
+
+        // if (distance(vUv, e) < 0.02) {
+        //     remoteColor = vec4(0.5, 0.0, 1.0, 1.0);
+        // }
+        // if (distance(vUv, f) < 0.02) {
+        //     remoteColor = vec4(0.5, 0.0, 0.0, 1.0);
+        // }
+        // if (distance(vUv, g) < 0.02) {
+        //     remoteColor = vec4(0.0, 0.5, 0.0, 1.0);
+        // }
+        // if (distance(vUv, h) < 0.02) {
+        //     remoteColor = vec4(0.0, 0.0, 0.5, 1.0);
+        // }
     }
     else {
         remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );

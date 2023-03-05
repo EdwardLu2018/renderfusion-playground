@@ -3,6 +3,7 @@ import {CompositorPass} from './compositor-pass';
 AFRAME.registerSystem('compositor', {
     schema: {
         doAsyncTimeWarp: {type: 'bool', default: true},
+        stretchBorders: {type: 'bool', default: true},
     },
 
     init: function() {
@@ -139,6 +140,7 @@ AFRAME.registerSystem('compositor', {
                 }
 
                 system.pass.setHasDualCameras(hasDualCameras);
+                system.pass.setStretchBorders(data.stretchBorders);
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
                 if (data.doAsyncTimeWarp) {
                     if (this.xr.enabled === true && this.xr.isPresenting === true) {

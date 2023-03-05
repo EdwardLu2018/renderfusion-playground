@@ -14,7 +14,8 @@ AFRAME.registerSystem('gui', {
         this.compositor = el.sceneEl.systems['compositor'];
 
         const options = {
-            doAsyncTimeWarp: true,
+            timeWarp: true,
+            stretchBorders: true,
             fps: 60,
             latency: 150,
         };
@@ -27,15 +28,20 @@ AFRAME.registerSystem('gui', {
                 _this.remoteScene.updateFPS();
             }
         )
-        gui.add(options, 'latency', 0, 1000000).onChange(
+        gui.add(options, 'latency', -1, 1000).onChange(
             function() {
                 _this.remoteScene.data.latency = this.getValue();
                 _this.remoteScene.clearPoses();
             }
         )
-        gui.add(options, 'doAsyncTimeWarp').onChange(
+        gui.add(options, 'timeWarp').onChange(
             function() {
                 _this.compositor.data.doAsyncTimeWarp = this.getValue();
+            }
+        )
+        gui.add(options, 'stretchBorders').onChange(
+            function() {
+                _this.compositor.data.stretchBorders = this.getValue();
             }
         )
         gui.open()
