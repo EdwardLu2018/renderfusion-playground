@@ -1,15 +1,15 @@
 export const CompositorShader = {
     uniforms: {
-        tDiffuse: {
+        tLocalColor: {
             type: 't', value: new THREE.Texture(),
         },
-        tStream: {
+        tRemoteColor: {
             type: 't', value: new THREE.Texture(),
         },
-        tDepth: {
+        tLocalDepth: {
             type: 't', value: new THREE.Texture(),
         },
-        tDepthStream: {
+        tRemoteDepth: {
             type: 't', value: new THREE.Texture(),
         },
         windowSize: {
@@ -36,23 +36,29 @@ export const CompositorShader = {
         doAsyncTimeWarp: {
             type: 'bool', value: true,
         },
-        cameraProjectionMatrix: {
+        cameraLProjectionMatrix: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
-        cameraMatrixWorld: {
+        cameraLMatrixWorld: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
-        cameraPos: {
-            type: 'vec3', value: new THREE.Vector3(),
-        },
-        remoteCameraProjectionMatrix: {
+        cameraRProjectionMatrix: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
-        remoteCameraMatrixWorld: {
+        cameraRMatrixWorld: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
-        remoteCameraPos: {
-            type: 'vec3', value: new THREE.Vector3(),
+        remoteLProjectionMatrix: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteLMatrixWorld: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteRProjectionMatrix: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteRMatrixWorld: {
+            type: 'mat4', value: new THREE.Matrix4(),
         },
     },
 

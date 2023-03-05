@@ -28,8 +28,8 @@ AFRAME.registerSystem('local-scene', {
     },
 
     tick: function () {
-        this.box1.rotation.x -= 0.01;
-        this.box1.rotation.y -= 0.01;
-        this.box1.rotation.z -= 0.01;
+        // this.box1.rotation.x -= 0.01;
+        // this.box1.rotation.y -= 0.01;
+        // this.box1.rotation.z -= 0.01;
     }
 });

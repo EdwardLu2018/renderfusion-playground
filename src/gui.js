@@ -27,7 +27,7 @@ AFRAME.registerSystem('gui', {
                 _this.remoteScene.updateFPS();
             }
         )
-        gui.add(options, 'latency', 0, 1000).onChange(
+        gui.add(options, 'latency', 0, 1000000).onChange(
             function() {
                 _this.remoteScene.data.latency = this.getValue();
                 _this.remoteScene.clearPoses();

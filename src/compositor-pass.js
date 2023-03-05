@@ -20,8 +20,8 @@ export class CompositorPass extends Pass {
             fragmentShader: CompositorShader.fragmentShader,
         });
 
-        this.material.uniforms.tStream.value = this.remoteRenderTarget.texture;
-        this.material.uniforms.tDepthStream.value = this.remoteRenderTarget.depthTexture;
+        this.material.uniforms.tRemoteColor.value = this.remoteRenderTarget.texture;
+        this.material.uniforms.tRemoteDepth.value = this.remoteRenderTarget.depthTexture;
         this.material.uniforms.streamSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
         this.material.uniforms.cameraNear.value = camera.near;
         this.material.uniforms.cameraFar.value = camera.far;
@@ -38,10 +38,6 @@ export class CompositorPass extends Pass {
         this.material.uniforms.windowSize.value = [width, height];
     }
 
-    setTextureSize(width, height) {
-        this.material.uniforms.streamSize.value = [width, height];
-    }
-
     setHasDualCameras(hasDualCameras) {
         this.material.uniforms.hasDualCameras.value = hasDualCameras;
     }
@@ -50,14 +46,28 @@ export class CompositorPass extends Pass {
         this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
     }
 
-    setCameraMats(camera, remoteCamera) {
-        this.material.uniforms.cameraProjectionMatrix.value = camera.projectionMatrix;
-        this.material.uniforms.cameraMatrixWorld.value = camera.matrixWorld;
-        this.material.uniforms.cameraPos.value = camera.position;
+    setCameraMats(cameraL, cameraR) {
+        if (cameraL) {
+            this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
+            this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+        }
 
-        this.material.uniforms.remoteCameraProjectionMatrix.value = remoteCamera.projectionMatrix;
-        this.material.uniforms.remoteCameraMatrixWorld.value = remoteCamera.matrixWorld;
-        this.material.uniforms.remoteCameraPos.value = remoteCamera.position;
+        if (cameraR) {
+            this.material.uniforms.cameraRProjectionMatrix.value.copy(cameraR.projectionMatrix);
+            this.material.uniforms.cameraRMatrixWorld.value.copy(cameraR.matrixWorld);
+        }
+    }
+
+    setCameraMatsRemote(remoteL, remoteR) {
+        if (remoteL) {
+            this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
+            this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+        }
+
+        if (remoteR) {
+            this.material.uniforms.remoteRProjectionMatrix.value.copy(remoteR.projectionMatrix);
+            this.material.uniforms.remoteRMatrixWorld.value.copy(remoteR.matrixWorld);
+        }
     }
 
     getHasDualCameras() {
@@ -79,8 +89,8 @@ export class CompositorPass extends Pass {
     }
 
     render(renderer, writeBuffer, readBuffer /* , deltaTime, maskActive */) {
-        this.material.uniforms.tDiffuse.value = readBuffer.texture;
-        this.material.uniforms.tDepth.value = readBuffer.depthTexture;
+        this.material.uniforms.tLocalColor.value = readBuffer.texture;
+        this.material.uniforms.tLocalDepth.value = readBuffer.depthTexture;
 
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);

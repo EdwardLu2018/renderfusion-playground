@@ -23,6 +23,7 @@ AFRAME.registerSystem('remote-local', {
 
         this.remoteScene = new THREE.Scene();
         this.remoteCamera = camera.clone();
+        this.remoteCamera.cameras = [camera.clone(), camera.clone()];
 
         this.poses = [];
 
@@ -100,7 +101,7 @@ AFRAME.registerSystem('remote-local', {
 			updateCamera( cameraVR, parent );
 
             const pose = [];
-            let prevPose;
+            let prevPose = system.poses.length > 0 ? system.poses[0] : null;
             if (system.poses.length > data.latency / FPS_PERIOD_60Hz) {
                 prevPose = system.poses.shift();
             }
@@ -109,15 +110,17 @@ AFRAME.registerSystem('remote-local', {
                 if (camera === system.remoteCamera) {
                     if (prevPose && prevPose[i]) {
                         cameras[ i ].matrix.copy(prevPose[i]);
+                        const remoteCamera = system.remoteCamera.cameras[ i ];
+                        remoteCamera.projectionMatrix.copy( cameras[ i ].projectionMatrix );
+                        remoteCamera.matrixWorld.copy( prevPose[i] );
+                        updateCamera( cameras[ i ], parent );
                     }
-
-                    updateCamera( cameras[ i ], parent );
                 }
                 else {
                     updateCamera( cameras[ i ], parent );
 
                     const camPose = new THREE.Matrix4();
-                    camPose.copy(cameras[ i ].matrix);
+                    camPose.copy( cameras[ i ].matrixWorld );
                     pose[i] = camPose;
                     system.poses.push(pose);
                 }
@@ -188,9 +191,11 @@ AFRAME.registerSystem('remote-local', {
             this.poses.push(camPose);
 
             if (this.poses.length > data.latency / FPS_PERIOD_60Hz) {
-                const pose = this.poses.shift();
+                const prevPose = this.poses.shift();
                 // update remote camera
-                pose.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
+                this.remoteCamera.matrixWorld.copy( prevPose );
+                this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
+                this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
 
                 // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
                 // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
