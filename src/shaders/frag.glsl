@@ -165,8 +165,8 @@ void main() {
                 remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
 
                 vec3 cameraLVector = mix( mix(cameraTopLeft, cameraTopRight, x),
-                                         mix(cameraBotLeft, cameraBotRight, x),
-                                         1.0 - vUv.y );
+                                          mix(cameraBotLeft, cameraBotRight, x),
+                                          1.0 - vUv.y );
                 vec3 cameraLPos = matrixWorldToPosition(cameraLMatrixWorld);
 
                 vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);
@@ -207,6 +207,7 @@ void main() {
         float xMin = ((!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5);
         float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5) - 0.005;
         if (!stretchBorders) {
+            remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
             if (coordRemoteNormalized.x < xMin ||
                 coordRemoteNormalized.x > xMax ||
                 coordRemoteNormalized.y < 0.0 ||

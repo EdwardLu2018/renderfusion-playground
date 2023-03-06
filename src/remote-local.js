@@ -190,29 +190,30 @@ AFRAME.registerSystem('remote-local', {
             camPose.copy(camera.matrixWorld);
             this.poses.push(camPose);
 
+            let prevPose  = this.poses.length > 0 ? this.poses[0] : null;
             if (data.latency != -1 && this.poses.length > data.latency / FPS_PERIOD_60Hz) {
-                const prevPose = this.poses.shift();
-                // update remote camera
-                this.remoteCamera.matrixWorld.copy( prevPose );
-                this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
-                this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
-
-                // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
-                // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
-                // var vectorBotLeft = new THREE.Vector3( -1, -1, 1 ).unproject( this.remoteCamera );
-                // var vectorBotRight = new THREE.Vector3( 1, -1, 1 ).unproject( this.remoteCamera );
-
-                // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
-                // var points = [];
-                // points.push(vectorTopLeft);
-                // points.push(vectorTopRight);
-                // points.push(vectorBotRight);
-                // points.push(vectorBotLeft);
-                // points.push(vectorTopLeft);
-                // var geometry = new THREE.BufferGeometry().setFromPoints( points );
-                // var line = new THREE.Line( geometry, material );
-                // this.remoteScene.add( line );
+                prevPose = this.poses.shift();
             }
+            // update remote camera
+            this.remoteCamera.matrixWorld.copy( prevPose );
+            this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
+            this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
+
+            // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
+            // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
+            // var vectorBotLeft = new THREE.Vector3( -1, -1, 1 ).unproject( this.remoteCamera );
+            // var vectorBotRight = new THREE.Vector3( 1, -1, 1 ).unproject( this.remoteCamera );
+
+            // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
+            // var points = [];
+            // points.push(vectorTopLeft);
+            // points.push(vectorTopRight);
+            // points.push(vectorBotRight);
+            // points.push(vectorBotLeft);
+            // points.push(vectorTopLeft);
+            // var geometry = new THREE.BufferGeometry().setFromPoints( points );
+            // var line = new THREE.Line( geometry, material );
+            // this.remoteScene.add( line );
         }
     }
 });
