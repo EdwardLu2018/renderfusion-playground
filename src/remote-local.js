@@ -107,22 +107,22 @@ AFRAME.registerSystem('remote-local', {
             }
 
 			for ( let i = 0; i < cameras.length; i ++ ) {
-                if (camera === system.remoteCamera) {
-                    if (prevPose && prevPose[i]) {
-                        cameras[ i ].matrix.copy(prevPose[i]);
-                        const remoteCamera = system.remoteCamera.cameras[ i ];
-                        remoteCamera.projectionMatrix.copy( cameras[ i ].projectionMatrix );
-                        remoteCamera.matrixWorld.copy( prevPose[i] );
-                        updateCamera( cameras[ i ], parent );
-                    }
-                }
-                else {
+                if (camera !== system.remoteCamera) {
                     updateCamera( cameras[ i ], parent );
 
                     const camPose = new THREE.Matrix4();
                     camPose.copy( cameras[ i ].matrixWorld );
                     pose[i] = camPose;
                     system.poses.push(pose);
+                } else {
+                    if (prevPose && prevPose[i]) {
+                        cameras[ i ].matrix.copy(prevPose[i]);
+                        const remoteCamera = system.remoteCamera.cameras[ i ];
+                        remoteCamera.projectionMatrix.copy( cameras[ i ].projectionMatrix );
+                        remoteCamera.matrixWorld.copy( prevPose[i] );
+
+                        updateCamera( cameras[ i ], parent );
+                    }
                 }
 			}
 

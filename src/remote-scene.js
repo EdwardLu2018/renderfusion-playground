@@ -23,6 +23,7 @@ AFRAME.registerComponent('remote-scene', {
 
         const boxMaterial = new THREE.MeshBasicMaterial({color: 0x7074FF});
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
+
         this.box1 = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box2 = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box1.position.x = 10; this.box2.position.x = -10;
