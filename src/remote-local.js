@@ -2,7 +2,6 @@ const FPS_PERIOD_60Hz = (1 / 60 * 1000);
 
 AFRAME.registerSystem('remote-local', {
     schema: {
-        fps: {type: 'number', default: 60},
         latency: {type: 'number', default: 150}, // ms
     },
 
@@ -165,14 +164,13 @@ AFRAME.registerSystem('remote-local', {
         this.remoteCamera.copy(camera);
     },
 
-    clearPoses() {
+    clearPoses: function() {
         this.poses = [];
     },
 
-    updateFPS() {
-        const data = this.data;
-
-        this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
+    setLatency: function(latency) {
+        this.data.latency = latency;
+        this.clearPoses();
     },
 
     tick: function () {

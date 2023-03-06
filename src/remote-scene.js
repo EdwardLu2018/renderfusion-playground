@@ -1,6 +1,9 @@
 AFRAME.registerComponent('remote-scene', {
     schema: {
+        fps: {type: 'number', default: 60},
+        latency: {type: 'number', default: 150}, // ms
     },
+
 
     init: function () {
         const el = this.el;
@@ -12,6 +15,8 @@ AFRAME.registerComponent('remote-scene', {
             return;
         }
 
+        this.remoteLocal = sceneEl.systems['remote-local'];
+
         this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
         this.remoteCamera = sceneEl.systems['remote-local'].remoteCamera;
 
@@ -21,7 +26,7 @@ AFRAME.registerComponent('remote-scene', {
 
         scene.background = new THREE.Color(0xF06565);
 
-        const boxMaterial = new THREE.MeshBasicMaterial({color: 0x7074FF});
+        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
 
         this.box1 = new THREE.Mesh(boxGeometry, boxMaterial);
@@ -42,6 +47,18 @@ AFRAME.registerComponent('remote-scene', {
         // mesh.rotation.x = -Math.PI / 8;
         // mesh.rotation.z = -Math.PI / 8;
         scene.add(mesh);
+    },
+
+    update(oldData) {
+        const data = this.data;
+
+        if (data.fps != oldData.fps) {
+            this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
+        }
+
+        if (data.latency != oldData.latency) {
+            this.remoteLocal.setLatency(data.latency);
+        }
     },
 
     tick: function () {
