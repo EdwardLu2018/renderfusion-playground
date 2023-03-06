@@ -1,8 +1,5 @@
-const FPS_PERIOD_60Hz = (1 / 60 * 1000);
-
 AFRAME.registerSystem('remote-local', {
     schema: {
-        latency: {type: 'number', default: 150}, // ms
     },
 
     init: function () {
@@ -24,9 +21,9 @@ AFRAME.registerSystem('remote-local', {
         this.remoteCamera = camera.clone();
         this.remoteCamera.cameras = [camera.clone(), camera.clone()];
 
-        this.poses = [];
+        this.latency = 150;
 
-        const system = this;
+        this.poses = [];
 
         let prev = [];
 		const cameraLPos = new THREE.Vector3();
@@ -87,6 +84,7 @@ AFRAME.registerSystem('remote-local', {
 			camera.matrixWorldInverse.copy( camera.matrixWorld ).invert();
 		}
 
+        const system = this;
 		renderer.xr.updateCamera = function ( cameraVR, camera ) {
             const cameraL = cameraVR.cameras[0];
             const cameraR = cameraVR.cameras[1];
@@ -99,10 +97,12 @@ AFRAME.registerSystem('remote-local', {
 
 			updateCamera( cameraVR, parent );
 
-            const pose = [];
-            let prevPose = system.poses.length > 0 ? system.poses[0] : null;
-            if (data.latency != -1 && system.poses.length > data.latency / FPS_PERIOD_60Hz) {
-                prevPose = system.poses.shift();
+            const camPoses = [];
+            let prevPose = system.poses.length > 1 ? system.poses[0].pose : null;
+            if (system.latency !== -1 &&
+                system.poses.length > 1 &&
+                performance.now() > system.poses[0].timestamp + system.latency) {
+                prevPose = system.poses.shift().pose;
             }
 
 			for ( let i = 0; i < cameras.length; i ++ ) {
@@ -111,8 +111,7 @@ AFRAME.registerSystem('remote-local', {
 
                     const camPose = new THREE.Matrix4();
                     camPose.copy( cameras[ i ].matrixWorld );
-                    pose[i] = camPose;
-                    system.poses.push(pose);
+                    camPoses[i] = camPose;
                 } else {
                     if (prevPose && prevPose[i]) {
                         cameras[ i ].matrix.copy(prevPose[i]);
@@ -124,6 +123,9 @@ AFRAME.registerSystem('remote-local', {
                     }
                 }
 			}
+            if (camera !== system.remoteCamera) {
+                system.poses.push({pose: camPoses, timestamp: performance.now()});
+            }
 
 			cameraVR.matrixWorld.decompose( cameraVR.position, cameraVR.quaternion, cameraVR.scale );
 
@@ -145,6 +147,7 @@ AFRAME.registerSystem('remote-local', {
 		};
 
         sceneEl.setAttribute("remote-scene", "");
+        sceneEl.setAttribute("local-scene", "");
 
         this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));
@@ -169,11 +172,16 @@ AFRAME.registerSystem('remote-local', {
     },
 
     setLatency: function(latency) {
-        this.data.latency = latency;
         this.clearPoses();
+        this.latency = latency;
     },
 
-    tick: function () {
+    updateFPS: function(fps) {
+        this.clearPoses();
+        this.tick = AFRAME.utils.throttleTick(this.tick, 1 / fps * 1000, this);
+    },
+
+    tick: function() {
         const el = this.el;
         const data = this.data;
 
@@ -183,19 +191,22 @@ AFRAME.registerSystem('remote-local', {
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
 
+        if (this.latency === -1) return;
+
         if (!(renderer.xr.enabled === true && renderer.xr.isPresenting === true)) {
             var camPose = new THREE.Matrix4();
             camPose.copy(camera.matrixWorld);
-            this.poses.push(camPose);
+            this.poses.push({pose: camPose, timestamp: performance.now()});
 
-            let prevPose  = this.poses.length > 0 ? this.poses[0] : null;
-            if (data.latency != -1 && this.poses.length > data.latency / FPS_PERIOD_60Hz) {
-                prevPose = this.poses.shift();
+            if (this.poses.length > 1 &&
+                performance.now() >= this.poses[0].timestamp + this.latency) {
+                const prevPose = this.poses.shift().pose;
+
+                // update remote camera
+                this.remoteCamera.matrixWorld.copy( prevPose );
+                this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
+                this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
             }
-            // update remote camera
-            this.remoteCamera.matrixWorld.copy( prevPose );
-            this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
-            this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
 
             // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
             // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );

@@ -33,7 +33,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box2 = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box1.position.x = 10; this.box2.position.x = -10;
         this.box1.position.y = this.box2.position.y = 1.6;
-        this.box1.position.z = this.box2.position.z = -10;
+        this.box1.position.z = this.box2.position.z = -30;
         scene.add(this.box1); // add to remote scene
         scene.add(this.box2);
 
@@ -43,7 +43,7 @@ AFRAME.registerComponent('remote-scene', {
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.x = -6;
         mesh.position.y = 1.6;
-        mesh.position.z = -50;
+        mesh.position.z = -100;
         // mesh.rotation.x = -Math.PI / 8;
         // mesh.rotation.z = -Math.PI / 8;
         scene.add(mesh);
@@ -54,6 +54,7 @@ AFRAME.registerComponent('remote-scene', {
 
         if (data.fps != oldData.fps) {
             this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
+            this.remoteLocal.updateFPS(data.fps);
         }
 
         if (data.latency != oldData.latency) {
