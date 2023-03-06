@@ -18,6 +18,7 @@ AFRAME.registerSystem('gui', {
             stretchBorders: true,
             fps: 60,
             latency: 150,
+            decreaseResolution: 1.
         };
 
         const _this = this;
@@ -32,6 +33,11 @@ AFRAME.registerSystem('gui', {
             function() {
                 _this.remoteScene.data.latency = this.getValue();
                 _this.remoteScene.clearPoses();
+            }
+        )
+        gui.add(options, 'decreaseResolution', 1, 16).onChange(
+            function() {
+                _this.compositor.decreaseResolution(this.getValue());
             }
         )
         gui.add(options, 'timeWarp').onChange(

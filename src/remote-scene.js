@@ -53,8 +53,8 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        // this.box1.rotation.x += 0.01;
-        // this.box1.rotation.y += 0.01;
-        // this.box1.rotation.z += 0.01;
+        this.box1.rotation.x += 0.01;
+        this.box1.rotation.y += 0.01;
+        this.box1.rotation.z += 0.01;
     }
 });

@@ -23,7 +23,10 @@ AFRAME.registerSystem('compositor', {
 
         this.originalRenderFunc = null;
 
-        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1280, 720);
+        this.baseResolutionWidth = 1920;
+        this.baseResolutionHeight = 1080;
+
+        this.remoteRenderTarget = new THREE.WebGLRenderTarget(this.baseResolutionWidth, this.baseResolutionHeight);
         this.remoteRenderTarget.texture.name = 'RemoteScene.rtLeft';
         this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
         this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
@@ -181,6 +184,10 @@ AFRAME.registerSystem('compositor', {
 
             system.cameras = [];
         };
+    },
+
+    decreaseResolution: function(scaleDownBy) {
+        this.remoteRenderTarget.setSize(this.baseResolutionWidth / scaleDownBy, this.baseResolutionHeight / scaleDownBy);
     },
 
     unbind: function() {
