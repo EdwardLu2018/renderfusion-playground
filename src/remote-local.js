@@ -1,3 +1,6 @@
+import './local-scene';
+import './remote-scene';
+
 AFRAME.registerSystem('remote-local', {
     schema: {
     },

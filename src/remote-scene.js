@@ -1,13 +1,12 @@
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
+// import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 60},
         latency: {type: 'number', default: 150}, // ms
     },
-
 
     init: function () {
         const el = this.el;
@@ -28,7 +27,11 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        // scene.background = new THREE.Color(0xF06565);
+        scene.background = new THREE.Color(0xF06565);
+
+        // const light = new THREE.PointLight( 0xF06565, 1, 0 );
+        // light.position.set( 10, 1.6, -30 );
+        // scene.add( light );
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
@@ -52,14 +55,10 @@ AFRAME.registerComponent('remote-scene', {
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
                 const model = gltf.scene;
 
-                model.scale.x = 5;
-                model.scale.y = 5;
-                model.scale.z = 5;
-
+                model.scale.set(5, 5, 5);
                 model.position.x = -10;
                 model.position.y = 1.6;
                 model.position.z = -30;
-
                 scene.add( model );
             } );
 
@@ -67,26 +66,21 @@ AFRAME.registerComponent('remote-scene', {
             .load( 'scene.gltf', function ( gltf ) {
                 const model = gltf.scene;
 
-                model.scale.x = 0.2;
-                model.scale.y = 0.2;
-                model.scale.z = 0.2;
-
+                model.scale.set(0.2, 0.2, 0.2);
                 model.position.x = 10;
                 model.position.y = 1.6;
                 model.position.z = -30;
-
                 scene.add( model );
             } );
 
         loader.setPath( 'assets/models/SciFiCorridor/' )
             .load( 'scene.gltf', function ( gltf ) {
-                gltf.scene.scale.x = 7;
-                gltf.scene.scale.y = 7;
-                gltf.scene.scale.z = 7;
+                const model = gltf.scene;
 
-                gltf.scene.position.y = -50;
-                gltf.scene.position.z = -200;
-                scene.add( gltf.scene );
+                model.scale.set(7, 7, 7);
+                model.position.y = -50;
+                model.position.z = -500;
+                scene.add( model );
             } );
     },
 

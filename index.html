@@ -8,7 +8,13 @@
     <script src="dist/index.js"></script>
 </head>
 <body>
-    <a-scene stats background="color: #ECECEC">
+    <a-scene
+        stats
+        background="color: #ECECEC"
+        antialias: true;
+        colorManagement: true;
+        sortObjects: true;
+        physicallyCorrectLights: true;>
         <a-entity id="cameraRig" position="0 0 0">
             <a-entity id="cameraSpinner" name="PerspectiveCamera" position="0 0 0" tag="MainCamera">
                 <a-camera id="my-camera"
