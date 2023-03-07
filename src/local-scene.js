@@ -1,3 +1,6 @@
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { ThreeMeshUI } from 'three-mesh-ui'
+
 AFRAME.registerSystem('local-scene', {
     schema: {
     },
@@ -25,6 +28,14 @@ AFRAME.registerSystem('local-scene', {
         this.box1.position.y = 1.6;
         this.box1.position.z = -30;
         scene.add(this.box1); // add to local scene
+
+        // new RGBELoader()
+        //     .setPath( 'assets/textures/' )
+        //     .load( 'san_giuseppe_bridge_2k.hdr', function ( texture ) {
+        //         texture.mapping = THREE.EquirectangularReflectionMapping;
+        //         scene.background = texture;
+        //         scene.environment = texture;
+        //     } );
     },
 
     tick: function () {

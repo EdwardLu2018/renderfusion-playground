@@ -1,3 +1,7 @@
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
+
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 60},
@@ -24,29 +28,66 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        scene.background = new THREE.Color(0xF06565);
+        // scene.background = new THREE.Color(0xF06565);
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
 
-        this.box1 = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box2 = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box1.position.x = 10; this.box2.position.x = -10;
-        this.box1.position.y = this.box2.position.y = 1.6;
-        this.box1.position.z = this.box2.position.z = -30;
-        scene.add(this.box1); // add to remote scene
-        scene.add(this.box2);
+        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
+        this.box.position.x = 10;
+        this.box.position.y = 1.6;
+        this.box.position.z = -30;
+        scene.add(this.box); // add to remote scene
 
-        const texture = new THREE.TextureLoader().load('./color.png');
-        const geometry = new THREE.PlaneGeometry(1920, 1080, 1, 1);
-        const material = new THREE.MeshBasicMaterial( { map: texture } );
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.x = -6;
-        mesh.position.y = 1.6;
-        mesh.position.z = -100;
-        // mesh.rotation.x = -Math.PI / 8;
-        // mesh.rotation.z = -Math.PI / 8;
-        scene.add(mesh);
+        new RGBELoader()
+            .setPath( 'assets/textures/' )
+            .load( 'san_giuseppe_bridge_2k.hdr', function ( texture ) {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = texture;
+            } );
+
+        const loader = new GLTFLoader();
+        loader.setPath( 'assets/models/DamagedHelmet/glTF/' )
+            .load( 'DamagedHelmet.gltf', function ( gltf ) {
+                const model = gltf.scene;
+
+                model.scale.x = 5;
+                model.scale.y = 5;
+                model.scale.z = 5;
+
+                model.position.x = -10;
+                model.position.y = 1.6;
+                model.position.z = -30;
+
+                scene.add( model );
+            } );
+
+        loader.setPath( 'assets/models/Sword/' )
+            .load( 'scene.gltf', function ( gltf ) {
+                const model = gltf.scene;
+
+                model.scale.x = 0.2;
+                model.scale.y = 0.2;
+                model.scale.z = 0.2;
+
+                model.position.x = 10;
+                model.position.y = 1.6;
+                model.position.z = -30;
+
+                scene.add( model );
+            } );
+
+        loader.setPath( 'assets/models/SciFiCorridor/' )
+            .load( 'scene.gltf', function ( gltf ) {
+                gltf.scene.scale.x = 7;
+                gltf.scene.scale.y = 7;
+                gltf.scene.scale.z = 7;
+
+                gltf.scene.position.y = -50;
+                gltf.scene.position.z = -200;
+                scene.add( gltf.scene );
+            } );
     },
 
     update(oldData) {
@@ -71,8 +112,8 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        this.box1.rotation.x += 0.01;
-        this.box1.rotation.y += 0.01;
-        this.box1.rotation.z += 0.01;
+        this.box.rotation.x += 0.01;
+        this.box.rotation.y += 0.01;
+        this.box.rotation.z += 0.01;
     }
 });
