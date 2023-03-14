@@ -1,11 +1,13 @@
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 import ThreeMeshUI from 'three-mesh-ui'
 
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
 
-AFRAME.registerSystem('local-scene', {
+AFRAME.registerComponent('local-scene', {
     schema: {
     },
 
@@ -13,7 +15,7 @@ AFRAME.registerSystem('local-scene', {
         const el = this.el;
         const data = this.data;
 
-        const sceneEl = this.sceneEl;
+        const sceneEl = el;
         if (!sceneEl.hasLoaded) {
             sceneEl.addEventListener('renderstart', this.init.bind(this));
             return;
@@ -98,6 +100,18 @@ AFRAME.registerSystem('local-scene', {
 
         container1.add( button1, button2 );
         container.add( container1, button3, button4 );
+
+        // const loader = new GLTFLoader();
+        // loader.setPath( 'assets/models/Sword/' )
+        //     .load( 'scene.gltf', function ( gltf ) {
+        //         const model = gltf.scene;
+
+        //         model.scale.set(0.2, 0.2, 0.2);
+        //         model.position.x = -10;
+        //         model.position.y = 1.6;
+        //         model.position.z = -30;
+        //         scene.add( model );
+        //     } );
     },
 
     tick: function () {
