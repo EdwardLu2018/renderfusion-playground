@@ -96,8 +96,8 @@ AFRAME.registerComponent('local-scene', {
 
         const _this = this;
         const loader = new GLTFLoader();
-        loader.setPath( 'assets/models/Sword/' )
-            .load( 'scene.gltf', function ( gltf ) {
+        loader.setPath( 'assets/models/' )
+            .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
 
                 model.scale.set(0.2, 0.2, 0.2);

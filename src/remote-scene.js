@@ -78,7 +78,7 @@ AFRAME.registerComponent('remote-scene', {
         //     } );
 
         textureLoader
-            .setPath('assets/textures/')
+            .setPath( 'assets/textures/' )
             .load( 'height_map.png' , function ( texture ) {
                 texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
                 texture.repeat.set(1, 1);
@@ -119,8 +119,8 @@ AFRAME.registerComponent('remote-scene', {
             } );
 
         gltfLoader
-            .setPath( 'assets/models/Sword/' )
-            .load( 'scene.gltf', function ( gltf ) {
+            .setPath( 'assets/models/' )
+            .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
 
                 model.scale.set(0.2, 0.2, 0.2);
@@ -137,12 +137,13 @@ AFRAME.registerComponent('remote-scene', {
             .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
                 const model = gltf.scene;
 
-                for (var i = 0; i < 5; i++) {
+                const NUM_TREES = 5;
+                for (var i = 0; i < NUM_TREES; i++) {
                     const model0 = model.clone();
-                    model0.scale.set(Math.random() * 10 + 25, Math.random() * 10 + 30, Math.random() * 10 + 25);
-                    model0.position.x = Math.random() * 500 - 250;
+                    model0.scale.set(25, 25, 25);
+                    model0.position.x = 350 * Math.cos((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4));
                     model0.position.y = -50;
-                    model0.position.z = Math.random() * 500 - 250 - 50;
+                    model0.position.z = -350 * Math.sin((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4));
                     model.castShadow = true;
                     model.receiveShadow = true;
                     // model0.rotation.y = Math.random() * 2 * Math.PI;
