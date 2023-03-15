@@ -1,6 +1,6 @@
 // import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 import ThreeMeshUI from 'three-mesh-ui'
 
@@ -21,11 +21,15 @@ AFRAME.registerComponent('local-scene', {
             return;
         }
 
-        const renderer = sceneEl.renderer;
-
         // this is the local scene init //
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
+
+        const origAdd = scene.add;
+        scene.add = function() {
+            arguments[0].medium = "local";
+            origAdd.apply(this, arguments);
+        }
 
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
@@ -33,7 +37,7 @@ AFRAME.registerComponent('local-scene', {
         this.box1.position.x = 0;
         this.box1.position.y = 1.6;
         this.box1.position.z = -30;
-        scene.add(this.box1); // add to local scene
+        this.addToScene(this.box1); // add to local scene
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
@@ -56,7 +60,7 @@ AFRAME.registerComponent('local-scene', {
         container.position.set(-7, -3, -20);
         container.scale.set(7, 7, 7);
         container.rotation.x = -0.2;
-        scene.add( container );
+        this.addToScene( container );
 
         const buttonOptions = {
             width: 0.4,
@@ -72,21 +76,10 @@ AFRAME.registerComponent('local-scene', {
         const button3 = new ThreeMeshUI.Block( buttonOptions );
         const button4 = new ThreeMeshUI.Block( buttonOptions );
 
-        button1.add(
-            new ThreeMeshUI.Text( { content: 'left' } )
-        );
-
-        button2.add(
-            new ThreeMeshUI.Text( { content: 'right' } )
-        );
-
-        button3.add(
-            new ThreeMeshUI.Text( { content: 'middle' } )
-        );
-
-        button4.add(
-            new ThreeMeshUI.Text( { content: 'reset' } )
-        );
+        button1.add( new ThreeMeshUI.Text( { content: 'left' } ) );
+        button2.add( new ThreeMeshUI.Text( { content: 'right' } ) );
+        button3.add( new ThreeMeshUI.Text( { content: 'middle' } ) );
+        button4.add( new ThreeMeshUI.Text( { content: 'reset' } ) );
 
         const container1 = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -101,17 +94,29 @@ AFRAME.registerComponent('local-scene', {
         container1.add( button1, button2 );
         container.add( container1, button3, button4 );
 
-        // const loader = new GLTFLoader();
-        // loader.setPath( 'assets/models/Sword/' )
-        //     .load( 'scene.gltf', function ( gltf ) {
-        //         const model = gltf.scene;
+        const _this = this;
+        const loader = new GLTFLoader();
+        loader.setPath( 'assets/models/Sword/' )
+            .load( 'scene.gltf', function ( gltf ) {
+                const model = gltf.scene;
 
-        //         model.scale.set(0.2, 0.2, 0.2);
-        //         model.position.x = -10;
-        //         model.position.y = 1.6;
-        //         model.position.z = -30;
-        //         scene.add( model );
-        //     } );
+                model.scale.set(0.2, 0.2, 0.2);
+                model.position.x = -10;
+                model.position.y = 1.6;
+                model.position.z = -30;
+                _this.addToScene( model );
+            } );
+    },
+
+    addToScene(object) {
+        const el = this.el;
+        const data = this.data;
+
+        const scene = el.object3D;
+        const camera = el.camera;
+
+        object.medium = "local";
+        scene.add(object);
     },
 
     tick: function () {

@@ -24,11 +24,10 @@ AFRAME.registerSystem('remote-local', {
         this.remoteCamera = camera.clone();
         this.remoteCamera.cameras = [camera.clone(), camera.clone()];
 
-        this.latency = 150;
+        this.latency = 0;
 
         this.poses = [];
 
-        let prev = [];
 		const cameraLPos = new THREE.Vector3();
 		const cameraRPos = new THREE.Vector3();
 		function setProjectionFromUnion( camera, cameraL, cameraR ) {

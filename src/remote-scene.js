@@ -1,3 +1,4 @@
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
@@ -27,21 +28,27 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
+        const origAdd = scene.add;
+        scene.add = function() {
+            arguments[0].medium = "remote";
+            origAdd.apply(this, arguments);
+        }
+
         // scene.background = new THREE.Color(0xF06565);
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
 
-        const NUM_LIGHTS = 6;
-        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-            const light = new THREE.PointLight( 0xFFEEEE, 1, 0 );
-            light.position.set( 50 * i, 1.6, -30 );
-            scene.add( light );
+        // const NUM_LIGHTS = 6;
+        // for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
+        //     const light = new THREE.PointLight( 0xFFEEEE, 1, 0 );
+        //     light.position.set( 50 * i, 1.6, -30 );
+        //     scene.add( light );
 
-            // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-            // box.position.set( 50 * i, 1.6, -30 );
-            // scene.add( box );
-        }
+        //     // const box = new THREE.Mesh(boxGeometry, boxMaterial);
+        //     // box.position.set( 50 * i, 1.6, -30 );
+        //     // scene.add( box );
+        // }
 
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.x = 10;
@@ -56,6 +63,14 @@ AFRAME.registerComponent('remote-scene', {
                 scene.background = texture;
                 scene.environment = texture;
             } );
+
+        // new RGBELoader()
+        //     .setPath( 'assets/textures/' )
+        //     .load( 'cycles.hdr', function ( texture ) {
+        //         texture.mapping = THREE.EquirectangularReflectionMapping;
+        //         scene.background = texture;
+        //         scene.environment = texture;
+        //     } );
 
         const loader = new GLTFLoader();
         loader.setPath( 'assets/models/DamagedHelmet/glTF/' )
@@ -80,16 +95,33 @@ AFRAME.registerComponent('remote-scene', {
                 scene.add( model );
             } );
 
-        loader.setPath( 'assets/models/StarWarsVenator/' )
-            .load( 'scene.gltf', function ( gltf ) {
-                const model = gltf.scene;
+        // for (var i = 0; i < 1; i++) {
+            // loader.setPath( 'assets/models/' )
+            //     .load( 'pine_tree.glb', function ( gltf ) {
+            //         const model = gltf.scene;
 
-                model.scale.set(50, 50, 50);
-                model.position.y = 1.6;
-                model.position.z = -75;
-                scene.add( model );
-            } );
+            //         model.scale.set(0.1, 0.1, 0.1);
+            //         // model.position.x = Math.random() * 50 - 25 - 5000;
+            //         // model.position.y = Math.random() * 50 - 25 + 1.6;
+            //         // model.position.z = Math.random() * 50 - 25 - 30;
+            //         // model.rotation.y = Math.random() * 2 * Math.PI;
+            //     //     model.scale.set(50, 50, 50);
+            //     // // model.position.x = 10;
+            //     // // model.position.y = 1.6;
+            //     // // model.position.z = -30;
+            //         scene.add( model );
+            //     } );
+        // }
     },
+
+    addToScene(object) {
+        const scene = this.remoteScene;
+        const camera = this.remoteCamera;
+
+        object.medium = "remote";
+        scene.add(object);
+    },
+
 
     update(oldData) {
         const data = this.data;
