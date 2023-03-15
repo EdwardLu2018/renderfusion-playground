@@ -59,21 +59,21 @@ AFRAME.registerComponent('remote-scene', {
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
 
-        new EXRLoader()
-            .setPath( 'assets/textures/' )
-            .load( 'farm_field_puresky_4k.exr', function ( texture ) {
-                texture.mapping = THREE.EquirectangularReflectionMapping;
-                scene.background = texture;
-                scene.environment = texture;
-            } );
-
-        // new RGBELoader()
+        // new EXRLoader()
         //     .setPath( 'assets/textures/' )
-        //     .load( 'san_giuseppe_bridge_2k.hdr', function ( texture ) {
+        //     .load( 'farm_field_puresky_4k.exr', function ( texture ) {
         //         texture.mapping = THREE.EquirectangularReflectionMapping;
         //         scene.background = texture;
         //         scene.environment = texture;
         //     } );
+
+        new RGBELoader()
+            .setPath( 'assets/textures/' )
+            .load( 'farm_field_puresky_4k.hdr', function ( texture ) {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = texture;
+            } );
 
         textureLoader
             .setPath( 'assets/textures/' )
