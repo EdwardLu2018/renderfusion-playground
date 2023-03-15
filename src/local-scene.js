@@ -37,7 +37,7 @@ AFRAME.registerComponent('local-scene', {
         this.box1.position.x = 0;
         this.box1.position.y = 1.6;
         this.box1.position.z = -30;
-        this.addToScene(this.box1); // add to local scene
+        this.addToScene( this.box1 ); // add to local scene
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )

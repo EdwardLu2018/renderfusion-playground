@@ -59,7 +59,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box.position.z = -30;
         this.box.castShadow = true;
         this.box.receiveShadow = true;
-        scene.add(this.box); // add to remote scene
+        scene.add( this.box ); // add to remote scene
 
         new EXRLoader()
             .setPath( 'assets/textures/' )
@@ -83,13 +83,13 @@ AFRAME.registerComponent('remote-scene', {
                 texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
                 texture.repeat.set(1, 1);
 
-                textureLoader.load('ground.jpg', function ( texture1 ) {
-                    texture1.wrapS = texture1.wrapT = THREE.RepeatWrapping;
-                    texture1.anisotropy = 16;
-                    texture1.encoding = THREE.sRGBEncoding;
+                textureLoader.load('ground.jpg', function ( groundTexture ) {
+                    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+                    groundTexture.anisotropy = 16;
+                    groundTexture.encoding = THREE.sRGBEncoding;
 
                     const groundMaterial = new THREE.MeshStandardMaterial({
-                        map: texture1,
+                        map: groundTexture,
                         // wireframe: true,
                         displacementMap: texture,
                         displacementScale: 50,
@@ -100,7 +100,7 @@ AFRAME.registerComponent('remote-scene', {
                     groundMesh.receiveShadow = true;
                     groundMesh.rotation.x = -Math.PI / 2;
                     groundMesh.position.y = -80;
-                    scene.add(groundMesh);
+                    scene.add( groundMesh );
                 } );
             } );
 
@@ -137,20 +137,16 @@ AFRAME.registerComponent('remote-scene', {
             .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
                 const model = gltf.scene;
 
-                const NUM_TREES = 5;
+                const NUM_TREES = 20;
                 for (var i = 0; i < NUM_TREES; i++) {
-                    const model0 = model.clone();
-                    model0.scale.set(25, 25, 25);
-                    model0.position.x = 350 * Math.cos((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4));
-                    model0.position.y = -50;
-                    model0.position.z = -350 * Math.sin((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4));
-                    model.castShadow = true;
-                    model.receiveShadow = true;
-                    // model0.rotation.y = Math.random() * 2 * Math.PI;
-                    // model0.position.x = 0;
-                    // model0.position.y = 1.6;
-                    // model0.position.z = -50;
-                    scene.add( model0 );
+                    const modelClone = model.clone();
+                    modelClone.scale.set(25, 25, 25);
+                    modelClone.position.x = 350 * Math.cos((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4.5));
+                    modelClone.position.y = -50;
+                    modelClone.position.z = -350 * Math.sin((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4.5));
+                    modelClone.castShadow = true;
+                    modelClone.receiveShadow = true;
+                    scene.add( modelClone );
                 }
             } );
     },
