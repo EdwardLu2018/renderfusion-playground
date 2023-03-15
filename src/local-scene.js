@@ -2,7 +2,7 @@
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-import ThreeMeshUI from 'three-mesh-ui'
+import ThreeMeshUI from 'three-mesh-ui';
 
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
@@ -36,6 +36,7 @@ AFRAME.registerComponent('local-scene', {
         this.box.position.y = 1.6;
         this.box.position.z = -30;
         _this.addToScene( 'redBox', this.box ); // add to local scene
+        this.box.userData.originalMedium = 'local';
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
@@ -44,16 +45,6 @@ AFRAME.registerComponent('local-scene', {
         //         scene.background = texture;
         //         scene.environment = texture;
         //     } );
-
-        const container = new ThreeMeshUI.Block( {
-            justifyContent: 'center',
-            contentDirection: 'column',
-            fontFamily: FontJSON,
-            fontTexture: FontImage,
-            fontSize: 0.07,
-            padding: 0.02,
-            borderRadius: 0.11
-        } );
 
         const buttonOptions = {
             width: 0.4,
@@ -74,7 +65,7 @@ AFRAME.registerComponent('local-scene', {
         button3.add( new ThreeMeshUI.Text( { content: 'middle' } ) );
         button4.add( new ThreeMeshUI.Text( { content: 'reset' } ) );
 
-        const container1 = new ThreeMeshUI.Block( {
+        const container = new ThreeMeshUI.Block( {
             justifyContent: 'center',
             contentDirection: 'row',
             fontFamily: FontJSON,
@@ -83,14 +74,23 @@ AFRAME.registerComponent('local-scene', {
             padding: 0.02,
             borderRadius: 0.11
         } );
+        container.add( button1, button2 );
 
-        container1.add( button1, button2 );
-        container.add( container1, button3, button4 );
-
-        container.position.set(-7, -3, -20);
-        container.scale.set(7, 7, 7);
-        container.rotation.x = -0.2;
-        _this.addToScene( 'menu', container );
+        this.menu = new ThreeMeshUI.Block( {
+            justifyContent: 'center',
+            contentDirection: 'column',
+            fontFamily: FontJSON,
+            fontTexture: FontImage,
+            fontSize: 0.07,
+            padding: 0.02,
+            borderRadius: 0.11
+        } );
+        this.menu.add( container, button3, button4 );
+        this.menu.position.set(-7, -3, -20);
+        this.menu.scale.set(7, 7, 7);
+        this.menu.rotation.x = -0.2;
+        _this.addToScene( 'menu', this.menu );
+        this.menu.userData.originalMedium = 'local';
 
         const loader = new GLTFLoader();
         loader.setPath( 'assets/models/' )
@@ -102,6 +102,7 @@ AFRAME.registerComponent('local-scene', {
                 model.position.y = 1.6;
                 model.position.z = -30;
                 _this.addToScene( 'swordLeft', model );
+                model.userData.originalMedium = 'local';
             } );
     },
 

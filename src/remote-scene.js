@@ -43,10 +43,12 @@ AFRAME.registerComponent('remote-scene', {
             light.position.set( 50 * i, 1.6, -30 );
             light.castShadow = true;
             _this.addToScene( `light${j++}`, light );
+            light.userData.originalMedium = 'remote';
 
             // const box = new THREE.Mesh(boxGeometry, boxMaterial);
             // box.position.set( 50 * i, 1.6, -30 );
             // _this.addToScene( box );
+            // box.userData.originalMedium = 'remote';
         }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
@@ -58,6 +60,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
+        this.box.userData.originalMedium = 'remote';
 
         // new EXRLoader()
         //     .setPath( 'assets/textures/' )
@@ -99,6 +102,7 @@ AFRAME.registerComponent('remote-scene', {
                     groundMesh.rotation.x = -Math.PI / 2;
                     groundMesh.position.y = -80;
                     _this.addToScene( 'groundMesh', groundMesh );
+                    groundMesh.userData.originalMedium = 'remote';
                 } );
             } );
 
@@ -114,6 +118,7 @@ AFRAME.registerComponent('remote-scene', {
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'helmet', model );
+                model.userData.originalMedium = 'remote';
             } );
 
         gltfLoader
@@ -128,6 +133,7 @@ AFRAME.registerComponent('remote-scene', {
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'swordRight', model );
+                model.userData.originalMedium = 'remote';
             } );
 
         gltfLoader
@@ -145,6 +151,7 @@ AFRAME.registerComponent('remote-scene', {
                     modelClone.castShadow = true;
                     modelClone.receiveShadow = true;
                     _this.addToScene( `tree${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'remote';
                 }
             } );
     },
