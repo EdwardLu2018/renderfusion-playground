@@ -18,13 +18,37 @@ AFRAME.registerSystem('decision-making', {
 
         this.remoteLocal = sceneEl.systems['remote-local'];
 
-        this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
-        this.remoteCamera = sceneEl.systems['remote-local'].remoteCamera;
+        this.remoteScene = this.remoteLocal.remoteScene;
+        this.remoteCamera = this.remoteLocal.remoteCamera;
 
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
 
-        this.tick = AFRAME.utils.throttleTick(this.tick, 5000, this);
+        this.tick = AFRAME.utils.throttleTick(this.tick, 10000, this);
+    },
+
+    swapRenderingMedium(objectId) {
+        const el = this.el;
+        const data = this.data;
+
+        const sceneEl = el.sceneEl;
+
+        const localScene = sceneEl.components['local-scene'];
+        const remoteScene = sceneEl.components['remote-scene'];
+
+        const localObj = this.localScene.userData.objects[objectId];
+        const remoteObj = this.remoteScene.userData.objects[objectId];
+
+        if (localObj && remoteObj === undefined) {
+            localObj.remove();
+            remoteScene.addToScene(objectId, localObj);
+            delete this.localScene.userData.objects[objectId];
+        }
+        else if (remoteObj && localObj === undefined) {
+            remoteObj.remove();
+            localScene.addToScene(objectId, remoteObj);
+            delete this.remoteScene.userData.objects[objectId];
+        }
     },
 
     update(oldData) {
@@ -32,7 +56,7 @@ AFRAME.registerSystem('decision-making', {
     },
 
     tick: function () {
-        console.log(this.localScene.children)
-        console.log(this.remoteScene.children)
+        console.log(this.localScene.userData.objects);
+        console.log(this.remoteScene.userData.objects);
     }
 });

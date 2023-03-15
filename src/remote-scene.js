@@ -28,38 +28,36 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        const origAdd = scene.add;
-        scene.add = function() {
-            arguments[0].medium = "remote";
-            origAdd.apply(this, arguments);
-        }
+        const _this = this;
+
+        scene.userData.objects = {};
 
         // scene.background = new THREE.Color(0xF06565);
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
         const NUM_LIGHTS = 6;
+        let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
             const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
             light.position.set( 50 * i, 1.6, -30 );
             light.castShadow = true;
-            scene.add( light );
+            _this.addToScene( `light${j++}`, light );
 
             // const box = new THREE.Mesh(boxGeometry, boxMaterial);
             // box.position.set( 50 * i, 1.6, -30 );
-            // scene.add( box );
+            // _this.addToScene( box );
         }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
-
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.x = 10;
         this.box.position.y = 1.6;
         this.box.position.z = -30;
         this.box.castShadow = true;
         this.box.receiveShadow = true;
-        scene.add( this.box ); // add to remote scene
+        _this.addToScene( 'blueBox', this.box ); // add to remote scene
 
         new EXRLoader()
             .setPath( 'assets/textures/' )
@@ -100,7 +98,7 @@ AFRAME.registerComponent('remote-scene', {
                     groundMesh.receiveShadow = true;
                     groundMesh.rotation.x = -Math.PI / 2;
                     groundMesh.position.y = -80;
-                    scene.add( groundMesh );
+                    _this.addToScene( 'groundMesh', groundMesh );
                 } );
             } );
 
@@ -115,7 +113,7 @@ AFRAME.registerComponent('remote-scene', {
                 model.position.z = -30;
                 model.castShadow = true;
                 model.receiveShadow = true;
-                scene.add( model );
+                _this.addToScene( 'helmet', model );
             } );
 
         gltfLoader
@@ -129,7 +127,7 @@ AFRAME.registerComponent('remote-scene', {
                 model.position.z = -30;
                 model.castShadow = true;
                 model.receiveShadow = true;
-                scene.add( model );
+                _this.addToScene( 'swordRight', model );
             } );
 
         gltfLoader
@@ -146,17 +144,17 @@ AFRAME.registerComponent('remote-scene', {
                     modelClone.position.z = -350 * Math.sin((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4.5));
                     modelClone.castShadow = true;
                     modelClone.receiveShadow = true;
-                    scene.add( modelClone );
+                    _this.addToScene( `tree${i}`, modelClone );
                 }
             } );
     },
 
-    addToScene(object) {
+    addToScene(objectId, object) {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        object.medium = "remote";
         scene.add(object);
+        scene.userData.objects[objectId] = object;
     },
 
     update(oldData) {
