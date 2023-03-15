@@ -35,30 +35,35 @@ AFRAME.registerComponent('remote-scene', {
         }
 
         // scene.background = new THREE.Color(0xF06565);
+        const textureLoader = new THREE.TextureLoader();
+        const gltfLoader = new GLTFLoader();
+
+        const NUM_LIGHTS = 6;
+        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
+            const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
+            light.position.set( 50 * i, 1.6, -30 );
+            light.castShadow = true;
+            scene.add( light );
+
+            // const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            // box.position.set( 50 * i, 1.6, -30 );
+            // scene.add( box );
+        }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
-
-        // const NUM_LIGHTS = 6;
-        // for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-        //     const light = new THREE.PointLight( 0xFFEEEE, 1, 0 );
-        //     light.position.set( 50 * i, 1.6, -30 );
-        //     scene.add( light );
-
-        //     // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-        //     // box.position.set( 50 * i, 1.6, -30 );
-        //     // scene.add( box );
-        // }
 
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.x = 10;
         this.box.position.y = 1.6;
         this.box.position.z = -30;
+        this.box.castShadow = true;
+        this.box.receiveShadow = true;
         scene.add(this.box); // add to remote scene
 
         new EXRLoader()
             .setPath( 'assets/textures/' )
-            .load( 'starmap_2020_4k_gal.exr', function ( texture ) {
+            .load( 'farm_field_puresky_4k.exr', function ( texture ) {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.background = texture;
                 scene.environment = texture;
@@ -66,14 +71,41 @@ AFRAME.registerComponent('remote-scene', {
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
-        //     .load( 'cycles.hdr', function ( texture ) {
+        //     .load( 'san_giuseppe_bridge_2k.hdr', function ( texture ) {
         //         texture.mapping = THREE.EquirectangularReflectionMapping;
         //         scene.background = texture;
         //         scene.environment = texture;
         //     } );
 
-        const loader = new GLTFLoader();
-        loader.setPath( 'assets/models/DamagedHelmet/glTF/' )
+        textureLoader
+            .setPath('assets/textures/')
+            .load( 'height_map.png' , function ( texture ) {
+                texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
+                texture.repeat.set(1, 1);
+
+                textureLoader.load('ground.jpg', function ( texture1 ) {
+                    texture1.wrapS = texture1.wrapT = THREE.RepeatWrapping;
+                    texture1.anisotropy = 16;
+                    texture1.encoding = THREE.sRGBEncoding;
+
+                    const groundMaterial = new THREE.MeshStandardMaterial({
+                        map: texture1,
+                        // wireframe: true,
+                        displacementMap: texture,
+                        displacementScale: 50,
+                    });
+
+                    const groundGeometry = new THREE.PlaneGeometry(1200, 1200, 100, 100);
+                    groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+                    groundMesh.receiveShadow = true;
+                    groundMesh.rotation.x = -Math.PI / 2;
+                    groundMesh.position.y = -80;
+                    scene.add(groundMesh);
+                } );
+            } );
+
+        gltfLoader
+            .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
                 const model = gltf.scene;
 
@@ -81,10 +113,13 @@ AFRAME.registerComponent('remote-scene', {
                 model.position.x = -10;
                 model.position.y = 1.6;
                 model.position.z = -30;
+                model.castShadow = true;
+                model.receiveShadow = true;
                 scene.add( model );
             } );
 
-        loader.setPath( 'assets/models/Sword/' )
+        gltfLoader
+            .setPath( 'assets/models/Sword/' )
             .load( 'scene.gltf', function ( gltf ) {
                 const model = gltf.scene;
 
@@ -92,26 +127,31 @@ AFRAME.registerComponent('remote-scene', {
                 model.position.x = 10;
                 model.position.y = 1.6;
                 model.position.z = -30;
+                model.castShadow = true;
+                model.receiveShadow = true;
                 scene.add( model );
             } );
 
-        // for (var i = 0; i < 1; i++) {
-            // loader.setPath( 'assets/models/' )
-            //     .load( 'pine_tree.glb', function ( gltf ) {
-            //         const model = gltf.scene;
+        gltfLoader
+            .setPath( '' )
+            .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+                const model = gltf.scene;
 
-            //         model.scale.set(0.1, 0.1, 0.1);
-            //         // model.position.x = Math.random() * 50 - 25 - 5000;
-            //         // model.position.y = Math.random() * 50 - 25 + 1.6;
-            //         // model.position.z = Math.random() * 50 - 25 - 30;
-            //         // model.rotation.y = Math.random() * 2 * Math.PI;
-            //     //     model.scale.set(50, 50, 50);
-            //     // // model.position.x = 10;
-            //     // // model.position.y = 1.6;
-            //     // // model.position.z = -30;
-            //         scene.add( model );
-            //     } );
-        // }
+                for (var i = 0; i < 5; i++) {
+                    const model0 = model.clone();
+                    model0.scale.set(Math.random() * 10 + 25, Math.random() * 10 + 30, Math.random() * 10 + 25);
+                    model0.position.x = Math.random() * 500 - 250;
+                    model0.position.y = -50;
+                    model0.position.z = Math.random() * 500 - 250 - 50;
+                    model.castShadow = true;
+                    model.receiveShadow = true;
+                    // model0.rotation.y = Math.random() * 2 * Math.PI;
+                    // model0.position.x = 0;
+                    // model0.position.y = 1.6;
+                    // model0.position.z = -50;
+                    scene.add( model0 );
+                }
+            } );
     },
 
     addToScene(object) {
@@ -121,7 +161,6 @@ AFRAME.registerComponent('remote-scene', {
         object.medium = "remote";
         scene.add(object);
     },
-
 
     update(oldData) {
         const data = this.data;

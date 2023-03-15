@@ -24,7 +24,7 @@ AFRAME.registerSystem('decision-making', {
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
 
-        this.tick = AFRAME.utils.throttleTick(this.tick, 1000, this);
+        this.tick = AFRAME.utils.throttleTick(this.tick, 5000, this);
     },
 
     update(oldData) {
