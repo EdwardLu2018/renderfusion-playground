@@ -84,7 +84,7 @@ AFRAME.registerComponent('remote-scene', {
                 texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
                 texture.repeat.set(1, 1);
 
-                textureLoader.load('park_dirt_diff_4k.png', function ( groundTexture ) {
+                textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
                     groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
                     groundTexture.anisotropy = 16;
                     groundTexture.encoding = THREE.sRGBEncoding;
