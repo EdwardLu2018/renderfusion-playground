@@ -16,6 +16,7 @@ uniform bool vrMode;
 
 uniform bool doAsyncTimeWarp;
 uniform bool stretchBorders;
+uniform bool preferLocal;
 
 uniform ivec2 windowSize;
 uniform ivec2 streamSize;
@@ -269,7 +270,7 @@ void main() {
     vec4 color;
     // if (!targetWidthGreater ||
     //     (targetWidthGreater && paddingLeft <= vUv.x && vUv.x <= paddingRight)) {
-        if (remoteDepth <= localDepth)
+        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth))
             color = vec4(remoteColor.rgb, 1.0);
         else
             color = localColor;

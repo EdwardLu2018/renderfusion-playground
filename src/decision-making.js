@@ -31,13 +31,24 @@ AFRAME.registerSystem('decision-making', {
 
         const sceneEl = el.sceneEl;
 
-        const localScene = sceneEl.components['local-scene'];
+        const localSceneSys = sceneEl.components['local-scene'];
         const localObj = this.localScene.userData.objects[objectId];
         const remoteObj = this.remoteScene.userData.objects[objectId];
 
         if (remoteObj && localObj === undefined) {
-            remoteObj.remove();
-            localScene.addToScene(objectId, remoteObj);
+            if (objectId !== 'background') {
+                remoteObj.remove();
+                localSceneSys.addToScene(objectId, remoteObj);
+            }
+            else {
+                this.localScene.background = remoteObj.clone();
+                this.localScene.environment = remoteObj.clone();
+                this.remoteScene.background = null;
+                this.remoteScene.environment = null;
+
+                this.localScene.userData.objects[objectId] = remoteObj;
+                this.compositor.data.preferLocal = true;
+            }
             delete this.remoteScene.userData.objects[objectId];
         }
     },
@@ -48,13 +59,26 @@ AFRAME.registerSystem('decision-making', {
 
         const sceneEl = el.sceneEl;
 
-        const remoteScene = sceneEl.components['remote-scene'];
+        const remoteSceneSys = sceneEl.components['remote-scene'];
         const localObj = this.localScene.userData.objects[objectId];
         const remoteObj = this.remoteScene.userData.objects[objectId];
 
+        console.log(objectId)
         if (localObj && remoteObj === undefined) {
-            localObj.remove();
-            remoteScene.addToScene(objectId, localObj);
+            if (objectId !== 'background') {
+                localObj.remove();
+                remoteSceneSys.addToScene(objectId, localObj);
+            }
+            else {
+                console.log(localObj);
+                this.localScene.background = null;
+                this.localScene.environment = null;
+                this.remoteScene.background = localObj;
+                this.remoteScene.environment = localObj;
+
+                this.remoteScene.userData.objects[objectId] = localObj;
+                this.compositor.data.preferLocal = false;
+            }
             delete this.localScene.userData.objects[objectId];
         }
     },
@@ -109,14 +133,12 @@ AFRAME.registerSystem('decision-making', {
             case this.gui.experiments[4]: // "mixed (no atw)"
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.localScene.userData.objects)) {
-                    console.log(object.userData.originalMedium)
                     if (object.userData.originalMedium === 'remote') {
                         this.swapToRemote(objectId);
                     }
                 }
 
                 for (const [objectId, object] of Object.entries(this.remoteScene.userData.objects)) {
-                    console.log(object.userData.originalMedium)
                     if (object.userData.originalMedium === 'local') {
                         this.swapToLocal(objectId);
                     }
@@ -126,14 +148,12 @@ AFRAME.registerSystem('decision-making', {
             case this.gui.experiments[5]: // "mixed (with atw)"
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.localScene.userData.objects)) {
-                    console.log(object.userData.originalMedium)
                     if (object.userData.originalMedium === 'remote') {
                         this.swapToRemote(objectId);
                     }
                 }
 
                 for (const [objectId, object] of Object.entries(this.remoteScene.userData.objects)) {
-                    console.log(object.userData.originalMedium)
                     if (object.userData.originalMedium === 'local') {
                         this.swapToLocal(objectId);
                     }

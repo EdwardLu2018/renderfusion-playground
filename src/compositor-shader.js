@@ -39,6 +39,9 @@ export const CompositorShader = {
         doAsyncTimeWarp: {
             type: 'bool', value: true,
         },
+        preferLocal: {
+            type: 'bool', value: false,
+        },
         cameraLProjectionMatrix: {
             type: 'mat4', value: new THREE.Matrix4(),
         },

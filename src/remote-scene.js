@@ -40,7 +40,7 @@ AFRAME.registerComponent('remote-scene', {
         let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
             const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
-            light.position.set( 50 * i, 1.6, -30 );
+            light.position.set(50 * i, 1.6, -30);
             light.castShadow = true;
             _this.addToScene( `light${j++}`, light );
             light.userData.originalMedium = 'remote';
@@ -54,9 +54,7 @@ AFRAME.registerComponent('remote-scene', {
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.x = 10;
-        this.box.position.y = 1.6;
-        this.box.position.z = -30;
+        this.box.position.set(10, 1.6, -30);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
@@ -76,6 +74,8 @@ AFRAME.registerComponent('remote-scene', {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.background = texture;
                 scene.environment = texture;
+                scene.userData.objects['background'] = texture;
+                texture.userData.originalMedium = 'remote';
             } );
 
         textureLoader
@@ -110,11 +110,8 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
                 const model = gltf.scene;
-
                 model.scale.set(5, 5, 5);
-                model.position.x = -10;
-                model.position.y = 1.6;
-                model.position.z = -30;
+                model.position.set(-10, 1.6, -30);
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'helmet', model );
@@ -125,11 +122,8 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
-
                 model.scale.set(0.2, 0.2, 0.2);
-                model.position.x = 10;
-                model.position.y = 1.6;
-                model.position.z = -30;
+                model.position.set(10, 1.6, -30);
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'swordRight', model );

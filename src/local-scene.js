@@ -32,9 +32,7 @@ AFRAME.registerComponent('local-scene', {
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.x = 0;
-        this.box.position.y = 1.6;
-        this.box.position.z = -30;
+        this.box.position.set(0, 1.6, -30);
         _this.addToScene( 'redBox', this.box ); // add to local scene
         this.box.userData.originalMedium = 'local';
 
@@ -96,11 +94,8 @@ AFRAME.registerComponent('local-scene', {
         loader.setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
-
                 model.scale.set(0.2, 0.2, 0.2);
-                model.position.x = -10;
-                model.position.y = 1.6;
-                model.position.z = -30;
+                model.position.set(-10, 1.6, -30);
                 _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = 'local';
             } );

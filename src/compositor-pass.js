@@ -50,6 +50,10 @@ export class CompositorPass extends Pass {
         this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
     }
 
+    setPreferLocal(preferLocal) {
+        this.material.uniforms.preferLocal.value = preferLocal;
+    }
+
     setCameraMats(cameraL, cameraR) {
         if (cameraL) {
             this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);

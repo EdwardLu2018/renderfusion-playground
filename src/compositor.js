@@ -4,6 +4,7 @@ AFRAME.registerSystem('compositor', {
     schema: {
         doAsyncTimeWarp: {type: 'bool', default: true},
         stretchBorders: {type: 'bool', default: true},
+        preferLocal: {type: 'bool', default: false},
     },
 
     init: function() {
@@ -145,6 +146,7 @@ AFRAME.registerSystem('compositor', {
                 system.pass.setHasDualCameras(hasDualCameras);
                 system.pass.setStretchBorders(data.stretchBorders);
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
+                system.pass.setPreferLocal(data.preferLocal);
                 if (data.doAsyncTimeWarp) {
                     if (this.xr.enabled === true && this.xr.isPresenting === true) {
                         const cameraL = cameraVR.cameras[0];
