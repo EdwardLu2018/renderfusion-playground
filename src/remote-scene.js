@@ -36,25 +36,31 @@ AFRAME.registerComponent('remote-scene', {
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
-        // const NUM_LIGHTS = 6;
-        // let j = 0;
-        // for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-        //     const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
-        //     light.position.set(50 * i, 1.6, -30);
-        //     light.castShadow = true;
-        //     _this.addToScene( `light${j++}`, light );
-        //     light.userData.originalMedium = 'remote';
+        const NUM_LIGHTS = 8;
+        let j = 0;
+        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
+            const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
+            light.position.set(2 * i, 1.6, 0);
+            light.castShadow = true;
+            _this.addToScene( `light${j++}`, light );
+            light.userData.originalMedium = 'remote';
 
-        //     // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-        //     // box.position.set( 50 * i, 1.6, -30 );
-        //     // _this.addToScene( box );
-        //     // box.userData.originalMedium = 'remote';
-        // }
+            // const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            // box.position.set( 20 * i, 1.6, 0 );
+            // _this.addToScene( box );
+            // box.userData.originalMedium = 'remote';
+        }
+
+        const pointLight = new THREE.PointLight( 0x0000EE, 1, 100 );
+        pointLight.position.set(0, 20, 0);
+        pointLight.castShadow = true;
+        _this.addToScene( 'pointLight', pointLight );
+        pointLight.userData.originalMedium = 'remote';
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
-        const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
+        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(10, 1.6, -30);
+        this.box.position.set(2, 1.6, -5);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
@@ -88,20 +94,20 @@ AFRAME.registerComponent('remote-scene', {
                     groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
                     groundTexture.anisotropy = 16;
                     groundTexture.encoding = THREE.sRGBEncoding;
-                    texture.repeat.set(16, 16);
+                    texture.repeat.set(32, 32);
 
                     const groundMaterial = new THREE.MeshStandardMaterial({
                         map: groundTexture,
                         // wireframe: true,
                         displacementMap: texture,
-                        displacementScale: 50,
+                        displacementScale: 5,
                     });
 
-                    const groundGeometry = new THREE.PlaneGeometry(1200, 1200, 100, 100);
+                    const groundGeometry = new THREE.PlaneGeometry(60, 60, 10, 10);
                     groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
                     groundMesh.receiveShadow = true;
                     groundMesh.rotation.x = -Math.PI / 2;
-                    groundMesh.position.y = -80;
+                    groundMesh.position.y = -5;
                     _this.addToScene( 'groundMesh', groundMesh );
                     groundMesh.userData.originalMedium = 'remote';
                 } );
@@ -111,8 +117,8 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
                 const model = gltf.scene;
-                model.scale.set(5, 5, 5);
-                model.position.set(-10, 1.6, -30);
+                model.scale.set(1, 1, 1);
+                model.position.set(-2, 1.6, -5);
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'helmet', model );
@@ -123,29 +129,32 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
-                model.scale.set(0.2, 0.2, 0.2);
-                model.position.set(10, 1.6, -30);
+                model.scale.set(0.02, 0.02, 0.02);
+                model.position.set(2, 1.6, -5);
                 model.castShadow = true;
                 model.receiveShadow = true;
                 _this.addToScene( 'swordRight', model );
                 model.userData.originalMedium = 'remote';
             } );
 
-        const NUM_TREES = 10;
+        const NUM_MODELS = 20;
         gltfLoader
             // .setPath( '' )
             // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
-            .load( 'pine.glb', function ( gltf ) {
+            // .load( 'Statue_2k.glb', function ( gltf ) {
+            // .load( 'Statue_320k.glb', function ( gltf ) {
+            .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
                 const model = gltf.scene;
-                for (var i = 0; i < NUM_TREES; i++) {
+                for (var i = 0; i < NUM_MODELS; i++) {
                     const modelClone = model.clone();
-                    modelClone.scale.set(25, 25, 25);
-                    modelClone.position.x = 375 * Math.cos((Math.PI / 1.25) * i / NUM_TREES + (Math.PI / 7));
-                    modelClone.position.y = -50;
-                    modelClone.position.z = -375 * Math.sin((Math.PI / 1.25) * i / NUM_TREES + (Math.PI / 7));
+                    modelClone.scale.set(2, 2, 2);
+                    modelClone.position.x = 10 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.position.y = 0;
+                    modelClone.position.z = -10 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    // modelClone.rotation.y = 90;
                     modelClone.castShadow = true;
                     modelClone.receiveShadow = true;
-                    _this.addToScene( `tree${i}`, modelClone );
+                    _this.addToScene( `model${i}`, modelClone );
                     modelClone.userData.originalMedium = 'remote';
                 }
             } );
