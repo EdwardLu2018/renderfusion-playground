@@ -36,20 +36,20 @@ AFRAME.registerComponent('remote-scene', {
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
-        const NUM_LIGHTS = 6;
-        let j = 0;
-        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-            const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
-            light.position.set(50 * i, 1.6, -30);
-            light.castShadow = true;
-            _this.addToScene( `light${j++}`, light );
-            light.userData.originalMedium = 'remote';
+        // const NUM_LIGHTS = 6;
+        // let j = 0;
+        // for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
+        //     const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
+        //     light.position.set(50 * i, 1.6, -30);
+        //     light.castShadow = true;
+        //     _this.addToScene( `light${j++}`, light );
+        //     light.userData.originalMedium = 'remote';
 
-            // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-            // box.position.set( 50 * i, 1.6, -30 );
-            // _this.addToScene( box );
-            // box.userData.originalMedium = 'remote';
-        }
+        //     // const box = new THREE.Mesh(boxGeometry, boxMaterial);
+        //     // box.position.set( 50 * i, 1.6, -30 );
+        //     // _this.addToScene( box );
+        //     // box.userData.originalMedium = 'remote';
+        // }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(5, 5, 5);
@@ -130,18 +130,18 @@ AFRAME.registerComponent('remote-scene', {
                 model.userData.originalMedium = 'remote';
             } );
 
+        const NUM_TREES = 20;
         gltfLoader
-            .setPath( '' )
-            .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+            // .setPath( '' )
+            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+            .load( 'pine.glb', function ( gltf ) {
                 const model = gltf.scene;
-
-                const NUM_TREES = 20;
                 for (var i = 0; i < NUM_TREES; i++) {
                     const modelClone = model.clone();
                     modelClone.scale.set(25, 25, 25);
-                    modelClone.position.x = 350 * Math.cos((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4.5));
+                    modelClone.position.x = 375 * Math.cos((Math.PI / 1.25) * i / NUM_TREES + (Math.PI / 7));
                     modelClone.position.y = -50;
-                    modelClone.position.z = -350 * Math.sin((Math.PI / 1.5) * i / NUM_TREES + (Math.PI / 4.5));
+                    modelClone.position.z = -375 * Math.sin((Math.PI / 1.25) * i / NUM_TREES + (Math.PI / 7));
                     modelClone.castShadow = true;
                     modelClone.receiveShadow = true;
                     _this.addToScene( `tree${i}`, modelClone );
