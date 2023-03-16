@@ -84,10 +84,11 @@ AFRAME.registerComponent('remote-scene', {
                 texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
                 texture.repeat.set(1, 1);
 
-                textureLoader.load('ground.jpg', function ( groundTexture ) {
+                textureLoader.load('park_dirt_diff_4k.png', function ( groundTexture ) {
                     groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
                     groundTexture.anisotropy = 16;
                     groundTexture.encoding = THREE.sRGBEncoding;
+                    texture.repeat.set(16, 16);
 
                     const groundMaterial = new THREE.MeshStandardMaterial({
                         map: groundTexture,
@@ -130,7 +131,7 @@ AFRAME.registerComponent('remote-scene', {
                 model.userData.originalMedium = 'remote';
             } );
 
-        const NUM_TREES = 20;
+        const NUM_TREES = 10;
         gltfLoader
             // .setPath( '' )
             // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
