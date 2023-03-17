@@ -19,6 +19,7 @@ AFRAME.registerComponent('remote-scene', {
             return;
         }
 
+        this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
 
         this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
@@ -29,8 +30,6 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         const _this = this;
-
-        scene.userData.objects = {};
 
         // scene.background = new THREE.Color(0xF06565);
         const textureLoader = new THREE.TextureLoader();
@@ -71,11 +70,11 @@ AFRAME.registerComponent('remote-scene', {
 
         new RGBELoader()
             .setPath( 'assets/textures/' )
-            .load( 'farm_field_puresky_4k.hdr', function ( texture ) {
+            .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.background = texture;
                 scene.environment = texture;
-                scene.userData.objects['background'] = texture;
+                _this.experimentManager.objects['background'] = texture;
                 texture.userData.originalMedium = 'remote';
             } );
 
@@ -131,6 +130,48 @@ AFRAME.registerComponent('remote-scene', {
                 _this.addToScene( 'swordRight', model );
                 model.userData.originalMedium = 'remote';
             } );
+
+        const NUM_MODELS = 10;
+        gltfLoader
+            // .setPath( '' )
+            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+            // .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+            .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
+                const model = gltf.scene;
+                for (var i = 0; i < NUM_MODELS; i++) {
+                    const modelClone = model.clone();
+                    modelClone.scale.set(5, 5, 5);
+                    modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.position.y = -2;
+                    modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.rotation.y = 45;
+                    modelClone.castShadow = true;
+                    modelClone.receiveShadow = true;
+                    modelClone.visible = false;
+                    _this.addToScene( `model_low${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'remote';
+                }
+            } );
+
+        gltfLoader
+            // .setPath( '' )
+            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+            .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+            // .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
+                const model = gltf.scene;
+                for (var i = 0; i < NUM_MODELS; i++) {
+                    const modelClone = model.clone();
+                    modelClone.scale.set(5, 5, 5);
+                    modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.position.y = -2;
+                    modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.rotation.y = 45;
+                    modelClone.castShadow = true;
+                    modelClone.receiveShadow = true;
+                    _this.addToScene( `model_high${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'remote';
+                }
+            } );
     },
 
     addToScene(objectId, object) {
@@ -138,7 +179,8 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         scene.add(object);
-        scene.userData.objects[objectId] = object;
+        object.userData.renderingMedium = 'remote';
+        this.experimentManager.objects[objectId] = object;
     },
 
     update(oldData) {

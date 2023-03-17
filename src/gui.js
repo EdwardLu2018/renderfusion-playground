@@ -1,4 +1,5 @@
 import { GUI } from 'dat.gui';
+import { EXPERIMENTS } from './constants.js';
 
 AFRAME.registerSystem('gui', {
     init: function () {
@@ -12,9 +13,7 @@ AFRAME.registerSystem('gui', {
 
         this.remoteLocal = sceneEl.systems['remote-local'];
         this.compositor = sceneEl.systems['compositor'];
-        this.decisionMaking = sceneEl.systems['decision-making'];
-
-        this.experiments = ["low poly local", "high poly local", "high poly remote (no atw)", "high poly remote (with atw)", "mixed (no atw)", "mixed (with atw)"];
+        this.experimentManager = sceneEl.systems['experiment-manager'];
 
         const options = {
             timeWarp: true,
@@ -22,7 +21,7 @@ AFRAME.registerSystem('gui', {
             fps: 60,
             latency: 150,
             decreaseResolution: 1,
-            experiment: this.experiments[this.experiments.length - 1],
+            experiment: EXPERIMENTS[EXPERIMENTS.length - 1],
         };
 
         const _this = this;
@@ -58,10 +57,10 @@ AFRAME.registerSystem('gui', {
                 _this.compositor.data.stretchBorders = this.getValue();
             } );
 
-        gui.add(options, 'experiment', this.experiments)
+        gui.add(options, 'experiment', EXPERIMENTS)
             .name("Experiment")
             .onChange( function() {
-                _this.decisionMaking.changeExperiment(this.getValue());
+                _this.experimentManager.changeExperiment(this.getValue());
             } );
 
         gui.open()
