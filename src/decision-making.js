@@ -1,3 +1,6 @@
+const LOW = 0;
+const HIGH = 1;
+
 AFRAME.registerSystem('decision-making', {
     schema: {
     },
@@ -63,14 +66,12 @@ AFRAME.registerSystem('decision-making', {
         const localObj = this.localScene.userData.objects[objectId];
         const remoteObj = this.remoteScene.userData.objects[objectId];
 
-        console.log(objectId)
         if (localObj && remoteObj === undefined) {
             if (objectId !== 'background') {
                 localObj.remove();
                 remoteSceneSys.addToScene(objectId, localObj);
             }
             else {
-                console.log(localObj);
                 this.localScene.background = null;
                 this.localScene.environment = null;
                 this.remoteScene.background = localObj;
@@ -83,20 +84,29 @@ AFRAME.registerSystem('decision-making', {
         }
     },
 
-    swapRenderingMedium(objectId) {
+    swapResolution(objectId, toHigh) {
         const el = this.el;
         const data = this.data;
 
         const sceneEl = el.sceneEl;
 
+        const localSceneSys = sceneEl.components['local-scene'];
         const localObj = this.localScene.userData.objects[objectId];
         const remoteObj = this.remoteScene.userData.objects[objectId];
 
-        if (localObj && remoteObj === undefined) {
-            this.swapToRemote(objectId);
-        }
-        else if (remoteObj && localObj === undefined) {
-            this.swapToLocal(objectId);
+        if (objectId.includes('model')) {
+            if (toHigh && objectId.includes('high')) {
+                localObj.visible = true;
+            }
+            else if (toHigh && objectId.includes('low')) {
+                localObj.visible = false;
+            }
+            if (!toHigh && objectId.includes('high')) {
+                localObj.visible = false;
+            }
+            else if (!toHigh && objectId.includes('low')) {
+                localObj.visible = true;
+            }
         }
     },
 
@@ -107,12 +117,18 @@ AFRAME.registerSystem('decision-making', {
                 for (const [objectId, object] of Object.entries(this.remoteScene.userData.objects)) {
                     this.swapToLocal(objectId);
                 }
+                for (const [objectId, object] of Object.entries(this.localScene.userData.objects)) {
+                    this.swapResolution(objectId, LOW);
+                }
                 break;
 
             case this.gui.experiments[1]: // "high poly local"
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.remoteScene.userData.objects)) {
                     this.swapToLocal(objectId);
+                }
+                for (const [objectId, object] of Object.entries(this.localScene.userData.objects)) {
+                    this.swapResolution(objectId, HIGH);
                 }
                 break;
 

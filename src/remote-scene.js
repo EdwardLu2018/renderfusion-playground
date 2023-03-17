@@ -39,7 +39,7 @@ AFRAME.registerComponent('remote-scene', {
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 
-        const NUM_LIGHTS = 6;
+        const NUM_LIGHTS = 5;
         let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
             const light = new THREE.DirectionalLight( 0xAAAAFF, 1 );
@@ -130,27 +130,6 @@ AFRAME.registerComponent('remote-scene', {
                 model.receiveShadow = true;
                 _this.addToScene( 'swordRight', model );
                 model.userData.originalMedium = 'remote';
-            } );
-
-        const NUM_MODELS = 20;
-        gltfLoader
-            // .setPath( '' )
-            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
-            // .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
-            .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
-                const model = gltf.scene;
-                for (var i = 0; i < NUM_MODELS; i++) {
-                    const modelClone = model.clone();
-                    modelClone.scale.set(5, 5, 5);
-                    modelClone.position.x = 20 * Math.cos((Math.PI / 1.5) * i / NUM_MODELS + (Math.PI / 6));
-                    modelClone.position.y = -2;
-                    modelClone.position.z = -20 * Math.sin((Math.PI / 1.5) * i / NUM_MODELS + (Math.PI / 6));
-                    // modelClone.rotation.y = 90;
-                    modelClone.castShadow = true;
-                    modelClone.receiveShadow = true;
-                    _this.addToScene( `model${i}`, modelClone );
-                    modelClone.userData.originalMedium = 'remote';
-                }
             } );
     },
 

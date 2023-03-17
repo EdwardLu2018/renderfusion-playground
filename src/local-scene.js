@@ -101,6 +101,48 @@ AFRAME.registerComponent('local-scene', {
                 _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = 'local';
             } );
+
+        const NUM_MODELS = 10;
+        loader
+            // .setPath( '' )
+            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+            // .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+            .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
+                const model = gltf.scene;
+                for (var i = 0; i < NUM_MODELS; i++) {
+                    const modelClone = model.clone();
+                    modelClone.scale.set(5, 5, 5);
+                    modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.position.y = -2;
+                    modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.rotation.y = 45;
+                    modelClone.castShadow = true;
+                    modelClone.receiveShadow = true;
+                    _this.addToScene( `model_low${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'local';
+                }
+            } );
+
+            loader
+                // .setPath( '' )
+                // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
+                .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+                // .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
+                    const model = gltf.scene;
+                    for (var i = 0; i < NUM_MODELS; i++) {
+                        const modelClone = model.clone();
+                        modelClone.scale.set(5, 5, 5);
+                        modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                        modelClone.position.y = -2;
+                        modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                        modelClone.rotation.y = 45;
+                        modelClone.castShadow = true;
+                        modelClone.receiveShadow = true;
+                        modelClone.visible = false;
+                        _this.addToScene( `model_high${i}`, modelClone );
+                        modelClone.userData.originalMedium = 'local';
+                    }
+                } );
     },
 
     addToScene(objectId, object) {
