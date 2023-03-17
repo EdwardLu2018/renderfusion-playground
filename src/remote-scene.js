@@ -136,9 +136,8 @@ AFRAME.registerComponent('remote-scene', {
         gltfLoader
             // .setPath( '' )
             // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
-            // .load( 'Statue_2k.glb', function ( gltf ) {
-            // .load( 'Statue_320k.glb', function ( gltf ) {
-            .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+            // .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
+            .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
                 const model = gltf.scene;
                 for (var i = 0; i < NUM_MODELS; i++) {
                     const modelClone = model.clone();
