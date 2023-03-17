@@ -96,7 +96,7 @@ AFRAME.registerComponent('local-scene', {
         loader.setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
-                model.scale.set(0.02, 0.02, 0.02);
+                model.scale.set(0.03, 0.03, 0.03);
                 model.position.set(-2, 1.6, -5);
                 _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = 'local';

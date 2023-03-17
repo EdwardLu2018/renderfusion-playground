@@ -36,29 +36,24 @@ AFRAME.registerComponent('remote-scene', {
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
-        const NUM_LIGHTS = 8;
+        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
+        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+        const NUM_LIGHTS = 6;
         let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-            const light = new THREE.DirectionalLight( 0xEEEEFF, 1 );
-            light.position.set(2 * i, 1.6, 0);
+            const light = new THREE.DirectionalLight( 0xAAAAFF, 1 );
+            light.position.set( 5*i, 10, 0 );
             light.castShadow = true;
             _this.addToScene( `light${j++}`, light );
             light.userData.originalMedium = 'remote';
 
             // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-            // box.position.set( 20 * i, 1.6, 0 );
-            // _this.addToScene( box );
+            // box.position.set( 5*i, 10, 0 );
+            // _this.addToScene( `box${j++}`, box );
             // box.userData.originalMedium = 'remote';
         }
 
-        const pointLight = new THREE.PointLight( 0x0000EE, 1, 100 );
-        pointLight.position.set(0, 20, 0);
-        pointLight.castShadow = true;
-        _this.addToScene( 'pointLight', pointLight );
-        pointLight.userData.originalMedium = 'remote';
-
-        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
-        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(2, 1.6, -5);
         this.box.castShadow = true;
@@ -103,7 +98,7 @@ AFRAME.registerComponent('remote-scene', {
                         displacementScale: 5,
                     });
 
-                    const groundGeometry = new THREE.PlaneGeometry(60, 60, 10, 10);
+                    const groundGeometry = new THREE.PlaneGeometry(120, 120, 10, 10);
                     groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
                     groundMesh.receiveShadow = true;
                     groundMesh.rotation.x = -Math.PI / 2;
@@ -129,7 +124,7 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 const model = gltf.scene;
-                model.scale.set(0.02, 0.02, 0.02);
+                model.scale.set(0.03, 0.03, 0.03);
                 model.position.set(2, 1.6, -5);
                 model.castShadow = true;
                 model.receiveShadow = true;
@@ -147,10 +142,10 @@ AFRAME.registerComponent('remote-scene', {
                 const model = gltf.scene;
                 for (var i = 0; i < NUM_MODELS; i++) {
                     const modelClone = model.clone();
-                    modelClone.scale.set(2, 2, 2);
-                    modelClone.position.x = 10 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
-                    modelClone.position.y = 0;
-                    modelClone.position.z = -10 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
+                    modelClone.scale.set(5, 5, 5);
+                    modelClone.position.x = 20 * Math.cos((Math.PI / 1.5) * i / NUM_MODELS + (Math.PI / 6));
+                    modelClone.position.y = -2;
+                    modelClone.position.z = -20 * Math.sin((Math.PI / 1.5) * i / NUM_MODELS + (Math.PI / 6));
                     // modelClone.rotation.y = 90;
                     modelClone.castShadow = true;
                     modelClone.receiveShadow = true;
