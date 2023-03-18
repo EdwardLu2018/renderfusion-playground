@@ -9,7 +9,7 @@ AFRAME.registerComponent('remote-scene', {
         latency: {type: 'number', default: 150}, // ms
     },
 
-    init: function () {
+    init: async function () {
         const el = this.el;
         const data = this.data;
 
@@ -35,29 +35,31 @@ AFRAME.registerComponent('remote-scene', {
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
-        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
-        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const sphereGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
+        const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
-        const NUM_LIGHTS = 5;
+        const NUM_LIGHTS = 2;
         let j = 0;
-        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-            const light = new THREE.PointLight( 0xAAAAFF, 2, 100 );
-            light.position.set( 20 * i, 10, -5 );
-            light.castShadow = true;
+        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.ceil(NUM_LIGHTS / 2); i++) {
+            let xPos = i;
+            if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
 
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.set( 20 * xPos, 8, -3 );
+            _this.addToScene( `light${j++}`, sphere );
+            sphere.userData.originalMedium = 'remote';
+
+            const light = new THREE.PointLight( 0xDDDDFF, 2, 100 );
+            light.castShadow = true;
             light.shadow.mapSize.width = 1024;
             light.shadow.mapSize.height = 1024;
             light.shadow.camera.near = 0.1;
             light.shadow.camera.far = 1000;
-
-            _this.addToScene( `light${j++}`, light );
-            light.userData.originalMedium = 'remote';
-
-            // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-            // box.position.set( 5*i, 10, 0 );
-            // _this.addToScene( `box${j++}`, box );
-            // box.userData.originalMedium = 'remote';
+            sphere.add( light );
         }
+
+        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
+        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(2, 1.6, -5);
@@ -141,49 +143,41 @@ AFRAME.registerComponent('remote-scene', {
                 model.userData.originalMedium = 'remote';
             } );
 
-        const NUM_MODELS = 10;
-        gltfLoader
-            // .setPath( '' )
-            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
-            // .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
-            .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
-                const model = gltf.scene;
-                for (var i = 0; i < NUM_MODELS; i++) {
-                    const modelClone = model.clone();
-                    modelClone.scale.set(5, 5, 5);
-                    modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
-                    modelClone.position.y = -2;
-                    modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
-                    modelClone.rotation.y = 45;
-                    model.traverse( function( node ) {
-                        if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-                    } );
-                    modelClone.visible = false;
-                    _this.addToScene( `model_low${i}`, modelClone );
-                    modelClone.userData.originalMedium = 'remote';
-                }
-            } );
 
-        gltfLoader
-            // .setPath( '' )
-            // .load( 'https://dl.dropboxusercontent.com/s/p0cxjnps8w9g4vm/pine_tree.glb', function ( gltf ) {
-            .load( 'les_bourgeois_de_calais_by_rodin.glb', function ( gltf ) {
-            // .load( 'les_bourgeois_de_calais_by_rodin_low.glb', function ( gltf ) {
-                const model = gltf.scene;
-                for (var i = 0; i < NUM_MODELS; i++) {
-                    const modelClone = model.clone();
-                    modelClone.scale.set(5, 5, 5);
-                    modelClone.position.x = 15 * Math.cos((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
-                    modelClone.position.y = -2;
-                    modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
-                    modelClone.rotation.y = 45;
-                    model.traverse( function( node ) {
-                        if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-                    } );
-                    _this.addToScene( `model_high${i}`, modelClone );
-                    modelClone.userData.originalMedium = 'remote';
+        function modelLoader(path) {
+            return new Promise((resolve, reject) => {
+                gltfLoader.load(path, data => resolve(data), null, reject);
+            });
+        }
+
+        const lowResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_low.glb');
+        const highResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin.glb');
+        const models = [lowResModel.scene, highResModel.scene];
+
+        const NUM_MODELS = 5;
+        for (var i = 0; i < NUM_MODELS; i++) {
+            for (var m = 0; m < 2; m++) {
+                const modelClone = models[m].clone();
+                modelClone.scale.set(5, 5, 5);
+                modelClone.position.x = 15 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.position.y = -2;
+                modelClone.position.z = -15 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i;
+                modelClone.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                } );
+                if (m == 0) {
+                    _this.addToScene( `modelLow${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'local';
+                    modelClone.visible = false;
                 }
-            } );
+                else {
+                    _this.addToScene( `modelHigh${i}`, modelClone );
+                    modelClone.userData.originalMedium = 'remote';
+                    modelClone.visible = true;
+                }
+            }
+        }
     },
 
     addToScene(objectId, object) {

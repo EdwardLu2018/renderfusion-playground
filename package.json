@@ -10,13 +10,12 @@
     },
     "dependencies": {
         "aframe": "^1.4.1",
-        "three": "^0.149.0",
-        "three-mesh-ui": "^6.5.3"
+        "three-mesh-ui": "^6.5.3",
+        "dat.gui": "^0.7.9"
     },
     "devDependencies": {
         "@parcel/transformer-glsl": "^2.8.3",
         "constants-browserify": "^1.0.0",
-        "dat.gui": "^0.7.9",
         "parcel": "^2.8.3"
     }
 }

@@ -76,17 +76,26 @@ AFRAME.registerSystem('experiment-manager', {
         const object = this.objects[objectId];
 
         if (objectId.includes('model')) {
-            if (resolutionType === HIGH && objectId.includes('high')) {
-                object.visible = true;
+            const model = object;
+            if ((resolutionType === HIGH && objectId.includes('High')) ||
+                (resolutionType == LOW && objectId.includes('Low'))) {
+                model.visible = true;
             }
-            else if (resolutionType === HIGH && objectId.includes('low')) {
-                object.visible = false;
+            else
+            if ((resolutionType === HIGH && objectId.includes('Low')) ||
+                (resolutionType === LOW && objectId.includes('High'))) {
+                model.visible = false;
             }
-            else if (resolutionType === LOW && objectId.includes('high')) {
-                object.visible = false;
+        }
+        else if (objectId.includes('light')) {
+            const light = object.children[0];
+            if (resolutionType === HIGH) {
+                light.shadow.mapSize.width = 1024;
+                light.shadow.mapSize.height = 1024;
             }
-            else if (resolutionType == LOW && objectId.includes('low')) {
-                object.visible = true;
+            else {
+                light.shadow.mapSize.width = 64;
+                light.shadow.mapSize.height = 64;
             }
         }
     },
