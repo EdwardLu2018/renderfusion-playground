@@ -139,13 +139,13 @@ AFRAME.registerSystem('experiment-manager', {
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === 'remote') {
-                        this.swapToRemote(objectId);
+                        this.swapRenderingMedium(objectId, REMOTE);
                     }
                 }
 
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === 'local') {
-                        this.swapToLocal(objectId);
+                        this.swapRenderingMedium(objectId, LOCAL);
                     }
                 }
                 break;

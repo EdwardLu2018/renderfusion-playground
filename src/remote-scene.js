@@ -41,9 +41,15 @@ AFRAME.registerComponent('remote-scene', {
         const NUM_LIGHTS = 5;
         let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.floor(NUM_LIGHTS / 2); i++) {
-            const light = new THREE.DirectionalLight( 0xAAAAFF, 1 );
-            light.position.set( 5*i, 10, 0 );
+            const light = new THREE.PointLight( 0xAAAAFF, 2, 100 );
+            light.position.set( 20 * i, 10, -5 );
             light.castShadow = true;
+
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            light.shadow.camera.near = 0.1;
+            light.shadow.camera.far = 1000;
+
             _this.addToScene( `light${j++}`, light );
             light.userData.originalMedium = 'remote';
 
@@ -60,23 +66,25 @@ AFRAME.registerComponent('remote-scene', {
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
         this.box.userData.originalMedium = 'remote';
 
-        // new EXRLoader()
-        //     .setPath( 'assets/textures/' )
-        //     .load( 'farm_field_puresky_4k.exr', function ( texture ) {
-        //         texture.mapping = THREE.EquirectangularReflectionMapping;
-        //         scene.background = texture;
-        //         scene.environment = texture;
-        //     } );
-
-        new RGBELoader()
+        new EXRLoader()
             .setPath( 'assets/textures/' )
-            .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
+            .load( 'starmap_2020_4k_gal.exr', function ( texture ) {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.background = texture;
                 scene.environment = texture;
                 _this.experimentManager.objects['background'] = texture;
                 texture.userData.originalMedium = 'remote';
             } );
+
+        // new RGBELoader()
+        //     .setPath( 'assets/textures/' )
+        //     .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
+        //         texture.mapping = THREE.EquirectangularReflectionMapping;
+        //         scene.background = texture;
+        //         scene.environment = texture;
+        //         _this.experimentManager.objects['background'] = texture;
+        //         texture.userData.originalMedium = 'remote';
+        //     } );
 
         textureLoader
             .setPath( 'assets/textures/' )
@@ -113,8 +121,9 @@ AFRAME.registerComponent('remote-scene', {
                 const model = gltf.scene;
                 model.scale.set(1, 1, 1);
                 model.position.set(-2, 1.6, -5);
-                model.castShadow = true;
-                model.receiveShadow = true;
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                } );
                 _this.addToScene( 'helmet', model );
                 model.userData.originalMedium = 'remote';
             } );
@@ -125,8 +134,9 @@ AFRAME.registerComponent('remote-scene', {
                 const model = gltf.scene;
                 model.scale.set(0.03, 0.03, 0.03);
                 model.position.set(2, 1.6, -5);
-                model.castShadow = true;
-                model.receiveShadow = true;
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                } );
                 _this.addToScene( 'swordRight', model );
                 model.userData.originalMedium = 'remote';
             } );
@@ -145,8 +155,9 @@ AFRAME.registerComponent('remote-scene', {
                     modelClone.position.y = -2;
                     modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
                     modelClone.rotation.y = 45;
-                    modelClone.castShadow = true;
-                    modelClone.receiveShadow = true;
+                    model.traverse( function( node ) {
+                        if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                    } );
                     modelClone.visible = false;
                     _this.addToScene( `model_low${i}`, modelClone );
                     modelClone.userData.originalMedium = 'remote';
@@ -166,8 +177,9 @@ AFRAME.registerComponent('remote-scene', {
                     modelClone.position.y = -2;
                     modelClone.position.z = -15 * Math.sin((Math.PI / 1.25) * i / NUM_MODELS + (Math.PI / 7));
                     modelClone.rotation.y = 45;
-                    modelClone.castShadow = true;
-                    modelClone.receiveShadow = true;
+                    model.traverse( function( node ) {
+                        if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                    } );
                     _this.addToScene( `model_high${i}`, modelClone );
                     modelClone.userData.originalMedium = 'remote';
                 }

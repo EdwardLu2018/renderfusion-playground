@@ -99,6 +99,9 @@ AFRAME.registerComponent('local-scene', {
                 const model = gltf.scene;
                 model.scale.set(0.03, 0.03, 0.03);
                 model.position.set(-2, 1.6, -5);
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                } );
                 _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = 'local';
             } );
