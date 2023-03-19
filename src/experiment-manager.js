@@ -90,12 +90,10 @@ AFRAME.registerSystem('experiment-manager', {
         else if (objectId.includes('light')) {
             const light = object.children[0];
             if (resolutionType === HIGH) {
-                light.shadow.mapSize.width = 1024;
-                light.shadow.mapSize.height = 1024;
+                light.castShadow = true;
             }
             else {
-                light.shadow.mapSize.width = 64;
-                light.shadow.mapSize.height = 64;
+                light.castShadow = false;
             }
         }
     },

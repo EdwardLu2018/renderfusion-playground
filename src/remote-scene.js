@@ -38,14 +38,14 @@ AFRAME.registerComponent('remote-scene', {
         const sphereGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
         const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
-        const NUM_LIGHTS = 2;
+        const NUM_LIGHTS = 3;
         let j = 0;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.ceil(NUM_LIGHTS / 2); i++) {
             let xPos = i;
             if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
 
             const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 20 * xPos, 8, -3 );
+            sphere.position.set( 20 * xPos, 10, -7 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
@@ -54,7 +54,7 @@ AFRAME.registerComponent('remote-scene', {
             light.shadow.mapSize.width = 1024;
             light.shadow.mapSize.height = 1024;
             light.shadow.camera.near = 0.1;
-            light.shadow.camera.far = 1000;
+            light.shadow.camera.far = 10000;
             sphere.add( light );
         }
 
