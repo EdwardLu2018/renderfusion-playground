@@ -33,7 +33,8 @@ AFRAME.registerComponent('remote-scene', {
 
         const _this = this;
 
-        // scene.background = new THREE.Color(0xF06565);
+        scene.background = new THREE.Color(0x87CEEB);
+
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
@@ -47,11 +48,11 @@ AFRAME.registerComponent('remote-scene', {
             if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
 
             const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 20 * xPos, 10, -7 );
+            sphere.position.set( 25 * xPos, 35, -10 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
-            const light = new THREE.PointLight( 0xDDDDFF, 2, 100 );
+            const light = new THREE.PointLight( 0xDDDDFF, 3, 100 );
             light.castShadow = true;
             light.shadow.mapSize.width = 1024;
             light.shadow.mapSize.height = 1024;
@@ -100,7 +101,7 @@ AFRAME.registerComponent('remote-scene', {
         //             groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
         //             groundTexture.anisotropy = 16;
         //             groundTexture.encoding = THREE.sRGBEncoding;
-        //             texture.repeat.set(32, 32);
+        //             groundTexture.repeat.set(8, 8);
 
         //             const groundMaterial = new THREE.MeshStandardMaterial({
         //                 map: groundTexture,
@@ -109,11 +110,11 @@ AFRAME.registerComponent('remote-scene', {
         //                 displacementScale: 5,
         //             });
 
-        //             const groundGeometry = new THREE.PlaneGeometry(120, 120, 10, 10);
+        //             const groundGeometry = new THREE.PlaneGeometry(120, 120, 5, 5);
         //             groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
         //             groundMesh.receiveShadow = true;
         //             groundMesh.rotation.x = -Math.PI / 2;
-        //             groundMesh.position.y = -5;
+        //             groundMesh.position.y = -4;
         //             _this.addToScene( 'groundMesh', groundMesh );
         //             groundMesh.userData.originalMedium = 'remote';
         //         } );
@@ -152,17 +153,17 @@ AFRAME.registerComponent('remote-scene', {
             });
         }
 
-        const lowResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_low_poly_low_tex.glb');
-        const highResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_high_poly_high_tex.glb');
+        const lowResModel = await modelLoader( 'island_tree_low_poly_high_tex.glb' );
+        const highResModel = await modelLoader( 'island_tree_high_poly_high_tex.glb' );
         const models = [lowResModel.scene, highResModel.scene];
 
-        const NUM_MODELS = 5;
+        const NUM_MODELS = 3;
         for (var i = 0; i < NUM_MODELS; i++) {
             for (var m = 0; m < 2; m++) {
                 const modelClone = models[m].clone();
                 modelClone.scale.set(10, 10, 10);
                 modelClone.position.x = 30 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
-                modelClone.position.y = -2;
+                modelClone.position.y = -3;
                 modelClone.position.z = -30 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
                 modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i;
                 modelClone.traverse( function( node ) {

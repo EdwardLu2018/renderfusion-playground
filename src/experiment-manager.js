@@ -87,26 +87,26 @@ AFRAME.registerSystem('experiment-manager', {
                 model.visible = false;
             }
 
-            if (resolutionType === HIGH) {
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-                } );
-            }
-            else {
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = false; node.receiveShadow = false; }
-                } );
-            }
+            // if (resolutionType === HIGH) {
+            //     model.traverse( function( node ) {
+            //         if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+            //     } );
+            // }
+            // else {
+            //     model.traverse( function( node ) {
+            //         if ( node.isMesh ) { node.castShadow = false; node.receiveShadow = false; }
+            //     } );
+            // }
         }
         else {
-            if (resolutionType === HIGH) {
-                object.castShadow = true;
-                object.receiveShadow = true;
-            }
-            else {
-                object.castShadow = false;
-                object.receiveShadow = false;
-            }
+            // if (resolutionType === HIGH) {
+            //     object.castShadow = true;
+            //     object.receiveShadow = true;
+            // }
+            // else {
+            //     object.castShadow = false;
+            //     object.receiveShadow = false;
+            // }
         }
     },
 
