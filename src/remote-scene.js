@@ -152,8 +152,8 @@ AFRAME.registerComponent('remote-scene', {
             });
         }
 
-        const lowResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_low_poly_mid_tex.glb');
-        const highResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin.glb');
+        const lowResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_low_poly_low_tex.glb');
+        const highResModel = await modelLoader( 'les_bourgeois_de_calais_by_rodin_high_poly_high_tex.glb');
         const models = [lowResModel.scene, highResModel.scene];
 
         const NUM_MODELS = 5;
