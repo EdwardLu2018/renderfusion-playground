@@ -21,7 +21,7 @@ AFRAME.registerSystem('gui', {
             fps: 60,
             latency: 150,
             decreaseResolution: 1,
-            experiment: EXPERIMENTS[EXPERIMENTS.length - 1],
+            experiment: EXPERIMENTS[0],
         };
 
         const _this = this;

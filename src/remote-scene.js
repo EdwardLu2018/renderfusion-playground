@@ -3,6 +3,8 @@ import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
+import {LOW_POLY_LOCAL} from './constants';
+
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 60},
@@ -68,15 +70,15 @@ AFRAME.registerComponent('remote-scene', {
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
         this.box.userData.originalMedium = 'remote';
 
-        new EXRLoader()
-            .setPath( 'assets/textures/' )
-            .load( 'starmap_2020_4k_gal.exr', function ( texture ) {
-                texture.mapping = THREE.EquirectangularReflectionMapping;
-                scene.background = texture;
-                scene.environment = texture;
-                _this.experimentManager.objects['background'] = texture;
-                texture.userData.originalMedium = 'remote';
-            } );
+        // new EXRLoader()
+        //     .setPath( 'assets/textures/' )
+        //     .load( 'starmap_2020_4k_gal.exr', function ( texture ) {
+        //         texture.mapping = THREE.EquirectangularReflectionMapping;
+        //         scene.background = texture;
+        //         scene.environment = texture;
+        //         _this.experimentManager.objects['background'] = texture;
+        //         texture.userData.originalMedium = 'remote';
+        //     } );
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
@@ -88,34 +90,34 @@ AFRAME.registerComponent('remote-scene', {
         //         texture.userData.originalMedium = 'remote';
         //     } );
 
-        textureLoader
-            .setPath( 'assets/textures/' )
-            .load( 'height_map.png' , function ( texture ) {
-                texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
-                texture.repeat.set(1, 1);
+        // textureLoader
+        //     .setPath( 'assets/textures/' )
+        //     .load( 'height_map.png' , function ( texture ) {
+        //         texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
+        //         texture.repeat.set(1, 1);
 
-                textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
-                    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-                    groundTexture.anisotropy = 16;
-                    groundTexture.encoding = THREE.sRGBEncoding;
-                    texture.repeat.set(32, 32);
+        //         textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
+        //             groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+        //             groundTexture.anisotropy = 16;
+        //             groundTexture.encoding = THREE.sRGBEncoding;
+        //             texture.repeat.set(32, 32);
 
-                    const groundMaterial = new THREE.MeshStandardMaterial({
-                        map: groundTexture,
-                        // wireframe: true,
-                        displacementMap: texture,
-                        displacementScale: 5,
-                    });
+        //             const groundMaterial = new THREE.MeshStandardMaterial({
+        //                 map: groundTexture,
+        //                 // wireframe: true,
+        //                 displacementMap: texture,
+        //                 displacementScale: 5,
+        //             });
 
-                    const groundGeometry = new THREE.PlaneGeometry(120, 120, 10, 10);
-                    groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-                    groundMesh.receiveShadow = true;
-                    groundMesh.rotation.x = -Math.PI / 2;
-                    groundMesh.position.y = -5;
-                    _this.addToScene( 'groundMesh', groundMesh );
-                    groundMesh.userData.originalMedium = 'remote';
-                } );
-            } );
+        //             const groundGeometry = new THREE.PlaneGeometry(120, 120, 10, 10);
+        //             groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+        //             groundMesh.receiveShadow = true;
+        //             groundMesh.rotation.x = -Math.PI / 2;
+        //             groundMesh.position.y = -5;
+        //             _this.addToScene( 'groundMesh', groundMesh );
+        //             groundMesh.userData.originalMedium = 'remote';
+        //         } );
+        //     } );
 
         gltfLoader
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
@@ -158,10 +160,10 @@ AFRAME.registerComponent('remote-scene', {
         for (var i = 0; i < NUM_MODELS; i++) {
             for (var m = 0; m < 2; m++) {
                 const modelClone = models[m].clone();
-                modelClone.scale.set(5, 5, 5);
-                modelClone.position.x = 15 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.scale.set(10, 10, 10);
+                modelClone.position.x = 30 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
                 modelClone.position.y = -2;
-                modelClone.position.z = -15 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.position.z = -30 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
                 modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i;
                 modelClone.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
@@ -178,6 +180,8 @@ AFRAME.registerComponent('remote-scene', {
                 }
             }
         }
+
+        this.experimentManager.changeExperiment(LOW_POLY_LOCAL);
     },
 
     addToScene(objectId, object) {

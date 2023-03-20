@@ -86,14 +86,26 @@ AFRAME.registerSystem('experiment-manager', {
                 (resolutionType === LOW && objectId.includes('High'))) {
                 model.visible = false;
             }
-        }
-        else if (objectId.includes('light')) {
-            const light = object.children[0];
+
             if (resolutionType === HIGH) {
-                light.castShadow = true;
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                } );
             }
             else {
-                light.castShadow = false;
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = false; node.receiveShadow = false; }
+                } );
+            }
+        }
+        else {
+            if (resolutionType === HIGH) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+            }
+            else {
+                object.castShadow = false;
+                object.receiveShadow = false;
             }
         }
     },
