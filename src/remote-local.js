@@ -28,6 +28,7 @@ AFRAME.registerSystem('remote-local', {
 
         this.poses = [];
 
+        this.originalUpdateCamera = renderer.xr.updateCamera;
         this.bind();
     },
 
@@ -97,7 +98,6 @@ AFRAME.registerSystem('remote-local', {
 		}
 
         const system = this;
-        this.originalUpdateCamera = renderer.xr.updateCamera;
 		renderer.xr.updateCamera = function ( cameraVR, camera ) {
             const cameraL = cameraVR.cameras[0];
             const cameraR = cameraVR.cameras[1];

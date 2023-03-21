@@ -45,8 +45,9 @@ AFRAME.registerSystem('compositor', {
         this.renderTarget.depthTexture.format = THREE.DepthFormat;
         this.renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-        this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
-        this.remoteCamera = sceneEl.systems['remote-local'].remoteCamera;
+        this.remoteLocal = sceneEl.systems['remote-local'];
+        this.remoteScene = this.remoteLocal.remoteScene;
+        this.remoteCamera = this.remoteLocal.remoteCamera;
         this.pass = new CompositorPass(
                         scene, camera,
                         this.remoteScene, this.remoteCamera,
@@ -93,6 +94,7 @@ AFRAME.registerSystem('compositor', {
         let isDigest = false;
 
         const camera = this.sceneEl.camera;
+        this.remoteLocal.bind();
 
         this.originalRenderFunc = render;
 
@@ -203,6 +205,7 @@ AFRAME.registerSystem('compositor', {
         renderer.render = this.originalRenderFunc;
         renderer.xr.cameraAutoUpdate = true;
         this.sceneEl.object3D.onBeforeRender = () => {};
+        this.remoteLocal.unbind();
         this.binded = false;
     },
 });
