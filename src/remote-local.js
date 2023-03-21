@@ -28,6 +28,16 @@ AFRAME.registerSystem('remote-local', {
 
         this.poses = [];
 
+        this.bind();
+    },
+
+    bind() {
+        const el = this.el;
+        const data = this.data;
+
+        const sceneEl = this.sceneEl;
+        const renderer = sceneEl.renderer;
+
 		const cameraLPos = new THREE.Vector3();
 		const cameraRPos = new THREE.Vector3();
 		function setProjectionFromUnion( camera, cameraL, cameraR ) {
@@ -87,6 +97,7 @@ AFRAME.registerSystem('remote-local', {
 		}
 
         const system = this;
+        this.originalUpdateCamera = renderer.xr.updateCamera;
 		renderer.xr.updateCamera = function ( cameraVR, camera ) {
             const cameraL = cameraVR.cameras[0];
             const cameraR = cameraVR.cameras[1];
@@ -148,13 +159,23 @@ AFRAME.registerSystem('remote-local', {
 			}
 		};
 
-        sceneEl.setAttribute("remote-scene", "");
-        sceneEl.setAttribute("local-scene", "");
+        sceneEl.setAttribute('remote-scene', '');
+        sceneEl.setAttribute('local-scene', '');
 
         this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));
         window.addEventListener('enter-vr', this.clearPoses.bind(this));
         window.addEventListener('exit-vr', this.clearPoses.bind(this));
+    },
+
+    unbind() {
+        const el = this.el;
+        const data = this.data;
+
+        const sceneEl = this.sceneEl;
+        const renderer = sceneEl.renderer;
+
+        renderer.xr.updateCamera = this.originalUpdateCamera;
     },
 
     onResize() {

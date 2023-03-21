@@ -118,6 +118,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, LOCAL);
                     this.swapResolution(objectId, LOW);
                 }
+                this.compositor.unbind();
                 break;
 
             case HIGH_POLY_LOCAL:
@@ -126,6 +127,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, LOCAL);
                     this.swapResolution(objectId, HIGH);
                 }
+                this.compositor.unbind();
                 break;
 
             case HIGH_POLY_REMOTE:
@@ -133,6 +135,7 @@ AFRAME.registerSystem('experiment-manager', {
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, REMOTE);
                 }
+                this.compositor.bind();
                 break;
 
             case HIGH_POLY_REMOTE_ATW:
@@ -140,6 +143,7 @@ AFRAME.registerSystem('experiment-manager', {
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, REMOTE);
                 }
+                this.compositor.bind();
                 break;
 
             case MIXED:
@@ -152,6 +156,7 @@ AFRAME.registerSystem('experiment-manager', {
                         this.swapRenderingMedium(objectId, LOCAL);
                     }
                 }
+                this.compositor.bind();
                 break;
 
             case MIXED_ATW:
@@ -167,6 +172,7 @@ AFRAME.registerSystem('experiment-manager', {
                         this.swapRenderingMedium(objectId, LOCAL);
                     }
                 }
+                this.compositor.bind();
                 break;
 
             default:

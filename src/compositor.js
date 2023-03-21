@@ -61,6 +61,7 @@ AFRAME.registerSystem('compositor', {
         this.t = 0;
         this.dt = 0;
 
+        this.binded = false;
         this.bind();
     },
 
@@ -81,6 +82,8 @@ AFRAME.registerSystem('compositor', {
     },
 
     bind: function() {
+        if (this.binded === true) return;
+
         const data = this.data;
 
         const renderer = this.sceneEl.renderer;
@@ -94,6 +97,7 @@ AFRAME.registerSystem('compositor', {
         this.originalRenderFunc = render;
 
         renderer.xr.cameraAutoUpdate = false;
+        this.binded = true;
 
         this.sceneEl.object3D.onBeforeRender = function(renderer, scene, camera) {
             if (camera instanceof THREE.ArrayCamera) {
@@ -193,8 +197,12 @@ AFRAME.registerSystem('compositor', {
     },
 
     unbind: function() {
+        if (!this.binded === true) return;
+
         const renderer = this.sceneEl.renderer;
         renderer.render = this.originalRenderFunc;
+        renderer.xr.cameraAutoUpdate = true;
         this.sceneEl.object3D.onBeforeRender = () => {};
+        this.binded = false;
     },
 });

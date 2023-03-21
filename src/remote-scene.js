@@ -48,16 +48,18 @@ AFRAME.registerComponent('remote-scene', {
             if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
 
             const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 25 * xPos, 35, -10 );
+            sphere.position.set( 25 * xPos, 25, -5 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
-            const light = new THREE.PointLight( 0xDDDDFF, 3, 100 );
+            const light = new THREE.SpotLight( 0xDDDDFF, 2 );
             light.castShadow = true;
-            light.shadow.mapSize.width = 1024;
-            light.shadow.mapSize.height = 1024;
-            light.shadow.camera.near = 0.1;
-            light.shadow.camera.far = 10000;
+            light.shadow.bias = -0.0001;
+            light.shadow.mapSize.width = 1024 * 4;
+            light.shadow.mapSize.height = 1024 * 4;
+            light.shadow.camera.near = 10;
+            light.shadow.camera.far = 1000;
+            light.shadow.camera.fov = 30;
             sphere.add( light );
         }
 
@@ -81,44 +83,44 @@ AFRAME.registerComponent('remote-scene', {
         //         texture.userData.originalMedium = 'remote';
         //     } );
 
-        // new RGBELoader()
-        //     .setPath( 'assets/textures/' )
-        //     .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
-        //         texture.mapping = THREE.EquirectangularReflectionMapping;
-        //         scene.background = texture;
-        //         scene.environment = texture;
-        //         _this.experimentManager.objects['background'] = texture;
-        //         texture.userData.originalMedium = 'remote';
-        //     } );
+        new RGBELoader()
+            .setPath( 'assets/textures/' )
+            .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = texture;
+                _this.experimentManager.objects['background'] = texture;
+                texture.userData.originalMedium = 'remote';
+            } );
 
-        // textureLoader
-        //     .setPath( 'assets/textures/' )
-        //     .load( 'height_map.png' , function ( texture ) {
-        //         texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
-        //         texture.repeat.set(1, 1);
+        textureLoader
+            .setPath( 'assets/textures/' )
+            .load( 'height_map.png' , function ( texture ) {
+                texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
+                texture.repeat.set(1, 1);
 
-        //         textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
-        //             groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-        //             groundTexture.anisotropy = 16;
-        //             groundTexture.encoding = THREE.sRGBEncoding;
-        //             groundTexture.repeat.set(8, 8);
+                textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
+                    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+                    groundTexture.anisotropy = 16;
+                    groundTexture.encoding = THREE.sRGBEncoding;
+                    groundTexture.repeat.set(32, 32);
 
-        //             const groundMaterial = new THREE.MeshStandardMaterial({
-        //                 map: groundTexture,
-        //                 // wireframe: true,
-        //                 displacementMap: texture,
-        //                 displacementScale: 5,
-        //             });
+                    const groundMaterial = new THREE.MeshStandardMaterial({
+                        map: groundTexture,
+                        // wireframe: true,
+                        displacementMap: texture,
+                        displacementScale: 5,
+                    });
 
-        //             const groundGeometry = new THREE.PlaneGeometry(120, 120, 5, 5);
-        //             groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-        //             groundMesh.receiveShadow = true;
-        //             groundMesh.rotation.x = -Math.PI / 2;
-        //             groundMesh.position.y = -4;
-        //             _this.addToScene( 'groundMesh', groundMesh );
-        //             groundMesh.userData.originalMedium = 'remote';
-        //         } );
-        //     } );
+                    const groundGeometry = new THREE.PlaneGeometry(120, 120, 5, 5);
+                    groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+                    groundMesh.receiveShadow = true;
+                    groundMesh.rotation.x = -Math.PI / 2;
+                    groundMesh.position.y = -4;
+                    _this.addToScene( 'groundMesh', groundMesh );
+                    groundMesh.userData.originalMedium = 'remote';
+                } );
+            } );
 
         gltfLoader
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
@@ -146,26 +148,26 @@ AFRAME.registerComponent('remote-scene', {
                 model.userData.originalMedium = 'remote';
             } );
 
-
         function modelLoader(path) {
+            gltfLoader.setPath( 'assets/models/' );
             return new Promise((resolve, reject) => {
                 gltfLoader.load(path, data => resolve(data), null, reject);
             });
         }
 
-        const lowResModel = await modelLoader( 'island_tree_low_poly_high_tex.glb' );
-        const highResModel = await modelLoader( 'island_tree_high_poly_high_tex.glb' );
+        const lowResModel = await modelLoader( 'golden_knight_1kTX_low_poly.glb' );
+        const highResModel = await modelLoader( 'golden_knight_1kTX_high_poly.glb' );
         const models = [lowResModel.scene, highResModel.scene];
 
-        const NUM_MODELS = 3;
+        const NUM_MODELS = 8;
         for (var i = 0; i < NUM_MODELS; i++) {
             for (var m = 0; m < 2; m++) {
                 const modelClone = models[m].clone();
-                modelClone.scale.set(10, 10, 10);
-                modelClone.position.x = 30 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
-                modelClone.position.y = -3;
-                modelClone.position.z = -30 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
-                modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i;
+                modelClone.scale.set(8, 8, 8);
+                modelClone.position.x = 20 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.position.y = -1.5;
+                modelClone.position.z = -20 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
+                modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i - Math.PI / 2;
                 modelClone.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
