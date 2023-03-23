@@ -65,7 +65,6 @@ AFRAME.registerComponent('remote-scene', {
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(2, 1.6, -5);
         this.box.castShadow = true;
@@ -218,8 +217,8 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        this.box.rotation.x += 0.01;
-        this.box.rotation.y += 0.01;
-        this.box.rotation.z += 0.01;
+        if (this.experimentManager.objects['helmet']) {
+            this.experimentManager.objects['helmet'].rotation.y -= 0.01;
+        }
     }
 });

@@ -1,8 +1,17 @@
-const dummyMatrix = new THREE.Matrix4();
+import {EVENTS} from './constants';
+
+const mouse = new THREE.Vector2();
+mouse.x = mouse.y = null;
+
+window.addEventListener( 'pointermove', ( event ) => {
+	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
+} );
 
 AFRAME.registerComponent('raycaster-custom', {
     schema: {
-
+        far: {default: 1000},
+        near: {default: 0},
     },
 
     init: function () {
@@ -24,44 +33,99 @@ AFRAME.registerComponent('raycaster-custom', {
 
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
+
+        this.handLeft = document.getElementById('handLeft');
+        this.handRight = document.getElementById('handRight');
+
+        this.intersectionDetail = {};
+
+        this.controllerConnected = false;
+        this.controllerModelReady = false;
+
+        const _this = this;
+        el.addEventListener('controllerconnected', () => {
+            _this.controllerConnected = true;
+        });
+
+        el.addEventListener('controllerdisconnected', () => {
+            _this.controllerConnected = false;
+        });
+
+        el.addEventListener('controllermodelready', function (evt) {
+            _this.controllerModelReady = true;
+        });
     },
 
-	updateOriginDirection: function() {
-        const el = this.el;
-        const data = this.data;
+	updateOriginDirection: (function() {
+        var direction = new THREE.Vector3();
+        var originVec3 = new THREE.Vector3();
 
-		dummyMatrix.identity().extractRotation( el.object3D.matrixWorld );
+        return function updateOriginDirection () {
+            // this.raycaster.setFromCamera( mouse, this.localCamera );
 
-		this.raycaster.ray.origin.setFromMatrixPosition( el.object3D.matrixWorld );
-		this.raycaster.ray.direction.set( 0, 0, -1 ).applyMatrix4( dummyMatrix );
-	},
+            var el = this.el;
+            var data = this.data;
+
+            const raycaster = el.getAttribute('raycaster');
+
+            el.object3D.updateMatrixWorld();
+            originVec3.setFromMatrixPosition(el.object3D.matrixWorld);
+
+            // If non-zero origin, translate the origin into world space.
+            if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) {
+                originVec3 = el.object3D.localToWorld(originVec3.copy(raycaster.origin));
+            }
+
+            // three.js raycaster direction is relative to 0, 0, 0 NOT the origin / offset we
+            // provide. Apply the offset to the direction, then rotation from the object,
+            // and normalize.
+            direction.copy(raycaster.direction).transformDirection(el.object3D.matrixWorld).normalize();
+
+            // Apply offset and direction, in world coordinates.
+            this.raycaster.set(originVec3, direction);
+            // this.localScene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, 300, 0xff0000) );
+          };
+    })(),
 
     checkIntersections: function() {
         const el = this.el;
         const data = this.data;
 
-        var rawIntersections = this.rawIntersections;
-
-        var intersection;
-        var intersections = this.intersections;
+        const objects = Object.values(this.localScene.children);
 
         this.updateOriginDirection();
-        rawIntersections.length = 0;
-        console.log(Object.values(this.localScene.children))
-        this.raycaster.intersectObjects(Object.values(this.localScene.children), true, rawIntersections);
+        this.rawIntersections.length = 0;
+        this.raycaster.intersectObjects(objects, true, this.rawIntersections);
 
-        intersections.length = 0;
-        for (i = 0; i < rawIntersections.length; i++) {
-            intersection = rawIntersections[i];
-            if (intersection.object === el.getObject3D('line')) {
+        this.intersections.length = 0;
+        for (var i = 0; i < this.rawIntersections.length; i++) {
+            const intersection = this.rawIntersections[i];
+            if (intersection.object === this.handLeft.getObject3D('line') ||
+                intersection.object === this.handRight.getObject3D('line')) {
                 continue;
             }
+            this.intersections.push(intersection);
         }
 
-        console.log(intersections)
+        this.intersectionDetail.intersections = this.intersections;
+        if (this.intersections.length > 0) {
+            el.emit(EVENTS.INTERSECT, this.intersectionDetail);
+        }
 	},
 
+    update: function (oldData) {
+        var data = this.data;
+        var el = this.el;
+        var raycaster = this.raycaster;
+
+        // Set raycaster properties.
+        raycaster.far = data.far;
+        raycaster.near = data.near;
+    },
+
     tock: function(time) {
-        this.checkIntersections();
+        if (this.controllerModelReady && this.controllerConnected) {
+            this.checkIntersections();
+        }
     }
 });

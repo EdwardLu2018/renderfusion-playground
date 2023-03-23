@@ -30,8 +30,6 @@ AFRAME.registerSystem('experiment-manager', {
 
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
-
-        // this.tick = AFRAME.utils.throttleTick(this.tick, 10000, this);
     },
 
     swapRenderingMedium(objectId, renderingMediumType) {
@@ -179,13 +177,4 @@ AFRAME.registerSystem('experiment-manager', {
                 break;
         }
     },
-
-    // update(oldData) {
-    //     const data = this.data;
-    // },
-
-    // tick: function () {
-    //     console.log(this.objects);
-    //     console.log(this.objects);
-    // }
 });

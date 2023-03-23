@@ -54,10 +54,12 @@ AFRAME.registerSystem('compositor', {
                         this.remoteRenderTarget
                     );
 
+        this.onResize = this.onResize.bind(this);
+
         this.onResize();
-        window.addEventListener('resize', this.onResize.bind(this));
-        renderer.xr.addEventListener('sessionstart', this.onResize.bind(this));
-        renderer.xr.addEventListener('sessionend', this.onResize.bind(this));
+        window.addEventListener('resize', this.onResize);
+        renderer.xr.addEventListener('sessionstart', this.onResize);
+        renderer.xr.addEventListener('sessionend', this.onResize);
 
         this.t = 0;
         this.dt = 0;
