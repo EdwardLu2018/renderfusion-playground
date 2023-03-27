@@ -40,7 +40,7 @@ AFRAME.registerComponent('remote-scene', {
         const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
-        const sphereGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
+        const sphereGeometry = new THREE.SphereGeometry( 0.3, 32, 16 );
         const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
         let j = 0;
@@ -50,7 +50,7 @@ AFRAME.registerComponent('remote-scene', {
             if (data.numLights % 2 == 0) xPos += 0.5;
 
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 25 * xPos, 25, -1 );
+            sphere.position.set( 15 * xPos, 10, -3 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
