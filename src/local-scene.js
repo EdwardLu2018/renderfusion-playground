@@ -30,9 +30,9 @@ AFRAME.registerComponent('local-scene', {
         const _this = this;
 
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
-        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(0, 1.6, -5);
+        this.box.position.set(0, 1.1, -1);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'redBox', this.box ); // add to local scene
@@ -87,9 +87,9 @@ AFRAME.registerComponent('local-scene', {
             borderRadius: 0.11
         } );
         this.menu.add( container, button3, button4 );
-        this.menu.position.set(-2.5, -0.1, -5);
-        this.menu.scale.set(2, 2, 2);
-        this.menu.rotation.x = -0.2;
+        this.menu.scale.set(1, 1, 1);
+        this.menu.position.set(-2, 1.2, -1);
+        this.menu.rotation.set(0, Math.PI / 4, 0);
         _this.addToScene( 'menu', this.menu );
         this.menu.userData.originalMedium = 'local';
 
@@ -99,7 +99,9 @@ AFRAME.registerComponent('local-scene', {
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 model = gltf.scene;
-                model.position.set(-2, 3, -5);
+                model.scale.set(0.25, 0.25, 0.25);
+                model.position.set(-0.75, 1.5, -1);
+                model.rotation.y += Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );

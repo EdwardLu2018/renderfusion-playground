@@ -1,3 +1,4 @@
+import { scenes } from 'aframe';
 import { EVENTS } from './constants';
 
 AFRAME.registerComponent('hand-grab', {
@@ -26,6 +27,15 @@ AFRAME.registerComponent('hand-grab', {
 
         this.intersections = [];
         this.grabbing = [];
+
+        this.remoteLocal = el.sceneEl.systems['remote-local'];
+        this.compositor = el.sceneEl.systems['compositor'];
+
+        this.remoteScene = this.remoteLocal.remoteScene;
+        this.remoteCamera = this.remoteLocal.remoteCamera;
+
+        this.localScene = el.sceneEl.object3D;
+        this.localCamera = el.sceneEl.camera;
 
         this.gotIntersectedObjects = this.gotIntersectedObjects.bind(this);
         this.onGrabStartButton = this.onGrabStartButton.bind(this);
@@ -69,7 +79,6 @@ AFRAME.registerComponent('hand-grab', {
         for (i = 0; i < this.intersections.length; i++) {
             intersection = this.intersections[i];
             distance = intersection.object.getWorldPosition(objPos).distanceTo(el.object3D.getWorldPosition(grabPos));
-            console.log(intersection.object);
             this.grabbing.push({
                 object: this.getContainerObjByChild(intersection.object),
                 distance: distance,
@@ -78,7 +87,7 @@ AFRAME.registerComponent('hand-grab', {
 
         for (i = 0; i < this.grabbing.length; i++) {
             grabbed = this.grabbing[i].object;
-            if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
+            // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
         }
     },
 
@@ -89,10 +98,26 @@ AFRAME.registerComponent('hand-grab', {
         console.log('grab end');
 
         var grabbed;
+        const objPos = new THREE.Vector3();
+        const objRot = new THREE.Quaternion();
 
         for (var i = 0; i < this.grabbing.length; i++) {
             grabbed = this.grabbing[i].object;
-            if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
+            grabbed.getWorldPosition(objPos);
+            grabbed.getWorldQuaternion(objRot);
+
+            el.object3D.remove(grabbed);
+            if (grabbed.userData.renderingMedium === 'local') {
+                this.localScene.add(grabbed);
+            }
+            else if (grabbed.userData.renderingMedium === 'remote') {
+                this.remoteScene.add(grabbed);
+            }
+
+            grabbed.position.copy(objPos);
+            grabbed.rotation.setFromQuaternion(objRot);
+
+            // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
         }
 
         this.grabbing = [];
@@ -110,21 +135,11 @@ AFRAME.registerComponent('hand-grab', {
         const direction = raycaster.direction;
 
         var grabbed;
-        var distance;
-        var newPos;
         for (var i = 0; i < this.grabbing.length; i++) {
             grabbed = this.grabbing[i].object;
             distance = this.grabbing[i].distance;
 
-            newPos = new THREE.Vector3();
-            newPos.copy(direction);
-            newPos
-                .applyQuaternion(el.object3D.getWorldQuaternion(q))
-                .setLength(distance)
-                .add(el.object3D.getWorldPosition(v))
-                .add(origin);
-
-            grabbed.position.copy(newPos);
+            el.object3D.attach(grabbed);
         }
     }
 });

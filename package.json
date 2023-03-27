@@ -7,7 +7,7 @@
         "last 2 firefox versions"
     ],
     "scripts": {
-        "start": "live-server --port=5500 --watch=src --no-browser",
+        "start": "live-server --port=5500 --wait=200 --watch=src --no-browser",
         "watch": "parcel watch src/index.js",
         "build": "parcel build src/index.js --dist-dir ./dist"
     },

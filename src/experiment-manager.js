@@ -132,6 +132,7 @@ AFRAME.registerSystem('experiment-manager', {
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, REMOTE);
+                    this.swapResolution(objectId, HIGH);
                 }
                 this.compositor.bind();
                 break;
@@ -140,6 +141,7 @@ AFRAME.registerSystem('experiment-manager', {
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, REMOTE);
+                    this.swapResolution(objectId, HIGH);
                 }
                 this.compositor.bind();
                 break;

@@ -9,6 +9,8 @@ AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 60},
         latency: {type: 'number', default: 150}, // ms
+        numLights: {type: 'number', default: 3},
+        numModels: {type: 'number', default: 8},
     },
 
     init: async function () {
@@ -41,16 +43,14 @@ AFRAME.registerComponent('remote-scene', {
         const sphereGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
         const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
-        const NUM_LIGHTS = 3;
-
         let j = 0;
         let sphere, light;
-        for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.ceil(NUM_LIGHTS / 2); i++) {
+        for (var i = -Math.floor(data.numLights / 2); i < Math.ceil(data.numLights / 2); i++) {
             let xPos = i;
-            if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
+            if (data.numLights % 2 == 0) xPos += 0.5;
 
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 25 * xPos, 25, -5 );
+            sphere.position.set( 25 * xPos, 25, -1 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
@@ -66,9 +66,9 @@ AFRAME.registerComponent('remote-scene', {
         }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
-        const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(2, 1.6, -5);
+        this.box.position.set(0.75, 1.1, -1);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
@@ -118,7 +118,7 @@ AFRAME.registerComponent('remote-scene', {
                     groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
                     groundMesh.receiveShadow = true;
                     groundMesh.rotation.x = -Math.PI / 2;
-                    groundMesh.position.y = -4;
+                    groundMesh.position.y = -3;
                     _this.addToScene( 'groundMesh', groundMesh );
                     groundMesh.userData.originalMedium = 'remote';
                 } );
@@ -129,8 +129,8 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
                 model = gltf.scene;
-                model.scale.set(1, 1, 1);
-                model.position.set(-2, 1.6, -5);
+                model.scale.set(0.25, 0.25, 0.25);
+                model.position.set(-0.75, 1.1, -1);
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
@@ -142,7 +142,9 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
                 model = gltf.scene;
-                model.position.set(2, 3, -5);
+                model.scale.set(0.25, 0.25, 0.25);
+                model.position.set(0.75, 1.5, -1);
+                model.rotation.y += Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );
@@ -161,15 +163,14 @@ AFRAME.registerComponent('remote-scene', {
         const highResModel = await modelLoader( 'golden_knight_1kTX_high_poly.glb' );
         const models = [lowResModel.scene, highResModel.scene];
 
-        const NUM_MODELS = 8;
-        for (var i = 0; i < NUM_MODELS; i++) {
+        for (var i = 0; i < data.numModels; i++) {
             for (var m = 0; m < 2; m++) {
                 model = models[m].clone();
-                model.scale.set(8, 8, 8);
-                model.position.x = 20 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
-                model.position.y = -1.5;
-                model.position.z = -20 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
-                model.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i - Math.PI / 2;
+                model.scale.set(2.5, 2.5, 2.5);
+                model.position.x = 5 * Math.cos((Math.PI / (data.numModels - 1)) * i);
+                model.position.y = -0.1;
+                model.position.z = -5 * Math.sin((Math.PI / (data.numModels - 1)) * i);
+                model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
