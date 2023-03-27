@@ -3,15 +3,20 @@
     "description": "",
     "version": "0.1.0",
     "license": "MIT",
+    "browserslist": [
+        "last 2 firefox versions"
+    ],
     "scripts": {
-        "serve": "python3 -m http.server 5500",
+        "start": "live-server --port=5500 --watch=src --no-browser",
         "watch": "parcel watch src/index.js",
-        "build": "parcel build src/index.js --public-url ./dist"
+        "build": "parcel build src/index.js --dist-dir ./dist"
     },
     "dependencies": {
         "aframe": "^1.4.1",
-        "three-mesh-ui": "^6.5.3",
-        "dat.gui": "^0.7.9"
+        "dat.gui": "^0.7.9",
+        "express": "^4.18.2",
+        "live-server": "^1.2.2",
+        "three-mesh-ui": "^6.5.3"
     },
     "devDependencies": {
         "@parcel/transformer-glsl": "^2.8.3",

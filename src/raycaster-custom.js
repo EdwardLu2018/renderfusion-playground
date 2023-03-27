@@ -1,4 +1,4 @@
-import {EVENTS} from './constants';
+import { EVENTS } from './constants';
 
 const mouse = new THREE.Vector2();
 mouse.x = mouse.y = null;
@@ -51,7 +51,7 @@ AFRAME.registerComponent('raycaster-custom', {
             _this.controllerConnected = false;
         });
 
-        el.addEventListener('controllermodelready', function (evt) {
+        el.addEventListener('controllermodelready', () => {
             _this.controllerModelReady = true;
         });
     },
@@ -91,6 +91,8 @@ AFRAME.registerComponent('raycaster-custom', {
         const el = this.el;
         const data = this.data;
 
+        var intersection;
+
         const objects = Object.values(this.localScene.children);
 
         this.updateOriginDirection();
@@ -99,11 +101,16 @@ AFRAME.registerComponent('raycaster-custom', {
 
         this.intersections.length = 0;
         for (var i = 0; i < this.rawIntersections.length; i++) {
-            const intersection = this.rawIntersections[i];
+            intersection = this.rawIntersections[i];
             if (intersection.object === this.handLeft.getObject3D('line') ||
                 intersection.object === this.handRight.getObject3D('line')) {
                 continue;
             }
+
+            if (!intersection.object.userData.grabbable) {
+                continue;
+            }
+
             this.intersections.push(intersection);
         }
 

@@ -37,6 +37,7 @@ AFRAME.registerComponent('local-scene', {
         this.box.receiveShadow = true;
         _this.addToScene( 'redBox', this.box ); // add to local scene
         this.box.userData.originalMedium = 'local';
+        this.box.userData.grabbable = true;
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
@@ -92,15 +93,15 @@ AFRAME.registerComponent('local-scene', {
         _this.addToScene( 'menu', this.menu );
         this.menu.userData.originalMedium = 'local';
 
+        var model;
         const loader = new GLTFLoader();
         loader
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
-                const model = gltf.scene;
-                model.scale.set(0.03, 0.03, 0.03);
-                model.position.set(-2, 1.6, -5);
+                model = gltf.scene;
+                model.position.set(-2, 3, -5);
                 model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );
                 _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = 'local';

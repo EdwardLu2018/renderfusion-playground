@@ -3,5 +3,5 @@ import './remote-local';
 import './compositor';
 import './experiment-manager';
 import './raycaster-custom';
-import './hand-custom';
+import './hand-grab';
 import './gui';

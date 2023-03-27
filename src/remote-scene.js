@@ -3,7 +3,7 @@ import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
-import {LOW_POLY_LOCAL} from './constants';
+import { LOW_POLY_LOCAL } from './constants';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
@@ -42,17 +42,19 @@ AFRAME.registerComponent('remote-scene', {
         const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
         const NUM_LIGHTS = 3;
+
         let j = 0;
+        let sphere, light;
         for (var i = -Math.floor(NUM_LIGHTS / 2); i < Math.ceil(NUM_LIGHTS / 2); i++) {
             let xPos = i;
             if (NUM_LIGHTS % 2 == 0) xPos += 0.5;
 
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.position.set( 25 * xPos, 25, -5 );
             _this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
-            const light = new THREE.SpotLight( 0xDDDDFF, 2 );
+            light = new THREE.SpotLight( 0xDDDDFF, 2 );
             light.castShadow = true;
             light.shadow.bias = -0.0001;
             light.shadow.mapSize.width = 1024 * 4;
@@ -71,6 +73,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box.receiveShadow = true;
         _this.addToScene( 'blueBox', this.box ); // add to remote scene
         this.box.userData.originalMedium = 'remote';
+        this.box.userData.grabbable = true;
 
         // new EXRLoader()
         //     .setPath( 'assets/textures/' )
@@ -121,10 +124,11 @@ AFRAME.registerComponent('remote-scene', {
                 } );
             } );
 
+        var model;
         gltfLoader
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function ( gltf ) {
-                const model = gltf.scene;
+                model = gltf.scene;
                 model.scale.set(1, 1, 1);
                 model.position.set(-2, 1.6, -5);
                 model.traverse( function( node ) {
@@ -137,11 +141,10 @@ AFRAME.registerComponent('remote-scene', {
         gltfLoader
             .setPath( 'assets/models/' )
             .load( 'sword.glb', function ( gltf ) {
-                const model = gltf.scene;
-                model.scale.set(0.03, 0.03, 0.03);
-                model.position.set(2, 1.6, -5);
+                model = gltf.scene;
+                model.position.set(2, 3, -5);
                 model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );
                 _this.addToScene( 'swordRight', model );
                 model.userData.originalMedium = 'remote';
@@ -161,24 +164,24 @@ AFRAME.registerComponent('remote-scene', {
         const NUM_MODELS = 8;
         for (var i = 0; i < NUM_MODELS; i++) {
             for (var m = 0; m < 2; m++) {
-                const modelClone = models[m].clone();
-                modelClone.scale.set(8, 8, 8);
-                modelClone.position.x = 20 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
-                modelClone.position.y = -1.5;
-                modelClone.position.z = -20 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
-                modelClone.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i - Math.PI / 2;
-                modelClone.traverse( function( node ) {
+                model = models[m].clone();
+                model.scale.set(8, 8, 8);
+                model.position.x = 20 * Math.cos((Math.PI / (NUM_MODELS - 1)) * i);
+                model.position.y = -1.5;
+                model.position.z = -20 * Math.sin((Math.PI / (NUM_MODELS - 1)) * i);
+                model.rotation.y = (Math.PI / (NUM_MODELS - 1)) * i - Math.PI / 2;
+                model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
                 if (m == 0) {
-                    _this.addToScene( `modelLow${i}`, modelClone );
-                    modelClone.userData.originalMedium = 'local';
-                    modelClone.visible = false;
+                    _this.addToScene( `modelLow${i}`, model );
+                    model.userData.originalMedium = 'local';
+                    model.visible = false;
                 }
                 else {
-                    _this.addToScene( `modelHigh${i}`, modelClone );
-                    modelClone.userData.originalMedium = 'remote';
-                    modelClone.visible = true;
+                    _this.addToScene( `modelHigh${i}`, model );
+                    model.userData.originalMedium = 'remote';
+                    model.visible = true;
                 }
             }
         }
