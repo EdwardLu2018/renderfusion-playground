@@ -1,3 +1,5 @@
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+
 import {CompositorPass} from './compositor-pass';
 
 AFRAME.registerSystem('compositor', {
@@ -5,6 +7,7 @@ AFRAME.registerSystem('compositor', {
         doAsyncTimeWarp: {type: 'bool', default: true},
         stretchBorders: {type: 'bool', default: true},
         preferLocal: {type: 'bool', default: false},
+        fps: {type: 'number', default: -1},
     },
 
     init: function() {
@@ -19,6 +22,10 @@ AFRAME.registerSystem('compositor', {
         const camera = sceneEl.camera;
 
         const renderer = sceneEl.renderer;
+
+        this.stats = new Stats();
+        this.stats.showPanel(0);
+        document.getElementById('local-stats').appendChild(this.stats.dom);
 
         this.cameras = [];
 
@@ -61,9 +68,6 @@ AFRAME.registerSystem('compositor', {
         renderer.xr.addEventListener('sessionstart', this.onResize);
         renderer.xr.addEventListener('sessionend', this.onResize);
 
-        this.t = 0;
-        this.dt = 0;
-
         this.binded = false;
         this.bind();
     },
@@ -77,11 +81,6 @@ AFRAME.registerSystem('compositor', {
         const pixelRatio = renderer.getPixelRatio();
         this.renderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
         this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
-    },
-
-    tick: function(t, dt) {
-        this.t = t;
-        this.dt = dt;
     },
 
     bind: function() {
@@ -115,6 +114,8 @@ AFRAME.registerSystem('compositor', {
 
         // const cameraLPos = new THREE.Vector3();
         // const cameraRPos = new THREE.Vector3();
+        var clock = new THREE.Clock();
+        var elapsed = 0;
         renderer.render = function() {
             if (isDigest) {
                 // render "normally"
@@ -139,7 +140,12 @@ AFRAME.registerSystem('compositor', {
                 }
                 // store "normal" rendering output to this.renderTarget
                 this.setRenderTarget(system.renderTarget);
-                render.apply(this, arguments);
+                elapsed += clock.getDelta() * 1000;
+                if (data.fps === -1 || elapsed > 1000 / data.fps) {
+                    elapsed = 0;
+                    system.stats.update();
+                    render.apply(this, arguments);
+                }
                 this.setRenderTarget(currentRenderTarget);
 
                 let hasDualCameras;

@@ -5,16 +5,21 @@
     <title>Hybrid Rendering</title>
     <meta name="description" content="Hello, World! - A-Frame">
 
+    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe/dist/aframe-master.min.js"></script>
     <script src="dist/index.js"></script>
 </head>
 <body>
+    <div id="stats-container">
+        <div id="local-stats"></div>
+        <div id="remote-stats"></div>
+    </div>
+
     <a-scene
-        stats
         background="color: #ECECEC"
-        antialias: true;
-        colorManagement: true;
-        sortObjects: true;
-        physicallyCorrectLights: true;>
+        renderer="
+            antialias: true;
+            colorManagement: true;
+            sortObjects: true;">
         <a-entity id="cameraRig" position="0 0 0">
             <a-entity id="cameraSpinner" name="PerspectiveCamera" position="0 0 0" tag="MainCamera">
                 <a-camera id="my-camera"

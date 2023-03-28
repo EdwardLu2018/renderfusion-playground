@@ -3,6 +3,7 @@ import './remote-scene';
 
 AFRAME.registerSystem('remote-local', {
     schema: {
+        fps: {type: 'number', default: 90},
     },
 
     init: function () {
@@ -14,6 +15,9 @@ AFRAME.registerSystem('remote-local', {
             sceneEl.addEventListener('renderstart', this.init.bind(this));
             return;
         }
+
+        this.elapsed = 0;
+        this.clock = new THREE.Clock();
 
         const renderer = sceneEl.renderer;
 
@@ -200,8 +204,11 @@ AFRAME.registerSystem('remote-local', {
     },
 
     updateFPS: function(fps) {
+        const el = this.el;
+        const data = this.data;
+
         this.clearPoses();
-        this.tick = AFRAME.utils.throttleTick(this.tick, 1 / fps * 1000, this);
+        data.fps = fps;
     },
 
     tick: function() {
@@ -216,36 +223,45 @@ AFRAME.registerSystem('remote-local', {
 
         if (this.latency === -1) return;
 
-        if (!(renderer.xr.enabled === true && renderer.xr.isPresenting === true)) {
-            var camPose = new THREE.Matrix4();
-            camPose.copy(camera.matrixWorld);
-            this.poses.push({pose: camPose, timestamp: performance.now()});
+        this.elapsed += this.clock.getDelta() * 1000;
+        if (this.elapsed > 1000 / data.fps) {
+            this.elapsed = 0;
 
-            if (this.poses.length > 1 &&
-                performance.now() >= this.poses[0].timestamp + this.latency) {
-                const prevPose = this.poses.shift().pose;
+            if (!(renderer.xr.enabled === true && renderer.xr.isPresenting === true)) {
+                var camPose = new THREE.Matrix4();
+                camPose.copy(camera.matrixWorld);
+                this.poses.push({pose: camPose, timestamp: performance.now()});
 
-                // update remote camera
-                this.remoteCamera.matrixWorld.copy( prevPose );
-                this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
-                this.remoteCamera.matrixWorld.decompose( this.remoteCamera.position, this.remoteCamera.quaternion, this.remoteCamera.scale );
+                if (this.poses.length > 1 &&
+                    performance.now() >= this.poses[0].timestamp + this.latency) {
+                    const prevPose = this.poses.shift().pose;
+
+                    // update remote camera
+                    this.remoteCamera.matrixWorld.copy( prevPose );
+                    this.remoteCamera.matrixWorldInverse.copy( this.remoteCamera.matrixWorld ).invert();
+                    this.remoteCamera.matrixWorld.decompose(
+                            this.remoteCamera.position,
+                            this.remoteCamera.quaternion,
+                            this.remoteCamera.scale
+                        );
+                }
+
+                // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
+                // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
+                // var vectorBotLeft = new THREE.Vector3( -1, -1, 1 ).unproject( this.remoteCamera );
+                // var vectorBotRight = new THREE.Vector3( 1, -1, 1 ).unproject( this.remoteCamera );
+
+                // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
+                // var points = [];
+                // points.push(vectorTopLeft);
+                // points.push(vectorTopRight);
+                // points.push(vectorBotRight);
+                // points.push(vectorBotLeft);
+                // points.push(vectorTopLeft);
+                // var geometry = new THREE.BufferGeometry().setFromPoints( points );
+                // var line = new THREE.Line( geometry, material );
+                // this.remoteScene.add( line );
             }
-
-            // var vectorTopLeft = new THREE.Vector3( -1, 1, 1 ).unproject( this.remoteCamera );
-            // var vectorTopRight = new THREE.Vector3( 1, 1, 1 ).unproject( this.remoteCamera );
-            // var vectorBotLeft = new THREE.Vector3( -1, -1, 1 ).unproject( this.remoteCamera );
-            // var vectorBotRight = new THREE.Vector3( 1, -1, 1 ).unproject( this.remoteCamera );
-
-            // var material = new THREE.LineBasicMaterial({ color: 0xAAFFAA });
-            // var points = [];
-            // points.push(vectorTopLeft);
-            // points.push(vectorTopRight);
-            // points.push(vectorBotRight);
-            // points.push(vectorBotLeft);
-            // points.push(vectorTopLeft);
-            // var geometry = new THREE.BufferGeometry().setFromPoints( points );
-            // var line = new THREE.Line( geometry, material );
-            // this.remoteScene.add( line );
         }
     }
 });

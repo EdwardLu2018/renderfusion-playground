@@ -1,13 +1,15 @@
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 // import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
 import { LOW_POLY_LOCAL } from './constants';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
-        fps: {type: 'number', default: 60},
+        fps: {type: 'number', default: 90},
         latency: {type: 'number', default: 150}, // ms
         numLights: {type: 'number', default: 3},
         numModels: {type: 'number', default: 8},
@@ -23,6 +25,11 @@ AFRAME.registerComponent('remote-scene', {
             return;
         }
 
+        this.stats = new Stats();
+        this.stats.showPanel(0);
+        document.getElementById('remote-stats').appendChild(this.stats.dom);
+        this.stats.dom.style.top = "50px";
+
         this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
 
@@ -34,6 +41,9 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         const _this = this;
+
+        this.elapsed = 0;
+        this.clock = new THREE.Clock();
 
         scene.background = new THREE.Color(0x87CEEB);
 
@@ -51,7 +61,7 @@ AFRAME.registerComponent('remote-scene', {
 
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.position.set( 15 * xPos, 10, -3 );
-            _this.addToScene( `light${j++}`, sphere );
+            this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = 'remote';
 
             light = new THREE.SpotLight( 0xDDDDFF, 2 );
@@ -71,7 +81,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box.position.set(0.75, 1.1, -1);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
-        _this.addToScene( 'blueBox', this.box ); // add to remote scene
+        this.addToScene( 'blueBox', this.box ); // add to remote scene
         this.box.userData.originalMedium = 'remote';
         this.box.userData.grabbable = true;
 
@@ -203,7 +213,6 @@ AFRAME.registerComponent('remote-scene', {
         const data = this.data;
 
         if (data.fps != oldData.fps) {
-            this.tick = AFRAME.utils.throttleTick(this.tick, 1 / data.fps * 1000, this);
             this.remoteLocal.updateFPS(data.fps);
         }
 
@@ -221,8 +230,14 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
-        if (this.experimentManager.objects['helmet']) {
-            this.experimentManager.objects['helmet'].rotation.y -= 0.01;
+        this.elapsed += this.clock.getDelta() * 1000;
+        if (this.elapsed > 1000 / data.fps) {
+            this.elapsed = 0;
+            this.stats.update();
+
+            if (this.experimentManager.objects['helmet']) {
+                this.experimentManager.objects['helmet'].rotation.y -= 0.01;
+            }
         }
     }
 });

@@ -116,7 +116,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, LOCAL);
                     this.swapResolution(objectId, LOW);
                 }
-                this.compositor.unbind();
+                // this.compositor.unbind();
                 break;
 
             case HIGH_POLY_LOCAL:
@@ -125,7 +125,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, LOCAL);
                     this.swapResolution(objectId, HIGH);
                 }
-                this.compositor.unbind();
+                // this.compositor.unbind();
                 break;
 
             case HIGH_POLY_REMOTE:
@@ -134,7 +134,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, REMOTE);
                     this.swapResolution(objectId, HIGH);
                 }
-                this.compositor.bind();
+                // this.compositor.bind();
                 break;
 
             case HIGH_POLY_REMOTE_ATW:
@@ -143,7 +143,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, REMOTE);
                     this.swapResolution(objectId, HIGH);
                 }
-                this.compositor.bind();
+                // this.compositor.bind();
                 break;
 
             case MIXED:
@@ -156,7 +156,7 @@ AFRAME.registerSystem('experiment-manager', {
                         this.swapRenderingMedium(objectId, LOCAL);
                     }
                 }
-                this.compositor.bind();
+                // this.compositor.bind();
                 break;
 
             case MIXED_ATW:
@@ -165,14 +165,11 @@ AFRAME.registerSystem('experiment-manager', {
                     if (object.userData.originalMedium === 'remote') {
                         this.swapRenderingMedium(objectId, REMOTE);
                     }
-                }
-
-                for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === 'local') {
                         this.swapRenderingMedium(objectId, LOCAL);
                     }
                 }
-                this.compositor.bind();
+                // this.compositor.bind();
                 break;
 
             default:

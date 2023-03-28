@@ -9,6 +9,7 @@ import FontImage from '/assets/fonts/Roboto-msdf.png';
 
 AFRAME.registerComponent('local-scene', {
     schema: {
+        fps: {type: 'number', default: 90},
     },
 
     init: function () {
@@ -21,6 +22,7 @@ AFRAME.registerComponent('local-scene', {
             return;
         }
 
+        this.compositor = sceneEl.systems['compositor'];
         this.experimentManager = sceneEl.systems['experiment-manager'];
 
         // this is the local scene init //
@@ -120,6 +122,14 @@ AFRAME.registerComponent('local-scene', {
         scene.add(object);
         object.userData.renderingMedium = 'local';
         this.experimentManager.objects[objectId] = object;
+    },
+
+    update(oldData) {
+        const data = this.data;
+
+        if (data.fps != oldData.fps) {
+            this.compositor.data.fps = data.fps;
+        }
     },
 
     tick: function () {

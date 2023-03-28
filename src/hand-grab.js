@@ -1,4 +1,3 @@
-import { scenes } from 'aframe';
 import { EVENTS } from './constants';
 
 AFRAME.registerComponent('hand-grab', {
