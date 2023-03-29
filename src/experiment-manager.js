@@ -37,7 +37,7 @@ AFRAME.registerSystem('experiment-manager', {
         const object = this.objects[objectId];
 
         if (renderingMediumType === RenderingMedium.Local) { // swap remote to local
-            if (object.userData.renderingMedium === 'remote') {
+            if (object.userData.renderingMedium === RenderingMedium.Remote) {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
             }
@@ -50,7 +50,7 @@ AFRAME.registerSystem('experiment-manager', {
             }
         }
         else { // swap local to remote
-            if (object.userData.renderingMedium === 'local') {
+            if (object.userData.renderingMedium === RenderingMedium.Local) {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
             }
@@ -61,6 +61,19 @@ AFRAME.registerSystem('experiment-manager', {
                 this.remoteScene.environment = object;
                 this.compositor.data.preferLocal = false;
             }
+        }
+    },
+
+    swapControllers(renderingMediumType) {
+        const handLeft = document.getElementById('handLeft');
+        const handRight = document.getElementById('handRight');
+        if (renderingMediumType === RenderingMedium.Local) {
+            handLeft.setAttribute('remote-controller', 'enabled', false);
+            handRight.setAttribute('remote-controller', 'enabled', false);
+        }
+        else if (renderingMediumType === RenderingMedium.Remote) {
+            handLeft.setAttribute('remote-controller', 'enabled', true);
+            handRight.setAttribute('remote-controller', 'enabled', true);
         }
     },
 
@@ -78,27 +91,6 @@ AFRAME.registerSystem('experiment-manager', {
                 (resolutionType === Resolution.Low && objectId.includes('High'))) {
                 model.visible = false;
             }
-
-            // if (resolutionType === Resolution.High) {
-            //     model.traverse( function( node ) {
-            //         if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-            //     } );
-            // }
-            // else {
-            //     model.traverse( function( node ) {
-            //         if ( node.isMesh ) { node.castShadow = false; node.receiveShadow = false; }
-            //     } );
-            // }
-        }
-        else {
-            // if (resolutionType === Resolution.High) {
-            //     object.castShadow = true;
-            //     object.receiveShadow = true;
-            // }
-            // else {
-            //     object.castShadow = false;
-            //     object.receiveShadow = false;
-            // }
         }
     },
 
@@ -110,6 +102,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.Low);
                 }
+                this.swapControllers(RenderingMedium.Local);
                 break;
 
             case Experiments.HighPolyLocal:
@@ -118,6 +111,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                this.swapControllers(RenderingMedium.Local);
                 break;
 
             case Experiments.HighPolyRemote:
@@ -126,6 +120,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                this.swapControllers(RenderingMedium.Remote);
                 break;
 
             case Experiments.HighPolyRemoteATW:
@@ -134,6 +129,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                this.swapControllers(RenderingMedium.Remote);
                 break;
 
             case Experiments.Mixed:
@@ -153,6 +149,7 @@ AFRAME.registerSystem('experiment-manager', {
                         }
                     }
                 }
+                this.swapControllers(RenderingMedium.Local);
                 break;
 
             case Experiments.MixedATW:
@@ -172,6 +169,7 @@ AFRAME.registerSystem('experiment-manager', {
                         }
                     }
                 }
+                this.swapControllers(RenderingMedium.Local);
                 break;
 
             default:

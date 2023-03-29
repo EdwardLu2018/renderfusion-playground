@@ -5,9 +5,6 @@ export class CompositorPass extends Pass {
     constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget) {
         super();
 
-        this.scene = scene;
-        this.camera = camera;
-
         this.remoteRenderTarget = remoteRenderTarget;
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;

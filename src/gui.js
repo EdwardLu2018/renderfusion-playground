@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { Experiments, ExperimentsList } from './constants.js';
+import { ExperimentsList } from './constants.js';
 
 AFRAME.registerSystem('gui', {
     init: function () {
@@ -29,37 +29,37 @@ AFRAME.registerSystem('gui', {
 
         const gui = new GUI()
         gui.add(options, 'fpsLocal', 1, 90)
-            .name("FPS (Local)")
+            .name('FPS (Local)')
             .onChange( function() {
                 sceneEl.setAttribute('local-scene', 'fps', this.getValue());
             } );
 
         gui.add(options, 'fpsRemote', 1, 90)
-            .name("FPS (Remote)")
+            .name('FPS (Remote)')
             .onChange( function() {
                 sceneEl.setAttribute('remote-scene', 'fps', this.getValue());
             } );
 
         gui.add(options, 'latency', -1, 1000)
-            .name("Latency (ms)")
+            .name('Latency (ms)')
             .onChange( function() {
                 sceneEl.setAttribute('remote-scene', 'latency', this.getValue());
             } );
 
         gui.add(options, 'decreaseResolution', 1, 16)
-            .name("Resolution Scale")
+            .name('Resolution Scale')
             .onChange( function() {
                 _this.compositor.decreaseResolution(this.getValue());
             } );
 
         gui.add(options, 'stretchBorders')
-            .name("Stretch Borders")
+            .name('Stretch Borders')
             .onChange( function() {
                 _this.compositor.data.stretchBorders = this.getValue();
             } );
 
         gui.add(options, 'experiment', ExperimentsList)
-            .name("Experiment")
+            .name('Experiment')
             .onChange( function() {
                 _this.experimentManager.changeExperiment(this.getValue());
             } );

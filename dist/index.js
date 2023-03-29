@@ -567,6 +567,7 @@ var _gui = require("./gui");
 },{"./remote-local":"apuLr","./compositor":"8e7Kf","./experiment-manager":"hjCCg","./raycaster-custom":"aXOVj","./gui":"8CMk2","./hand-grab":"78at7"}],"apuLr":[function(require,module,exports) {
 var _localScene = require("./local-scene");
 var _remoteScene = require("./remote-scene");
+var _remoteController = require("./remote-controller");
 AFRAME.registerSystem("remote-local", {
     schema: {
         fps: {
@@ -595,6 +596,12 @@ AFRAME.registerSystem("remote-local", {
         ];
         this.latency = 0;
         this.poses = [];
+        sceneEl.setAttribute("remote-scene", "");
+        sceneEl.setAttribute("local-scene", "");
+        this.onResize();
+        window.addEventListener("resize", this.onResize.bind(this));
+        window.addEventListener("enter-vr", this.clearPoses.bind(this));
+        window.addEventListener("exit-vr", this.clearPoses.bind(this));
         this.originalUpdateCamera = renderer.xr.updateCamera;
         this.bind();
     },
@@ -688,12 +695,6 @@ AFRAME.registerSystem("remote-local", {
             else // assume single camera setup (AR)
             cameraVR.projectionMatrix.copy(cameraL.projectionMatrix);
         };
-        sceneEl.setAttribute("remote-scene", "");
-        sceneEl.setAttribute("local-scene", "");
-        this.onResize();
-        window.addEventListener("resize", this.onResize.bind(this));
-        window.addEventListener("enter-vr", this.clearPoses.bind(this));
-        window.addEventListener("exit-vr", this.clearPoses.bind(this));
     },
     unbind () {
         const el = this.el;
@@ -716,6 +717,10 @@ AFRAME.registerSystem("remote-local", {
     setLatency: function(latency) {
         this.clearPoses();
         this.latency = latency;
+        const handLeft = document.getElementById("handLeft");
+        const handRight = document.getElementById("handRight");
+        handLeft.setAttribute("remote-controller", "latency", latency);
+        handRight.setAttribute("remote-controller", "latency", latency);
     },
     updateFPS: function(fps) {
         const el = this.el;
@@ -767,7 +772,7 @@ AFRAME.registerSystem("remote-local", {
     }
 });
 
-},{"./local-scene":"eHHhj","./remote-scene":"i7pwL"}],"eHHhj":[function(require,module,exports) {
+},{"./local-scene":"eHHhj","./remote-scene":"i7pwL","./remote-controller":"56nUN"}],"eHHhj":[function(require,module,exports) {
 // import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -41820,7 +41825,79 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
     }
 }
 
-},{"three":"2gBPR","@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}],"8e7Kf":[function(require,module,exports) {
+},{"three":"2gBPR","@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}],"56nUN":[function(require,module,exports) {
+AFRAME.registerComponent("remote-controller", {
+    schema: {
+        fps: {
+            type: "number",
+            default: 90
+        },
+        enabled: {
+            type: "bool",
+            default: false
+        },
+        latency: {
+            type: "number",
+            default: 150
+        }
+    },
+    init: function() {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el.sceneEl;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener("renderstart", this.init.bind(this));
+            return;
+        }
+        this.elapsed = 0;
+        this.clock = new THREE.Clock();
+        this.poses = [];
+        const _this = this;
+        el.addEventListener("controllermodelready", ()=>{
+            _this.remoteLocal = sceneEl.systems["remote-local"];
+            _this.remoteScene = _this.remoteLocal.remoteScene;
+            _this.remoteCamera = _this.remoteLocal.remoteCamera;
+            _this.remoteObject3D = el.object3D.clone();
+            _this.remoteScene.add(_this.remoteObject3D);
+        });
+    },
+    tick: function() {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el.sceneEl;
+        const renderer = sceneEl.renderer;
+        const scene = sceneEl.object3D;
+        const camera = sceneEl.camera;
+        if (this.remoteObject3D === undefined) return;
+        if (data.enabled === true) {
+            this.remoteObject3D.visible = true;
+            el.object3D.visible = false;
+        } else {
+            this.remoteObject3D.visible = false;
+            el.object3D.visible = true;
+            return;
+        }
+        if (data.latency === -1) return;
+        this.elapsed += this.clock.getDelta() * 1000;
+        if (this.elapsed > 1000 / data.fps) {
+            this.elapsed = 0;
+            var pose = new THREE.Matrix4();
+            pose.copy(el.object3D.matrixWorld);
+            this.poses.push({
+                pose: pose,
+                timestamp: performance.now()
+            });
+            if (this.poses.length > 1 && performance.now() >= this.poses[0].timestamp + this.latency) {
+                const prevPose = this.poses.shift().pose;
+                // update remote controller
+                this.remoteObject3D.matrixWorld.copy(prevPose);
+                this.remoteObject3D.matrixWorld.decompose(this.remoteObject3D.position, this.remoteObject3D.quaternion, this.remoteObject3D.scale);
+            }
+        }
+    }
+});
+
+},{}],"8e7Kf":[function(require,module,exports) {
 var _compositor = require("./compositor");
 
 },{"./compositor":"9Y5gz"}],"9Y5gz":[function(require,module,exports) {
@@ -41863,7 +41940,7 @@ AFRAME.registerSystem("compositor", {
         this.originalRenderFunc = null;
         this.baseResolutionWidth = 1920;
         this.baseResolutionHeight = 1080;
-        this.remoteRenderTarget = new THREE.WebGLRenderTarget(this.baseResolutionWidth, this.baseResolutionHeight);
+        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1, 1);
         this.remoteRenderTarget.texture.name = "RemoteScene.rtLeft";
         this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
         this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
@@ -42011,8 +42088,6 @@ var _compositorShader = require("./compositor-shader");
 class CompositorPass extends (0, _pass.Pass) {
     constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget){
         super();
-        this.scene = scene;
-        this.camera = camera;
         this.remoteRenderTarget = remoteRenderTarget;
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
@@ -42300,7 +42375,7 @@ AFRAME.registerSystem("experiment-manager", {
         const remoteSceneSys = sceneEl.components["remote-scene"];
         const object = this.objects[objectId];
         if (renderingMediumType === (0, _constants.RenderingMedium).Local) {
-            if (object.userData.renderingMedium === "remote") {
+            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Remote) {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
             } else if (objectId === "background") {
@@ -42311,7 +42386,7 @@ AFRAME.registerSystem("experiment-manager", {
                 this.compositor.data.preferLocal = true;
             }
         } else {
-            if (object.userData.renderingMedium === "local") {
+            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Local) {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
             } else if (objectId === "background") {
@@ -42323,22 +42398,23 @@ AFRAME.registerSystem("experiment-manager", {
             }
         }
     },
+    swapControllers (renderingMediumType) {
+        const handLeft = document.getElementById("handLeft");
+        const handRight = document.getElementById("handRight");
+        if (renderingMediumType === (0, _constants.RenderingMedium).Local) {
+            handLeft.setAttribute("remote-controller", "enabled", false);
+            handRight.setAttribute("remote-controller", "enabled", false);
+        } else if (renderingMediumType === (0, _constants.RenderingMedium).Remote) {
+            handLeft.setAttribute("remote-controller", "enabled", true);
+            handRight.setAttribute("remote-controller", "enabled", true);
+        }
+    },
     swapResolution (objectId, resolutionType) {
         const object = this.objects[objectId];
         if (objectId.includes("model")) {
             const model = object;
             if (resolutionType === (0, _constants.Resolution).High && objectId.includes("High") || resolutionType == (0, _constants.Resolution).Low && objectId.includes("Low")) model.visible = true;
             else if (resolutionType === (0, _constants.Resolution).High && objectId.includes("Low") || resolutionType === (0, _constants.Resolution).Low && objectId.includes("High")) model.visible = false;
-        // if (resolutionType === Resolution.High) {
-        //     model.traverse( function( node ) {
-        //         if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-        //     } );
-        // }
-        // else {
-        //     model.traverse( function( node ) {
-        //         if ( node.isMesh ) { node.castShadow = false; node.receiveShadow = false; }
-        //     } );
-        // }
         }
     },
     changeExperiment (experiment) {
@@ -42349,6 +42425,7 @@ AFRAME.registerSystem("experiment-manager", {
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Local);
                     this.swapResolution(objectId, (0, _constants.Resolution).Low);
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Local);
                 break;
             case (0, _constants.Experiments).HighPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
@@ -42356,6 +42433,7 @@ AFRAME.registerSystem("experiment-manager", {
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Local);
                     this.swapResolution(objectId, (0, _constants.Resolution).High);
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Local);
                 break;
             case (0, _constants.Experiments).HighPolyRemote:
                 this.compositor.data.doAsyncTimeWarp = false;
@@ -42363,6 +42441,7 @@ AFRAME.registerSystem("experiment-manager", {
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                     this.swapResolution(objectId, (0, _constants.Resolution).High);
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Remote);
                 break;
             case (0, _constants.Experiments).HighPolyRemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
@@ -42370,6 +42449,7 @@ AFRAME.registerSystem("experiment-manager", {
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                     this.swapResolution(objectId, (0, _constants.Resolution).High);
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Remote);
                 break;
             case (0, _constants.Experiments).Mixed:
                 this.compositor.data.doAsyncTimeWarp = false;
@@ -42384,6 +42464,7 @@ AFRAME.registerSystem("experiment-manager", {
                         } else this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                     }
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Local);
                 break;
             case (0, _constants.Experiments).MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
@@ -42398,6 +42479,7 @@ AFRAME.registerSystem("experiment-manager", {
                         } else this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                     }
                 }
+                this.swapControllers((0, _constants.RenderingMedium).Local);
                 break;
             default:
                 break;

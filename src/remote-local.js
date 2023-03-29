@@ -1,5 +1,6 @@
 import './local-scene';
 import './remote-scene';
+import './remote-controller';
 
 AFRAME.registerSystem('remote-local', {
     schema: {
@@ -31,6 +32,14 @@ AFRAME.registerSystem('remote-local', {
         this.latency = 0;
 
         this.poses = [];
+
+        sceneEl.setAttribute('remote-scene', '');
+        sceneEl.setAttribute('local-scene', '');
+
+        this.onResize();
+        window.addEventListener('resize', this.onResize.bind(this));
+        window.addEventListener('enter-vr', this.clearPoses.bind(this));
+        window.addEventListener('exit-vr', this.clearPoses.bind(this));
 
         this.originalUpdateCamera = renderer.xr.updateCamera;
         this.bind();
@@ -162,14 +171,6 @@ AFRAME.registerSystem('remote-local', {
 				cameraVR.projectionMatrix.copy( cameraL.projectionMatrix );
 			}
 		};
-
-        sceneEl.setAttribute('remote-scene', '');
-        sceneEl.setAttribute('local-scene', '');
-
-        this.onResize();
-        window.addEventListener('resize', this.onResize.bind(this));
-        window.addEventListener('enter-vr', this.clearPoses.bind(this));
-        window.addEventListener('exit-vr', this.clearPoses.bind(this));
     },
 
     unbind() {
@@ -201,6 +202,11 @@ AFRAME.registerSystem('remote-local', {
     setLatency: function(latency) {
         this.clearPoses();
         this.latency = latency;
+
+        const handLeft = document.getElementById('handLeft');
+        const handRight = document.getElementById('handRight');
+        handLeft.setAttribute('remote-controller', 'latency', latency);
+        handRight.setAttribute('remote-controller', 'latency', latency);
     },
 
     updateFPS: function(fps) {

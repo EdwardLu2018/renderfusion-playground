@@ -34,7 +34,7 @@ AFRAME.registerSystem('compositor', {
         this.baseResolutionWidth = 1920;
         this.baseResolutionHeight = 1080;
 
-        this.remoteRenderTarget = new THREE.WebGLRenderTarget(this.baseResolutionWidth, this.baseResolutionHeight);
+        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1, 1);
         this.remoteRenderTarget.texture.name = 'RemoteScene.rtLeft';
         this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
         this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
@@ -43,7 +43,7 @@ AFRAME.registerSystem('compositor', {
         this.remoteRenderTarget.depthTexture.format = THREE.DepthFormat;
         this.remoteRenderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-        this.renderTarget = new THREE.WebGLRenderTarget(1,1);
+        this.renderTarget = new THREE.WebGLRenderTarget(1, 1);
         this.renderTarget.texture.name = 'EffectComposer.rt1';
         this.renderTarget.texture.minFilter = THREE.NearestFilter;
         this.renderTarget.texture.magFilter = THREE.NearestFilter;
