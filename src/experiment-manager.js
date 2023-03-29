@@ -1,5 +1,10 @@
 import { Experiments, RenderingMedium, Resolution } from './constants';
 
+import ThreeMeshUI from 'three-mesh-ui';
+
+import FontJSON from '/assets/fonts/Roboto-msdf.json';
+import FontImage from '/assets/fonts/Roboto-msdf.png';
+
 AFRAME.registerSystem('experiment-manager', {
     schema: {
     },
@@ -24,6 +29,40 @@ AFRAME.registerSystem('experiment-manager', {
 
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
+
+        const buttonOptions = {
+            width: 1.0,
+            height: 0.15,
+            justifyContent: 'center',
+            offset: 0.05,
+            margin: 0.02,
+            borderRadius: 0.075
+        };
+
+        const block1 = new ThreeMeshUI.Block( buttonOptions );
+        const block2 = new ThreeMeshUI.Block( buttonOptions );
+
+        block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
+        this.experimentText = new ThreeMeshUI.Text( { content: '' });
+        block2.add( this.experimentText );
+
+        this.infoBlock = new ThreeMeshUI.Block( {
+            justifyContent: 'center',
+            contentDirection: 'column',
+            fontFamily: FontJSON,
+            fontTexture: FontImage,
+            fontSize: 0.07,
+            padding: 0.02,
+            borderRadius: 0.11
+        } );
+        this.infoBlock.add(block1, block2);
+        this.infoBlock.scale.set(1, 1, 1);
+        this.infoBlock.position.set(2, 1.2, -1);
+        this.infoBlock.rotation.set(0, -Math.PI / 4, 0);
+        this.localScene.add(this.infoBlock);
+        this.infoBlock.userData.originalMedium = RenderingMedium.Local;
+        this.infoBlock.userData.renderingMedium = RenderingMedium.Local;
+        this.objects['experiment-text'] = this.infoBlock;
     },
 
     swapRenderingMedium(objectId, renderingMediumType) {
@@ -175,5 +214,7 @@ AFRAME.registerSystem('experiment-manager', {
             default:
                 break;
         }
+
+        this.experimentText.set( { content: experiment } );
     },
 });

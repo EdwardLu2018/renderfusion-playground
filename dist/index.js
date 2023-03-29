@@ -836,16 +836,16 @@ AFRAME.registerComponent("local-scene", {
         const button3 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
         const button4 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
         button1.add(new (0, _threeMeshUiDefault.default).Text({
-            content: "left"
+            content: "Previous"
         }));
         button2.add(new (0, _threeMeshUiDefault.default).Text({
-            content: "right"
+            content: "Next"
         }));
         button3.add(new (0, _threeMeshUiDefault.default).Text({
-            content: "middle"
+            content: "I Give Up"
         }));
         button4.add(new (0, _threeMeshUiDefault.default).Text({
-            content: "reset"
+            content: "Done"
         }));
         const container = new (0, _threeMeshUiDefault.default).Block({
             justifyContent: "center",
@@ -870,7 +870,7 @@ AFRAME.registerComponent("local-scene", {
         this.menu.scale.set(1, 1, 1);
         this.menu.position.set(-2, 1.2, -1);
         this.menu.rotation.set(0, Math.PI / 4, 0);
-        _this.addToScene("menu", this.menu);
+        this.addToScene("menu", this.menu);
         this.menu.userData.originalMedium = (0, _constants.RenderingMedium).Local;
         var model;
         const loader = new (0, _gltfloader.GLTFLoader)();
@@ -41253,12 +41253,12 @@ parcelHelpers.export(exports, "RenderingMedium", ()=>RenderingMedium);
 parcelHelpers.export(exports, "Resolution", ()=>Resolution);
 parcelHelpers.export(exports, "EVENTS", ()=>EVENTS);
 const Experiments = Object.freeze({
-    LowPolyLocal: "low poly local",
-    HighPolyLocal: "high poly local",
-    HighPolyRemote: "high poly remote (no atw)",
-    HighPolyRemoteATW: "high poly remote (with atw)",
-    Mixed: "mixed (no atw)",
-    MixedATW: "mixed (with atw)"
+    LowPolyLocal: "Low Poly Local",
+    HighPolyLocal: "High Poly Local",
+    HighPolyRemote: "High Poly Remote (no atw)",
+    HighPolyRemoteATW: "High Poly Remote (with atw)",
+    Mixed: "Mixed (no atw)",
+    MixedATW: "Mixed (with atw)"
 });
 const ExperimentsList = Object.values(Experiments);
 const RenderingMedium = Object.freeze({
@@ -41413,21 +41413,19 @@ AFRAME.registerComponent("remote-scene", {
             _this.addToScene("helmet", model);
             model.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
         });
-        gltfLoader.setPath("assets/models/").load("sword.glb", function(gltf) {
-            model = gltf.scene;
-            model.scale.set(0.25, 0.25, 0.25);
-            model.position.set(0.75, 1.5, -1);
-            model.rotation.y += Math.PI / 2;
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                    node.userData.grabbable = true;
-                }
-            });
-            _this.addToScene("swordRight", model);
-            model.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
-        });
+        // gltfLoader
+        //     .setPath( 'assets/models/' )
+        //     .load( 'sword.glb', function ( gltf ) {
+        //         model = gltf.scene;
+        //         model.scale.set(0.25, 0.25, 0.25);
+        //         model.position.set(0.75, 1.5, -1);
+        //         model.rotation.y += Math.PI / 2;
+        //         model.traverse( function( node ) {
+        //             if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
+        //         } );
+        //         _this.addToScene( 'swordRight', model );
+        //         model.userData.originalMedium = RenderingMedium.Remote;
+        //     } );
         function modelLoader(path) {
             gltfLoader.setPath("assets/models/");
             return new Promise((resolve, reject)=>{
@@ -41940,7 +41938,7 @@ AFRAME.registerSystem("compositor", {
         this.originalRenderFunc = null;
         this.baseResolutionWidth = 1920;
         this.baseResolutionHeight = 1080;
-        this.remoteRenderTarget = new THREE.WebGLRenderTarget(1, 1);
+        this.remoteRenderTarget = new THREE.WebGLRenderTarget(this.baseResolutionWidth, this.baseResolutionHeight);
         this.remoteRenderTarget.texture.name = "RemoteScene.rtLeft";
         this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
         this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
@@ -42348,7 +42346,14 @@ module.exports = "#define GLSLIFY 1\nvarying vec2 vUv;\n\nvoid main() {\n    vUv
 module.exports = "#define GLSLIFY 1\n#include <packing>\n\nvarying vec2 vUv;\n\nuniform sampler2D tLocalColor;\nuniform sampler2D tLocalDepth;\nuniform sampler2D tRemoteColor;\nuniform sampler2D tRemoteDepth;\n\nuniform float cameraNear;\nuniform float cameraFar;\n\nuniform bool hasDualCameras;\nuniform bool arMode;\nuniform bool vrMode;\n\nuniform bool doAsyncTimeWarp;\nuniform bool stretchBorders;\nuniform bool preferLocal;\n\nuniform ivec2 windowSize;\nuniform ivec2 streamSize;\n\nuniform mat4 cameraLProjectionMatrix;\nuniform mat4 cameraLMatrixWorld;\n\nuniform mat4 remoteLProjectionMatrix;\nuniform mat4 remoteLMatrixWorld;\n\nuniform mat4 cameraRProjectionMatrix;\nuniform mat4 cameraRMatrixWorld;\n\nuniform mat4 remoteRProjectionMatrix;\nuniform mat4 remoteRMatrixWorld;\n\nvec3 homogenize(vec2 coord) {\n    return vec3(coord, 1.0);\n}\n\nvec2 unhomogenize(vec3 coord) {\n    return coord.xy / coord.z;\n}\n\nvec2 image2NDC(vec2 imageCoords) {\n    return 2.0 * imageCoords - 1.0;\n}\n\nvec2 NDC2image(vec2 ndcCoords) {\n    return (ndcCoords + 1.0) / 2.0;\n}\n\nfloat intersectPlane(vec3 p0, vec3 n, vec3 l0, vec3 l) {\n    n = normalize(n);\n    l = normalize(l);\n    float t = 0.0;\n    float denom = dot(n, l);\n    if (denom > 1e-6) {\n        vec3 p0l0 = p0 - l0;\n        t = dot(p0l0, n) / denom;\n        return t;\n    }\n    return t;\n}\n\nfloat readDepth(sampler2D depthSampler, vec2 coord) {\n    float depth = texture2D( depthSampler, coord ).x;\n    return depth;\n}\n\nvec3 unprojectCamera(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {\n    vec4 uv4 = matrixWorld * inverse(projectionMatrix) * vec4(image2NDC(uv), 1.0, 1.0);\n    vec3 uv3 = uv4.xyz / uv4.w;\n    return uv3;\n}\n\nvec2 projectCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {\n    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);\n    vec2 uv2 = unhomogenize(uv4.xyz / uv4.w);\n    return NDC2image(uv2);\n}\n\nvec3 matrixWorldToPosition(mat4 matrixWorld) {\n    return vec3(matrixWorld[0][3], matrixWorld[1][3], matrixWorld[2][3]);\n}\n\nvoid main() {\n    ivec2 frameSize = ivec2(streamSize.x / 2, streamSize.y);\n    vec2 frameSizeF = vec2(frameSize);\n    vec2 windowSizeF = vec2(windowSize);\n\n    // calculate new dimensions, maintaining aspect ratio\n    float aspect = frameSizeF.x / frameSizeF.y;\n    int newHeight = windowSize.y;\n    int newWidth = int(float(newHeight) * aspect);\n\n    // calculate left and right padding offset\n    int totalPad = abs(windowSize.x - newWidth);\n    float padding = float(totalPad / 2);\n    float paddingLeft = padding / windowSizeF.x;\n    float paddingRight = 1.0 - paddingLeft;\n\n    bool targetWidthGreater = windowSize.x > newWidth;\n\n    vec2 coordLocalNormalized = vUv;\n    vec2 coordRemoteNormalized = vUv;\n    // if (targetWidthGreater) {\n    //     coordRemoteNormalized = vec2(\n    //         ( (vUv.x * windowSizeF.x - padding) / float(windowSize.x - totalPad) ) / 2.0,\n    //         vUv.y\n    //     );\n    // }\n    // else {\n    //     coordRemoteNormalized = vec2(\n    //         ( (vUv.x * windowSizeF.x + padding) / float(newWidth) ) / 2.0,\n    //         vUv.y\n    //     );\n    // }\n\n    vec2 coordLocalColor = coordLocalNormalized;\n    vec2 coordLocalDepth = coordLocalNormalized;\n\n    vec4 localColor  = texture2D( tLocalColor, coordLocalColor );\n    float localDepth = readDepth( tLocalDepth, coordLocalDepth );\n\n    vec4 remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );\n    float remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );\n\n    if (doAsyncTimeWarp) {\n        vec3 cameraTopLeft, cameraTopRight, cameraBotLeft, cameraBotRight;\n        vec3 remoteTopLeft, remoteTopRight, remoteBotLeft, remoteBotRight;\n\n        if (!hasDualCameras) {\n            cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n            cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n            cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n            cameraBotRight = unprojectCamera(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n\n            remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n            remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n            remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n            remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n\n            vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, vUv.x),\n                                     mix(cameraBotLeft, cameraBotRight, vUv.x),\n                                     1.0 - vUv.y );\n            vec3 cameraPos = matrixWorldToPosition(cameraLMatrixWorld);\n\n            vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);\n            float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);\n            vec3 hitPt = cameraPos + cameraVector * t;\n            vec2 uv3 = projectCamera(hitPt, remoteLProjectionMatrix, remoteLMatrixWorld);\n\n            coordRemoteNormalized = uv3;\n        }\n        else {\n            if (vUv.x < 0.5) {\n                float x = 2.0 * vUv.x;\n                cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n                cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n                cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n                cameraBotRight = unprojectCamera(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);\n\n                remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n                remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n                remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n                remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);\n\n                vec3 cameraLVector = mix( mix(cameraTopLeft, cameraTopRight, x),\n                                          mix(cameraBotLeft, cameraBotRight, x),\n                                          1.0 - vUv.y );\n                vec3 cameraLPos = matrixWorldToPosition(cameraLMatrixWorld);\n\n                vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);\n                float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraLPos, cameraLVector);\n                vec3 hitPt = cameraLPos + cameraLVector * t;\n                vec2 uv3 = projectCamera(hitPt, remoteLProjectionMatrix, remoteLMatrixWorld);\n\n                coordRemoteNormalized = uv3;\n                coordRemoteNormalized.x = coordRemoteNormalized.x / 2.0;\n            }\n            else {\n                float x = 2.0 * (vUv.x - 0.5);\n                cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);\n                cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);\n                cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);\n                cameraBotRight = unprojectCamera(vec2(1.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);\n\n                remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);\n                remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);\n                remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);\n                remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);\n\n                vec3 cameraRVector = mix( mix(cameraTopLeft, cameraTopRight, x),\n                                          mix(cameraBotLeft, cameraBotRight, x),\n                                          1.0 - vUv.y );\n                vec3 cameraRPos = matrixWorldToPosition(cameraRMatrixWorld);\n\n                vec3 remotePlaneNormal = cross(remoteTopRight - remoteTopLeft, remoteBotLeft - remoteTopLeft);\n                float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraRPos, cameraRVector);\n                vec3 hitPt = cameraRPos + cameraRVector * t;\n                vec2 uv3 = projectCamera(hitPt, remoteRProjectionMatrix, remoteRMatrixWorld);\n\n                coordRemoteNormalized = uv3;\n                coordRemoteNormalized.x = coordRemoteNormalized.x / 2.0 + 0.5;\n            }\n        }\n\n        float xMin = ((!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5);\n        float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5) - 0.005;\n        if (!stretchBorders) {\n            remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );\n            if (coordRemoteNormalized.x < xMin ||\n                coordRemoteNormalized.x > xMax ||\n                coordRemoteNormalized.y < 0.0 ||\n                coordRemoteNormalized.y > 1.0) {\n                remoteColor = vec4(0.0);\n            }\n            remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );\n        }\n        else {\n            coordRemoteNormalized.x = max(coordRemoteNormalized.x, xMin);\n            coordRemoteNormalized.x = min(coordRemoteNormalized.x, xMax);\n            coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);\n            coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);\n            remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );\n            remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );\n        }\n\n        // vec2 a = projectCamera(remoteTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 b = projectCamera(remoteTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 c = projectCamera(remoteBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 d = projectCamera(remoteBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);\n\n        // vec2 e = projectCamera(cameraTopLeft, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 f = projectCamera(cameraTopRight, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 g = projectCamera(cameraBotLeft, cameraLProjectionMatrix, cameraLMatrixWorld);\n        // vec2 h = projectCamera(cameraBotRight, cameraLProjectionMatrix, cameraLMatrixWorld);\n\n        // if (distance(vUv, a) < 0.01) {\n        //     remoteColor = vec4(1.0, 0.0, 0.0, 1.0);\n        // }\n        // if (distance(vUv, b) < 0.01) {\n        //     remoteColor = vec4(0.0, 1.0, 0.0, 1.0);\n        // }\n        // if (distance(vUv, c) < 0.01) {\n        //     remoteColor = vec4(0.0, 0.0, 1.0, 1.0);\n        // }\n        // if (distance(vUv, d) < 0.01) {\n        //     remoteColor = vec4(1.0, 1.0, 0.0, 1.0);\n        // }\n\n        // if (distance(vUv, e) < 0.02) {\n        //     remoteColor = vec4(0.5, 0.0, 1.0, 1.0);\n        // }\n        // if (distance(vUv, f) < 0.02) {\n        //     remoteColor = vec4(0.5, 0.0, 0.0, 1.0);\n        // }\n        // if (distance(vUv, g) < 0.02) {\n        //     remoteColor = vec4(0.0, 0.5, 0.0, 1.0);\n        // }\n        // if (distance(vUv, h) < 0.02) {\n        //     remoteColor = vec4(0.0, 0.0, 0.5, 1.0);\n        // }\n    }\n    else {\n        remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );\n        remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );\n    }\n\n    vec4 color;\n    // if (!targetWidthGreater ||\n    //     (targetWidthGreater && paddingLeft <= vUv.x && vUv.x <= paddingRight)) {\n        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth))\n            color = vec4(remoteColor.rgb, 1.0);\n        else\n            color = localColor;\n    // }\n    // else {\n    //     color = localColor;\n    // }\n\n    // color = vec4(remoteColor.rgb, 1.0);\n    // color = vec4(localColor.rgb, 1.0);\n    gl_FragColor = color;\n\n    // gl_FragColor.rgb = vec3(remoteDepth);\n    // gl_FragColor.a = 1.0;\n}\n";
 
 },{}],"hjCCg":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _constants = require("./constants");
+var _threeMeshUi = require("three-mesh-ui");
+var _threeMeshUiDefault = parcelHelpers.interopDefault(_threeMeshUi);
+var _robotoMsdfJson = require("/assets/fonts/Roboto-msdf.json");
+var _robotoMsdfJsonDefault = parcelHelpers.interopDefault(_robotoMsdfJson);
+var _robotoMsdfPng = require("/assets/fonts/Roboto-msdf.png");
+var _robotoMsdfPngDefault = parcelHelpers.interopDefault(_robotoMsdfPng);
 AFRAME.registerSystem("experiment-manager", {
     schema: {},
     init: function() {
@@ -42366,6 +42371,40 @@ AFRAME.registerSystem("experiment-manager", {
         this.remoteCamera = this.remoteLocal.remoteCamera;
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
+        const buttonOptions = {
+            width: 1.0,
+            height: 0.15,
+            justifyContent: "center",
+            offset: 0.05,
+            margin: 0.02,
+            borderRadius: 0.075
+        };
+        const block1 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
+        const block2 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
+        block1.add(new (0, _threeMeshUiDefault.default).Text({
+            content: "Current Experiment:"
+        }));
+        this.experimentText = new (0, _threeMeshUiDefault.default).Text({
+            content: ""
+        });
+        block2.add(this.experimentText);
+        this.infoBlock = new (0, _threeMeshUiDefault.default).Block({
+            justifyContent: "center",
+            contentDirection: "column",
+            fontFamily: (0, _robotoMsdfJsonDefault.default),
+            fontTexture: (0, _robotoMsdfPngDefault.default),
+            fontSize: 0.07,
+            padding: 0.02,
+            borderRadius: 0.11
+        });
+        this.infoBlock.add(block1, block2);
+        this.infoBlock.scale.set(1, 1, 1);
+        this.infoBlock.position.set(2, 1.2, -1);
+        this.infoBlock.rotation.set(0, -Math.PI / 4, 0);
+        this.localScene.add(this.infoBlock);
+        this.infoBlock.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        this.infoBlock.userData.renderingMedium = (0, _constants.RenderingMedium).Local;
+        this.objects["experiment-text"] = this.infoBlock;
     },
     swapRenderingMedium (objectId, renderingMediumType) {
         const el = this.el;
@@ -42484,10 +42523,13 @@ AFRAME.registerSystem("experiment-manager", {
             default:
                 break;
         }
+        this.experimentText.set({
+            content: experiment
+        });
     }
 });
 
-},{"./constants":"9jgXK"}],"aXOVj":[function(require,module,exports) {
+},{"./constants":"9jgXK","three-mesh-ui":"i2YRC","/assets/fonts/Roboto-msdf.json":"7want","/assets/fonts/Roboto-msdf.png":"bJfGO","@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}],"aXOVj":[function(require,module,exports) {
 var _constants = require("./constants");
 const mouse = new THREE.Vector2();
 mouse.x = mouse.y = null;
@@ -42617,13 +42659,13 @@ AFRAME.registerSystem("gui", {
         gui.add(options, "fpsRemote", 1, 90).name("FPS (Remote)").onChange(function() {
             sceneEl.setAttribute("remote-scene", "fps", this.getValue());
         });
-        gui.add(options, "latency", -1, 1000).name("Latency (ms)").onChange(function() {
+        gui.add(options, "latency", -1, 1000).name("Remote Latency (ms)").onChange(function() {
             sceneEl.setAttribute("remote-scene", "latency", this.getValue());
         });
-        gui.add(options, "decreaseResolution", 1, 16).name("Resolution Scale").onChange(function() {
+        gui.add(options, "decreaseResolution", 1, 16).name("Resolution Scale (Remote)").onChange(function() {
             _this.compositor.decreaseResolution(this.getValue());
         });
-        gui.add(options, "stretchBorders").name("Stretch Borders").onChange(function() {
+        gui.add(options, "stretchBorders").name("Stretch Borders (ATW)").onChange(function() {
             _this.compositor.data.stretchBorders = this.getValue();
         });
         gui.add(options, "experiment", (0, _constantsJs.ExperimentsList)).name("Experiment").onChange(function() {

@@ -41,19 +41,19 @@ AFRAME.registerSystem('gui', {
             } );
 
         gui.add(options, 'latency', -1, 1000)
-            .name('Latency (ms)')
+            .name('Remote Latency (ms)')
             .onChange( function() {
                 sceneEl.setAttribute('remote-scene', 'latency', this.getValue());
             } );
 
         gui.add(options, 'decreaseResolution', 1, 16)
-            .name('Resolution Scale')
+            .name('Resolution Scale (Remote)')
             .onChange( function() {
                 _this.compositor.decreaseResolution(this.getValue());
             } );
 
         gui.add(options, 'stretchBorders')
-            .name('Stretch Borders')
+            .name('Stretch Borders (ATW)')
             .onChange( function() {
                 _this.compositor.data.stretchBorders = this.getValue();
             } );

@@ -65,10 +65,10 @@ AFRAME.registerComponent('local-scene', {
         const button3 = new ThreeMeshUI.Block( buttonOptions );
         const button4 = new ThreeMeshUI.Block( buttonOptions );
 
-        button1.add( new ThreeMeshUI.Text( { content: 'left' } ) );
-        button2.add( new ThreeMeshUI.Text( { content: 'right' } ) );
-        button3.add( new ThreeMeshUI.Text( { content: 'middle' } ) );
-        button4.add( new ThreeMeshUI.Text( { content: 'reset' } ) );
+        button1.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
+        button2.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
+        button3.add( new ThreeMeshUI.Text( { content: 'I Give Up' } ) );
+        button4.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
 
         const container = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -94,7 +94,7 @@ AFRAME.registerComponent('local-scene', {
         this.menu.scale.set(1, 1, 1);
         this.menu.position.set(-2, 1.2, -1);
         this.menu.rotation.set(0, Math.PI / 4, 0);
-        _this.addToScene( 'menu', this.menu );
+        this.addToScene( 'menu', this.menu );
         this.menu.userData.originalMedium = RenderingMedium.Local;
 
         var model;

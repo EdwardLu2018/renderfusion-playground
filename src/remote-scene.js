@@ -148,19 +148,19 @@ AFRAME.registerComponent('remote-scene', {
                 model.userData.originalMedium = RenderingMedium.Remote;
             } );
 
-        gltfLoader
-            .setPath( 'assets/models/' )
-            .load( 'sword.glb', function ( gltf ) {
-                model = gltf.scene;
-                model.scale.set(0.25, 0.25, 0.25);
-                model.position.set(0.75, 1.5, -1);
-                model.rotation.y += Math.PI / 2;
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
-                } );
-                _this.addToScene( 'swordRight', model );
-                model.userData.originalMedium = RenderingMedium.Remote;
-            } );
+        // gltfLoader
+        //     .setPath( 'assets/models/' )
+        //     .load( 'sword.glb', function ( gltf ) {
+        //         model = gltf.scene;
+        //         model.scale.set(0.25, 0.25, 0.25);
+        //         model.position.set(0.75, 1.5, -1);
+        //         model.rotation.y += Math.PI / 2;
+        //         model.traverse( function( node ) {
+        //             if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
+        //         } );
+        //         _this.addToScene( 'swordRight', model );
+        //         model.userData.originalMedium = RenderingMedium.Remote;
+        //     } );
 
         function modelLoader(path) {
             gltfLoader.setPath( 'assets/models/' );

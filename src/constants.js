@@ -1,10 +1,10 @@
 export const Experiments = Object.freeze({
-    LowPolyLocal:       'low poly local',
-    HighPolyLocal:      'high poly local',
-    HighPolyRemote:     'high poly remote (no atw)',
-    HighPolyRemoteATW:  'high poly remote (with atw)',
-    Mixed:              'mixed (no atw)',
-    MixedATW:           'mixed (with atw)',
+    LowPolyLocal:       'Low Poly Local',
+    HighPolyLocal:      'High Poly Local',
+    HighPolyRemote:     'High Poly Remote (no atw)',
+    HighPolyRemoteATW:  'High Poly Remote (with atw)',
+    Mixed:              'Mixed (no atw)',
+    MixedATW:           'Mixed (with atw)',
 });
 
 export const ExperimentsList = Object.values(Experiments);
