@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { EXPERIMENTS } from './constants.js';
+import { Experiments, ExperimentsList } from './constants.js';
 
 AFRAME.registerSystem('gui', {
     init: function () {
@@ -22,7 +22,7 @@ AFRAME.registerSystem('gui', {
             fpsRemote: 90,
             latency: 150,
             decreaseResolution: 1,
-            experiment: EXPERIMENTS[0],
+            experiment: ExperimentsList[0],
         };
 
         const _this = this;
@@ -52,19 +52,13 @@ AFRAME.registerSystem('gui', {
                 _this.compositor.decreaseResolution(this.getValue());
             } );
 
-        // gui.add(options, 'timeWarp')
-        //     .name("ATW")
-        //     .onChange( function() {
-        //         _this.compositor.data.doAsyncTimeWarp = this.getValue();
-        //     } );
-
         gui.add(options, 'stretchBorders')
             .name("Stretch Borders")
             .onChange( function() {
                 _this.compositor.data.stretchBorders = this.getValue();
             } );
 
-        gui.add(options, 'experiment', EXPERIMENTS)
+        gui.add(options, 'experiment', ExperimentsList)
             .name("Experiment")
             .onChange( function() {
                 _this.experimentManager.changeExperiment(this.getValue());

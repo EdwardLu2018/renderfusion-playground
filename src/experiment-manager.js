@@ -1,10 +1,4 @@
-import { LOW_POLY_LOCAL, HIGH_POLY_LOCAL, HIGH_POLY_REMOTE, HIGH_POLY_REMOTE_ATW, MIXED, MIXED_ATW } from './constants';
-
-const LOW = 0;
-const HIGH = 1;
-
-const LOCAL = 0;
-const REMOTE = 1;
+import { Experiments, RenderingMedium, Resolution } from './constants';
 
 AFRAME.registerSystem('experiment-manager', {
     schema: {
@@ -42,7 +36,7 @@ AFRAME.registerSystem('experiment-manager', {
         const remoteSceneSys = sceneEl.components['remote-scene'];
         const object = this.objects[objectId];
 
-        if (renderingMediumType === LOCAL) { // swap remote to local
+        if (renderingMediumType === RenderingMedium.Local) { // swap remote to local
             if (object.userData.renderingMedium === 'remote') {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
@@ -75,17 +69,17 @@ AFRAME.registerSystem('experiment-manager', {
 
         if (objectId.includes('model')) {
             const model = object;
-            if ((resolutionType === HIGH && objectId.includes('High')) ||
-                (resolutionType == LOW && objectId.includes('Low'))) {
+            if ((resolutionType === Resolution.High && objectId.includes('High')) ||
+                (resolutionType == Resolution.Low && objectId.includes('Low'))) {
                 model.visible = true;
             }
             else
-            if ((resolutionType === HIGH && objectId.includes('Low')) ||
-                (resolutionType === LOW && objectId.includes('High'))) {
+            if ((resolutionType === Resolution.High && objectId.includes('Low')) ||
+                (resolutionType === Resolution.Low && objectId.includes('High'))) {
                 model.visible = false;
             }
 
-            // if (resolutionType === HIGH) {
+            // if (resolutionType === Resolution.High) {
             //     model.traverse( function( node ) {
             //         if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
             //     } );
@@ -97,7 +91,7 @@ AFRAME.registerSystem('experiment-manager', {
             // }
         }
         else {
-            // if (resolutionType === HIGH) {
+            // if (resolutionType === Resolution.High) {
             //     object.castShadow = true;
             //     object.receiveShadow = true;
             // }
@@ -110,71 +104,71 @@ AFRAME.registerSystem('experiment-manager', {
 
     changeExperiment(experiment) {
         switch (experiment) {
-            case LOW_POLY_LOCAL:
+            case Experiments.LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, LOCAL);
-                    this.swapResolution(objectId, LOW);
+                    this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                    this.swapResolution(objectId, Resolution.Low);
                 }
                 break;
 
-            case HIGH_POLY_LOCAL:
+            case Experiments.HighPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, LOCAL);
-                    this.swapResolution(objectId, HIGH);
+                    this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                    this.swapResolution(objectId, Resolution.High);
                 }
                 break;
 
-            case HIGH_POLY_REMOTE:
+            case Experiments.HighPolyRemote:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, REMOTE);
-                    this.swapResolution(objectId, HIGH);
+                    this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+                    this.swapResolution(objectId, Resolution.High);
                 }
                 break;
 
-            case HIGH_POLY_REMOTE_ATW:
+            case Experiments.HighPolyRemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, REMOTE);
-                    this.swapResolution(objectId, HIGH);
+                    this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+                    this.swapResolution(objectId, Resolution.High);
                 }
                 break;
 
-            case MIXED:
+            case Experiments.Mixed:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === 'remote') {
-                        this.swapRenderingMedium(objectId, REMOTE);
-                        this.swapResolution(objectId, HIGH);
+                        this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+                        this.swapResolution(objectId, Resolution.High);
                     }
                     else if (object.userData.originalMedium === 'local') {
                         if (!objectId.includes('model')) {
-                            this.swapRenderingMedium(objectId, LOCAL);
-                            this.swapResolution(objectId, LOW);
+                            this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                            this.swapResolution(objectId, Resolution.Low);
                         }
                         else {
-                            this.swapRenderingMedium(objectId, REMOTE);
+                            this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         }
                     }
                 }
                 break;
 
-            case MIXED_ATW:
+            case Experiments.MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === 'remote') {
-                        this.swapRenderingMedium(objectId, REMOTE);
-                        this.swapResolution(objectId, HIGH);
+                        this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+                        this.swapResolution(objectId, Resolution.High);
                     }
                     else if (object.userData.originalMedium === 'local') {
                         if (!objectId.includes('model')) {
-                            this.swapRenderingMedium(objectId, LOCAL);
-                            this.swapResolution(objectId, LOW);
+                            this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                            this.swapResolution(objectId, Resolution.Low);
                         }
                         else {
-                            this.swapRenderingMedium(objectId, REMOTE);
+                            this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         }
                     }
                 }

@@ -7,6 +7,8 @@ import ThreeMeshUI from 'three-mesh-ui';
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
 
+import { RenderingMedium } from './constants';
+
 AFRAME.registerComponent('local-scene', {
     schema: {
         fps: {type: 'number', default: 90},
@@ -38,7 +40,7 @@ AFRAME.registerComponent('local-scene', {
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         _this.addToScene( 'redBox', this.box ); // add to local scene
-        this.box.userData.originalMedium = 'local';
+        this.box.userData.originalMedium = RenderingMedium.Local;
         this.box.userData.grabbable = true;
 
         // new RGBELoader()
@@ -93,7 +95,7 @@ AFRAME.registerComponent('local-scene', {
         this.menu.position.set(-2, 1.2, -1);
         this.menu.rotation.set(0, Math.PI / 4, 0);
         _this.addToScene( 'menu', this.menu );
-        this.menu.userData.originalMedium = 'local';
+        this.menu.userData.originalMedium = RenderingMedium.Local;
 
         var model;
         const loader = new GLTFLoader();
@@ -108,7 +110,7 @@ AFRAME.registerComponent('local-scene', {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );
                 _this.addToScene( 'swordLeft', model );
-                model.userData.originalMedium = 'local';
+                model.userData.originalMedium = RenderingMedium.Local;
             } );
     },
 
@@ -120,7 +122,7 @@ AFRAME.registerComponent('local-scene', {
         const camera = el.camera;
 
         scene.add(object);
-        object.userData.renderingMedium = 'local';
+        object.userData.renderingMedium = RenderingMedium.Local;
         this.experimentManager.objects[objectId] = object;
     },
 

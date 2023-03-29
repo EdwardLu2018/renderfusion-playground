@@ -5,7 +5,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 // import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
-import { LOW_POLY_LOCAL } from './constants';
+import { Experiments, RenderingMedium } from './constants';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
@@ -28,7 +28,7 @@ AFRAME.registerComponent('remote-scene', {
         this.stats = new Stats();
         this.stats.showPanel(0);
         document.getElementById('remote-stats').appendChild(this.stats.dom);
-        this.stats.dom.style.top = "50px";
+        this.stats.dom.style.top = '50px';
 
         this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
@@ -62,7 +62,7 @@ AFRAME.registerComponent('remote-scene', {
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.position.set( 15 * xPos, 10, -3 );
             this.addToScene( `light${j++}`, sphere );
-            sphere.userData.originalMedium = 'remote';
+            sphere.userData.originalMedium = RenderingMedium.Remote;
 
             light = new THREE.SpotLight( 0xDDDDFF, 2 );
             light.castShadow = true;
@@ -82,7 +82,7 @@ AFRAME.registerComponent('remote-scene', {
         this.box.castShadow = true;
         this.box.receiveShadow = true;
         this.addToScene( 'blueBox', this.box ); // add to remote scene
-        this.box.userData.originalMedium = 'remote';
+        this.box.userData.originalMedium = RenderingMedium.Remote;
         this.box.userData.grabbable = true;
 
         // new EXRLoader()
@@ -92,7 +92,7 @@ AFRAME.registerComponent('remote-scene', {
         //         scene.background = texture;
         //         scene.environment = texture;
         //         _this.experimentManager.objects['background'] = texture;
-        //         texture.userData.originalMedium = 'remote';
+        //         texture.userData.originalMedium = RenderingMedium.Remote;
         //     } );
 
         new RGBELoader()
@@ -102,7 +102,7 @@ AFRAME.registerComponent('remote-scene', {
                 scene.background = texture;
                 scene.environment = texture;
                 _this.experimentManager.objects['background'] = texture;
-                texture.userData.originalMedium = 'remote';
+                texture.userData.originalMedium = RenderingMedium.Remote;
             } );
 
         textureLoader
@@ -130,7 +130,7 @@ AFRAME.registerComponent('remote-scene', {
                     groundMesh.rotation.x = -Math.PI / 2;
                     groundMesh.position.y = -3;
                     _this.addToScene( 'groundMesh', groundMesh );
-                    groundMesh.userData.originalMedium = 'remote';
+                    groundMesh.userData.originalMedium = RenderingMedium.Remote;
                 } );
             } );
 
@@ -145,7 +145,7 @@ AFRAME.registerComponent('remote-scene', {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
                 _this.addToScene( 'helmet', model );
-                model.userData.originalMedium = 'remote';
+                model.userData.originalMedium = RenderingMedium.Remote;
             } );
 
         gltfLoader
@@ -159,7 +159,7 @@ AFRAME.registerComponent('remote-scene', {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
                 } );
                 _this.addToScene( 'swordRight', model );
-                model.userData.originalMedium = 'remote';
+                model.userData.originalMedium = RenderingMedium.Remote;
             } );
 
         function modelLoader(path) {
@@ -191,13 +191,13 @@ AFRAME.registerComponent('remote-scene', {
                 }
                 else {
                     _this.addToScene( `modelHigh${i}`, model );
-                    model.userData.originalMedium = 'remote';
+                    model.userData.originalMedium = RenderingMedium.Remote;
                     model.visible = true;
                 }
             }
         }
 
-        this.experimentManager.changeExperiment(LOW_POLY_LOCAL);
+        this.experimentManager.changeExperiment(Experiments.LowPolyLocal);
     },
 
     addToScene(objectId, object) {
@@ -205,7 +205,7 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         scene.add(object);
-        object.userData.renderingMedium = 'remote';
+        object.userData.renderingMedium = RenderingMedium.Remote;
         this.experimentManager.objects[objectId] = object;
     },
 

@@ -1,12 +1,24 @@
-export const LOW_POLY_LOCAL = 'low poly local';
-export const HIGH_POLY_LOCAL =  'high poly local';
-export const HIGH_POLY_REMOTE = 'high poly remote (no atw)';
-export const HIGH_POLY_REMOTE_ATW = 'high poly remote (with atw)';
-export const MIXED = 'mixed (no atw)';
-export const MIXED_ATW = 'mixed (with atw)';
+export const Experiments = Object.freeze({
+    LowPolyLocal:       'low poly local',
+    HighPolyLocal:      'high poly local',
+    HighPolyRemote:     'high poly remote (no atw)',
+    HighPolyRemoteATW:  'high poly remote (with atw)',
+    Mixed:              'mixed (no atw)',
+    MixedATW:           'mixed (with atw)',
+});
 
-export const EXPERIMENTS = [LOW_POLY_LOCAL, HIGH_POLY_LOCAL, HIGH_POLY_REMOTE, HIGH_POLY_REMOTE_ATW, MIXED, MIXED_ATW];
+export const ExperimentsList = Object.values(Experiments);
 
-export const EVENTS = {
-    INTERSECT: 'raycaster-custom-intersected',
-};
+export const RenderingMedium = Object.freeze({
+    Local:  'local',
+    Remote: 'remote',
+});
+
+export const Resolution = Object.freeze({
+    Low:    'low',
+    High:   'high',
+});
+
+export const EVENTS = Object.freeze({
+    INTERSECT:  'raycaster-custom-intersected',
+});
