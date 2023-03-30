@@ -1,4 +1,4 @@
-import { EVENTS } from './constants';
+import { EVENTS, RenderingMedium } from './constants';
 
 AFRAME.registerComponent('hand-grab', {
     schema: {
@@ -20,9 +20,17 @@ AFRAME.registerComponent('hand-grab', {
         },
     },
 
+    dependencies: ['remote-controller'],
+
     init: function () {
         const el = this.el;
         const data = this.data;
+
+        const sceneEl = el.sceneEl;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener('renderstart', this.init.bind(this));
+            return;
+        }
 
         this.intersections = [];
         this.grabbing = [];
@@ -75,9 +83,14 @@ AFRAME.registerComponent('hand-grab', {
         const objPos = new THREE.Vector3();
         const grabPos = new THREE.Vector3();
 
+        var object3D = el.object3D;
+        if (el.getAttribute('remote-controller').enabled) {
+            object3D = el.remoteObject3D;
+        }
+
         for (i = 0; i < this.intersections.length; i++) {
             intersection = this.intersections[i];
-            distance = intersection.object.getWorldPosition(objPos).distanceTo(el.object3D.getWorldPosition(grabPos));
+            distance = intersection.object.getWorldPosition(objPos).distanceTo(object3D.getWorldPosition(grabPos));
             this.grabbing.push({
                 object: this.getContainerObjByChild(intersection.object),
                 distance: distance,
@@ -97,6 +110,7 @@ AFRAME.registerComponent('hand-grab', {
         console.log('grab end');
 
         var grabbed;
+        var object3D;
         const objPos = new THREE.Vector3();
         const objRot = new THREE.Quaternion();
 
@@ -105,11 +119,16 @@ AFRAME.registerComponent('hand-grab', {
             grabbed.getWorldPosition(objPos);
             grabbed.getWorldQuaternion(objRot);
 
-            el.object3D.remove(grabbed);
-            if (grabbed.userData.renderingMedium === 'local') {
+            object3D = el.object3D;
+            if (el.getAttribute('remote-controller').enabled) {
+                object3D = el.remoteObject3D;
+            }
+
+            object3D.remove(grabbed);
+            if (grabbed.userData.renderingMedium === RenderingMedium.Local) {
                 this.localScene.add(grabbed);
             }
-            else if (grabbed.userData.renderingMedium === 'remote') {
+            else if (grabbed.userData.renderingMedium === RenderingMedium.Remote) {
                 this.remoteScene.add(grabbed);
             }
 
@@ -134,11 +153,17 @@ AFRAME.registerComponent('hand-grab', {
         const direction = raycaster.direction;
 
         var grabbed;
+        var object3D;
         for (var i = 0; i < this.grabbing.length; i++) {
             grabbed = this.grabbing[i].object;
             distance = this.grabbing[i].distance;
 
-            el.object3D.attach(grabbed);
+            object3D = el.object3D;
+            if (el.getAttribute('remote-controller').enabled) {
+                object3D = el.remoteObject3D;
+            }
+
+            object3D.attach(grabbed);
         }
     }
 });

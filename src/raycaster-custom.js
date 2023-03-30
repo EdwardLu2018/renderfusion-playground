@@ -1,4 +1,4 @@
-import { EVENTS } from './constants';
+import { EVENTS, Experiments } from './constants';
 
 const mouse = new THREE.Vector2();
 mouse.x = mouse.y = null;
@@ -14,15 +14,21 @@ AFRAME.registerComponent('raycaster-custom', {
         near: {default: 0},
     },
 
+    dependencies: ['remote-controller'],
+
     init: function () {
         const el = this.el;
         const data = this.data;
 
-        const sceneEl = el.sceneEl;
-
         this.raycaster = new THREE.Raycaster();
         this.rawIntersections = [];
         this.intersections = [];
+
+        const sceneEl = el.sceneEl;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener('renderstart', this.init.bind(this));
+            return;
+        }
 
         this.remoteLocal = sceneEl.systems['remote-local'];
         this.compositor = sceneEl.systems['compositor'];
@@ -68,18 +74,23 @@ AFRAME.registerComponent('raycaster-custom', {
 
             const raycaster = el.getAttribute('raycaster');
 
-            el.object3D.updateMatrixWorld();
-            originVec3.setFromMatrixPosition(el.object3D.matrixWorld);
+            var object3D = el.object3D;
+            if (el.getAttribute('remote-controller').enabled) {
+                object3D = el.remoteObject3D;
+            }
+
+            object3D.updateMatrixWorld();
+            originVec3.setFromMatrixPosition(object3D.matrixWorld);
 
             // If non-zero origin, translate the origin into world space.
             if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) {
-                originVec3 = el.object3D.localToWorld(originVec3.copy(raycaster.origin));
+                originVec3 = object3D.localToWorld(originVec3.copy(raycaster.origin));
             }
 
             // three.js raycaster direction is relative to 0, 0, 0 NOT the origin / offset we
             // provide. Apply the offset to the direction, then rotation from the object,
             // and normalize.
-            direction.copy(raycaster.direction).transformDirection(el.object3D.matrixWorld).normalize();
+            direction.copy(raycaster.direction).transformDirection(object3D.matrixWorld).normalize();
 
             // Apply offset and direction, in world coordinates.
             this.raycaster.set(originVec3, direction);
@@ -93,7 +104,10 @@ AFRAME.registerComponent('raycaster-custom', {
 
         var intersection;
 
-        const objects = Object.values(this.localScene.children);
+        var objects = Object.values(this.localScene.children);
+        if (el.getAttribute('remote-controller').enabled) {
+            objects = Object.values(this.remoteScene.children)
+        }
 
         this.updateOriginDirection();
         this.rawIntersections.length = 0;

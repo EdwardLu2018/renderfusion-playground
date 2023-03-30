@@ -26,8 +26,8 @@ AFRAME.registerComponent('remote-controller', {
             _this.remoteScene = _this.remoteLocal.remoteScene;
             _this.remoteCamera = _this.remoteLocal.remoteCamera;
 
-            _this.remoteObject3D = el.object3D.clone();
-            _this.remoteScene.add(_this.remoteObject3D);
+            el.remoteObject3D = el.object3D.clone();
+            _this.remoteScene.add(el.remoteObject3D);
         });
     },
 
@@ -41,13 +41,13 @@ AFRAME.registerComponent('remote-controller', {
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
 
-        if (this.remoteObject3D === undefined) return;
+        if (el.remoteObject3D === undefined) return;
         if (data.enabled === true) {
-            this.remoteObject3D.visible = true;
+            el.remoteObject3D.visible = true;
             el.object3D.visible = false;
         }
         else {
-            this.remoteObject3D.visible = false;
+            el.remoteObject3D.visible = false;
             el.object3D.visible = true;
             return;
         }
@@ -66,11 +66,11 @@ AFRAME.registerComponent('remote-controller', {
                 const prevPose = this.poses.shift().pose;
 
                 // update remote controller
-                this.remoteObject3D.matrixWorld.copy( prevPose );
-                this.remoteObject3D.matrixWorld.decompose(
-                        this.remoteObject3D.position,
-                        this.remoteObject3D.quaternion,
-                        this.remoteObject3D.scale
+                el.remoteObject3D.matrixWorld.copy( prevPose );
+                el.remoteObject3D.matrixWorld.decompose(
+                        el.remoteObject3D.position,
+                        el.remoteObject3D.quaternion,
+                        el.remoteObject3D.scale
                     );
             }
         }

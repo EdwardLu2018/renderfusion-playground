@@ -41855,8 +41855,8 @@ AFRAME.registerComponent("remote-controller", {
             _this.remoteLocal = sceneEl.systems["remote-local"];
             _this.remoteScene = _this.remoteLocal.remoteScene;
             _this.remoteCamera = _this.remoteLocal.remoteCamera;
-            _this.remoteObject3D = el.object3D.clone();
-            _this.remoteScene.add(_this.remoteObject3D);
+            el.remoteObject3D = el.object3D.clone();
+            _this.remoteScene.add(el.remoteObject3D);
         });
     },
     tick: function() {
@@ -41866,12 +41866,12 @@ AFRAME.registerComponent("remote-controller", {
         const renderer = sceneEl.renderer;
         const scene = sceneEl.object3D;
         const camera = sceneEl.camera;
-        if (this.remoteObject3D === undefined) return;
+        if (el.remoteObject3D === undefined) return;
         if (data.enabled === true) {
-            this.remoteObject3D.visible = true;
+            el.remoteObject3D.visible = true;
             el.object3D.visible = false;
         } else {
-            this.remoteObject3D.visible = false;
+            el.remoteObject3D.visible = false;
             el.object3D.visible = true;
             return;
         }
@@ -41888,8 +41888,8 @@ AFRAME.registerComponent("remote-controller", {
             if (this.poses.length > 1 && performance.now() >= this.poses[0].timestamp + data.latency) {
                 const prevPose = this.poses.shift().pose;
                 // update remote controller
-                this.remoteObject3D.matrixWorld.copy(prevPose);
-                this.remoteObject3D.matrixWorld.decompose(this.remoteObject3D.position, this.remoteObject3D.quaternion, this.remoteObject3D.scale);
+                el.remoteObject3D.matrixWorld.copy(prevPose);
+                el.remoteObject3D.matrixWorld.decompose(el.remoteObject3D.position, el.remoteObject3D.quaternion, el.remoteObject3D.scale);
             }
         }
     }
@@ -42552,13 +42552,20 @@ AFRAME.registerComponent("raycaster-custom", {
             default: 0
         }
     },
+    dependencies: [
+        "remote-controller"
+    ],
     init: function() {
         const el = this.el;
         const data = this.data;
-        const sceneEl = el.sceneEl;
         this.raycaster = new THREE.Raycaster();
         this.rawIntersections = [];
         this.intersections = [];
+        const sceneEl = el.sceneEl;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener("renderstart", this.init.bind(this));
+            return;
+        }
         this.remoteLocal = sceneEl.systems["remote-local"];
         this.compositor = sceneEl.systems["compositor"];
         this.experimentManager = sceneEl.systems["experiment-manager"];
@@ -42590,14 +42597,16 @@ AFRAME.registerComponent("raycaster-custom", {
             var el = this.el;
             var data = this.data;
             const raycaster = el.getAttribute("raycaster");
-            el.object3D.updateMatrixWorld();
-            originVec3.setFromMatrixPosition(el.object3D.matrixWorld);
+            var object3D = el.object3D;
+            if (el.getAttribute("remote-controller").enabled) object3D = el.remoteObject3D;
+            object3D.updateMatrixWorld();
+            originVec3.setFromMatrixPosition(object3D.matrixWorld);
             // If non-zero origin, translate the origin into world space.
-            if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) originVec3 = el.object3D.localToWorld(originVec3.copy(raycaster.origin));
+            if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) originVec3 = object3D.localToWorld(originVec3.copy(raycaster.origin));
             // three.js raycaster direction is relative to 0, 0, 0 NOT the origin / offset we
             // provide. Apply the offset to the direction, then rotation from the object,
             // and normalize.
-            direction.copy(raycaster.direction).transformDirection(el.object3D.matrixWorld).normalize();
+            direction.copy(raycaster.direction).transformDirection(object3D.matrixWorld).normalize();
             // Apply offset and direction, in world coordinates.
             this.raycaster.set(originVec3, direction);
         // this.localScene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, 300, 0xff0000) );
@@ -42607,7 +42616,8 @@ AFRAME.registerComponent("raycaster-custom", {
         const el = this.el;
         const data = this.data;
         var intersection;
-        const objects = Object.values(this.localScene.children);
+        var objects = Object.values(this.localScene.children);
+        if (el.getAttribute("remote-controller").enabled) objects = Object.values(this.remoteScene.children);
         this.updateOriginDirection();
         this.rawIntersections.length = 0;
         this.raycaster.intersectObjects(objects, true, this.rawIntersections);
@@ -45013,9 +45023,17 @@ AFRAME.registerComponent("hand-grab", {
             ]
         }
     },
+    dependencies: [
+        "remote-controller"
+    ],
     init: function() {
         const el = this.el;
         const data = this.data;
+        const sceneEl = el.sceneEl;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener("renderstart", this.init.bind(this));
+            return;
+        }
         this.intersections = [];
         this.grabbing = [];
         this.remoteLocal = el.sceneEl.systems["remote-local"];
@@ -45053,9 +45071,11 @@ AFRAME.registerComponent("hand-grab", {
         console.log("grab start");
         const objPos = new THREE.Vector3();
         const grabPos = new THREE.Vector3();
+        var object3D = el.object3D;
+        if (el.getAttribute("remote-controller").enabled) object3D = el.remoteObject3D;
         for(i = 0; i < this.intersections.length; i++){
             intersection = this.intersections[i];
-            distance1 = intersection.object.getWorldPosition(objPos).distanceTo(el.object3D.getWorldPosition(grabPos));
+            distance1 = intersection.object.getWorldPosition(objPos).distanceTo(object3D.getWorldPosition(grabPos));
             this.grabbing.push({
                 object: this.getContainerObjByChild(intersection.object),
                 distance: distance1
@@ -45068,15 +45088,18 @@ AFRAME.registerComponent("hand-grab", {
         const data = this.data;
         console.log("grab end");
         var grabbed;
+        var object3D;
         const objPos = new THREE.Vector3();
         const objRot = new THREE.Quaternion();
         for(var i = 0; i < this.grabbing.length; i++){
             grabbed = this.grabbing[i].object;
             grabbed.getWorldPosition(objPos);
             grabbed.getWorldQuaternion(objRot);
-            el.object3D.remove(grabbed);
-            if (grabbed.userData.renderingMedium === "local") this.localScene.add(grabbed);
-            else if (grabbed.userData.renderingMedium === "remote") this.remoteScene.add(grabbed);
+            object3D = el.object3D;
+            if (el.getAttribute("remote-controller").enabled) object3D = el.remoteObject3D;
+            object3D.remove(grabbed);
+            if (grabbed.userData.renderingMedium === (0, _constants.RenderingMedium).Local) this.localScene.add(grabbed);
+            else if (grabbed.userData.renderingMedium === (0, _constants.RenderingMedium).Remote) this.remoteScene.add(grabbed);
             grabbed.position.copy(objPos);
             grabbed.rotation.setFromQuaternion(objRot);
         // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
@@ -45092,10 +45115,13 @@ AFRAME.registerComponent("hand-grab", {
         const origin = raycaster.origin;
         const direction = raycaster.direction;
         var grabbed;
+        var object3D;
         for(var i = 0; i < this.grabbing.length; i++){
             grabbed = this.grabbing[i].object;
             distance = this.grabbing[i].distance;
-            el.object3D.attach(grabbed);
+            object3D = el.object3D;
+            if (el.getAttribute("remote-controller").enabled) object3D = el.remoteObject3D;
+            object3D.attach(grabbed);
         }
     }
 });
