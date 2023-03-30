@@ -10,7 +10,7 @@ import { Experiments, RenderingMedium } from './constants';
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 90},
-        latency: {type: 'number', default: 150}, // ms
+        latency: {type: 'number', default: 200}, // ms
         numLights: {type: 'number', default: 3},
         numModels: {type: 'number', default: 8},
     },

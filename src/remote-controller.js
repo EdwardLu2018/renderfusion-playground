@@ -2,7 +2,7 @@ AFRAME.registerComponent('remote-controller', {
     schema: {
         fps: {type: 'number', default: 90},
         enabled: {type: 'bool', default: false},
-        latency: {type: 'number', default: 150}, // ms
+        latency: {type: 'number', default: 200}, // ms
     },
 
     init: function () {
@@ -62,7 +62,7 @@ AFRAME.registerComponent('remote-controller', {
             this.poses.push({pose: pose, timestamp: performance.now()});
 
             if (this.poses.length > 1 &&
-                performance.now() >= this.poses[0].timestamp + this.latency) {
+                performance.now() >= this.poses[0].timestamp + data.latency) {
                 const prevPose = this.poses.shift().pose;
 
                 // update remote controller

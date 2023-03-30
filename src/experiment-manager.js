@@ -21,6 +21,8 @@ AFRAME.registerSystem('experiment-manager', {
             return;
         }
 
+        this.experiment = Experiments.LowPolyLocal;
+
         this.remoteLocal = sceneEl.systems['remote-local'];
         this.compositor = sceneEl.systems['compositor'];
 
@@ -134,7 +136,10 @@ AFRAME.registerSystem('experiment-manager', {
     },
 
     changeExperiment(experiment) {
-        switch (experiment) {
+        this.experiment = experiment;
+        this.experimentText.set( { content: this.experiment } );
+
+        switch (this.experiment) {
             case Experiments.LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
@@ -174,11 +179,11 @@ AFRAME.registerSystem('experiment-manager', {
             case Experiments.Mixed:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    if (object.userData.originalMedium === 'remote') {
+                    if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         this.swapResolution(objectId, Resolution.High);
                     }
-                    else if (object.userData.originalMedium === 'local') {
+                    else if (object.userData.originalMedium === RenderingMedium.Local) {
                         if (!objectId.includes('model')) {
                             this.swapRenderingMedium(objectId, RenderingMedium.Local);
                             this.swapResolution(objectId, Resolution.Low);
@@ -194,11 +199,11 @@ AFRAME.registerSystem('experiment-manager', {
             case Experiments.MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    if (object.userData.originalMedium === 'remote') {
+                    if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         this.swapResolution(objectId, Resolution.High);
                     }
-                    else if (object.userData.originalMedium === 'local') {
+                    else if (object.userData.originalMedium === RenderingMedium.Local) {
                         if (!objectId.includes('model')) {
                             this.swapRenderingMedium(objectId, RenderingMedium.Local);
                             this.swapResolution(objectId, Resolution.Low);
@@ -214,7 +219,5 @@ AFRAME.registerSystem('experiment-manager', {
             default:
                 break;
         }
-
-        this.experimentText.set( { content: experiment } );
     },
 });

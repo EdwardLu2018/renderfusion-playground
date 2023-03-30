@@ -20,7 +20,7 @@ AFRAME.registerSystem('gui', {
             stretchBorders: true,
             fpsLocal: 90,
             fpsRemote: 90,
-            latency: 150,
+            latency: 200,
             decreaseResolution: 1,
             experiment: ExperimentsList[0],
         };

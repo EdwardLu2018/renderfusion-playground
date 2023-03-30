@@ -41290,7 +41290,7 @@ AFRAME.registerComponent("remote-scene", {
         },
         latency: {
             type: "number",
-            default: 150
+            default: 200
         },
         numLights: {
             type: "number",
@@ -41836,7 +41836,7 @@ AFRAME.registerComponent("remote-controller", {
         },
         latency: {
             type: "number",
-            default: 150
+            default: 200
         }
     },
     init: function() {
@@ -41885,7 +41885,7 @@ AFRAME.registerComponent("remote-controller", {
                 pose: pose,
                 timestamp: performance.now()
             });
-            if (this.poses.length > 1 && performance.now() >= this.poses[0].timestamp + this.latency) {
+            if (this.poses.length > 1 && performance.now() >= this.poses[0].timestamp + data.latency) {
                 const prevPose = this.poses.shift().pose;
                 // update remote controller
                 this.remoteObject3D.matrixWorld.copy(prevPose);
@@ -41987,6 +41987,7 @@ AFRAME.registerSystem("compositor", {
         this.originalRenderFunc = render;
         renderer.xr.cameraAutoUpdate = false;
         this.binded = true;
+        let currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
         this.sceneEl.object3D.onBeforeRender = function(renderer, scene, camera) {
             if (camera instanceof THREE.ArrayCamera) system.cameras = camera.cameras;
             else system.cameras.push(camera);
@@ -42021,6 +42022,8 @@ AFRAME.registerSystem("compositor", {
                     render.apply(this, arguments);
                 }
                 this.setRenderTarget(currentRenderTarget);
+                currentShadowAutoUpdate = this.shadowMap.autoUpdate;
+                this.shadowMap.autoUpdate = false;
                 let hasDualCameras;
                 if (system.cameras.length > 1) // we have two cameras here (vr mode or headset ar mode)
                 hasDualCameras = !isWebXRViewer; // webarviewer seens to have 2 cameras, but uses one...
@@ -42055,6 +42058,7 @@ AFRAME.registerSystem("compositor", {
                 // the composer will take the "local" frame and merge it with the "remote" frame from
                 // the video by calling the compositor pass and executing the shaders.
                 system.pass.render(this, currentRenderTarget, system.renderTarget);
+                this.shadowMap.autoUpdate = currentShadowAutoUpdate;
                 // restore render state
                 this.setRenderTarget(currentRenderTarget);
                 // call this part of the conditional again on the next call to render()
@@ -42365,6 +42369,7 @@ AFRAME.registerSystem("experiment-manager", {
             sceneEl.addEventListener("renderstart", this.init.bind(this));
             return;
         }
+        this.experiment = (0, _constants.Experiments).LowPolyLocal;
         this.remoteLocal = sceneEl.systems["remote-local"];
         this.compositor = sceneEl.systems["compositor"];
         this.remoteScene = this.remoteLocal.remoteScene;
@@ -42457,7 +42462,11 @@ AFRAME.registerSystem("experiment-manager", {
         }
     },
     changeExperiment (experiment) {
-        switch(experiment){
+        this.experiment = experiment;
+        this.experimentText.set({
+            content: this.experiment
+        });
+        switch(this.experiment){
             case (0, _constants.Experiments).LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)){
@@ -42493,10 +42502,10 @@ AFRAME.registerSystem("experiment-manager", {
             case (0, _constants.Experiments).Mixed:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)){
-                    if (object.userData.originalMedium === "remote") {
+                    if (object.userData.originalMedium === (0, _constants.RenderingMedium).Remote) {
                         this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                         this.swapResolution(objectId, (0, _constants.Resolution).High);
-                    } else if (object.userData.originalMedium === "local") {
+                    } else if (object.userData.originalMedium === (0, _constants.RenderingMedium).Local) {
                         if (!objectId.includes("model")) {
                             this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Local);
                             this.swapResolution(objectId, (0, _constants.Resolution).Low);
@@ -42508,10 +42517,10 @@ AFRAME.registerSystem("experiment-manager", {
             case (0, _constants.Experiments).MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)){
-                    if (object.userData.originalMedium === "remote") {
+                    if (object.userData.originalMedium === (0, _constants.RenderingMedium).Remote) {
                         this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                         this.swapResolution(objectId, (0, _constants.Resolution).High);
-                    } else if (object.userData.originalMedium === "local") {
+                    } else if (object.userData.originalMedium === (0, _constants.RenderingMedium).Local) {
                         if (!objectId.includes("model")) {
                             this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Local);
                             this.swapResolution(objectId, (0, _constants.Resolution).Low);
@@ -42523,9 +42532,6 @@ AFRAME.registerSystem("experiment-manager", {
             default:
                 break;
         }
-        this.experimentText.set({
-            content: experiment
-        });
     }
 });
 
@@ -42612,8 +42618,10 @@ AFRAME.registerComponent("raycaster-custom", {
             if (!intersection.object.userData.grabbable) continue;
             this.intersections.push(intersection);
         }
-        this.intersectionDetail.intersections = this.intersections;
-        if (this.intersections.length > 0) el.emit((0, _constants.EVENTS).INTERSECT, this.intersectionDetail);
+        if (this.intersections.length > 0) {
+            this.intersectionDetail.intersections = this.intersections;
+            el.emit((0, _constants.EVENTS).INTERSECT, this.intersectionDetail);
+        }
     },
     update: function(oldData) {
         var data = this.data;
@@ -42647,7 +42655,7 @@ AFRAME.registerSystem("gui", {
             stretchBorders: true,
             fpsLocal: 90,
             fpsRemote: 90,
-            latency: 150,
+            latency: 200,
             decreaseResolution: 1,
             experiment: (0, _constantsJs.ExperimentsList)[0]
         };

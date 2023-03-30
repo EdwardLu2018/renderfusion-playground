@@ -114,8 +114,8 @@ AFRAME.registerComponent('raycaster-custom', {
             this.intersections.push(intersection);
         }
 
-        this.intersectionDetail.intersections = this.intersections;
         if (this.intersections.length > 0) {
+            this.intersectionDetail.intersections = this.intersections;
             el.emit(EVENTS.INTERSECT, this.intersectionDetail);
         }
 	},
