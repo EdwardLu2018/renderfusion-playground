@@ -15,11 +15,9 @@
     </div>
 
     <a-scene
+        renderer="antialias: true; colorManagement: true;"
         background="color: #ECECEC"
-        renderer="
-            antialias: true;
-            colorManagement: true;
-            sortObjects: true;">
+        light="defaultLightsEnabled: false">
         <a-entity id="cameraRig" position="0 0 0">
             <a-entity id="cameraSpinner" name="PerspectiveCamera" position="0 0 0" tag="MainCamera">
                 <a-camera id="my-camera"

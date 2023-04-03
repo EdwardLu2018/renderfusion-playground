@@ -41297,7 +41297,7 @@ AFRAME.registerComponent("remote-scene", {
         },
         numLights: {
             type: "number",
-            default: 0
+            default: 3
         },
         numModels: {
             type: "number",
