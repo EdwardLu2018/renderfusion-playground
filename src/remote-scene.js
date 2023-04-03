@@ -11,7 +11,7 @@ AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 90},
         latency: {type: 'number', default: 200}, // ms
-        numLights: {type: 'number', default: 3},
+        numLights: {type: 'number', default: 0},
         numModels: {type: 'number', default: 8},
     },
 
@@ -205,6 +205,11 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         scene.add(object);
+        object.traverse( function( node ) {
+            if ( node.isMesh ) {
+                node.userData.renderingMedium = RenderingMedium.Remote;
+            }
+        } );
         object.userData.renderingMedium = RenderingMedium.Remote;
         this.experimentManager.objects[objectId] = object;
     },

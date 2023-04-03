@@ -107,10 +107,14 @@ AFRAME.registerComponent('local-scene', {
                 model.position.set(-0.75, 1.5, -1);
                 model.rotation.y += Math.PI / 2;
                 model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
+                    if ( node.isMesh ) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        node.userData.grabbable = true;
+                    }
                 } );
-                _this.addToScene( 'swordLeft', model );
                 model.userData.originalMedium = RenderingMedium.Local;
+                _this.addToScene( 'swordLeft', model );
             } );
     },
 
@@ -122,6 +126,11 @@ AFRAME.registerComponent('local-scene', {
         const camera = el.camera;
 
         scene.add(object);
+        object.traverse( function( node ) {
+            if ( node.isMesh ) {
+                node.userData.renderingMedium = RenderingMedium.Local;
+            }
+        } );
         object.userData.renderingMedium = RenderingMedium.Local;
         this.experimentManager.objects[objectId] = object;
     },

@@ -74,66 +74,88 @@ AFRAME.registerComponent('hand-grab', {
         const el = this.el;
         const data = this.data;
 
+        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
+
         var i;
         var grabbed;
         var distance;
 
-        console.log('grab start');
+        // console.log('grab start');
 
         const objPos = new THREE.Vector3();
         const grabPos = new THREE.Vector3();
 
-        var object3D = el.object3D;
-        if (el.getAttribute('remote-controller').enabled) {
-            object3D = el.remoteObject3D;
-        }
+        var object3D = !remoteControllerEnabled ? el.object3D : el.remoteObject3D;
 
+        const _this = this;
         for (i = 0; i < this.intersections.length; i++) {
             intersection = this.intersections[i];
+
+            if (!intersection.object.userData.grabbable) {
+                continue;
+            }
+
             distance = intersection.object.getWorldPosition(objPos).distanceTo(object3D.getWorldPosition(grabPos));
-            this.grabbing.push({
-                object: this.getContainerObjByChild(intersection.object),
-                distance: distance,
-            });
+            if (intersection.object.userData.renderingMedium == RenderingMedium.Local) {
+                this.grabbing.push({
+                    object: this.getContainerObjByChild(intersection.object),
+                    distance: distance,
+                });
+            }
+            else if (intersection.object.userData.renderingMedium == RenderingMedium.Remote) {
+                const object = intersection.object;
+                window.setTimeout(() => {
+                    _this.grabbing.push({
+                        object: this.getContainerObjByChild(object),
+                        distance: distance,
+                    });
+                }, _this.remoteLocal.latency);
+            }
         }
 
-        for (i = 0; i < this.grabbing.length; i++) {
-            grabbed = this.grabbing[i].object;
-            // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
-        }
+        // for (i = 0; i < this.grabbing.length; i++) {
+        //     grabbed = this.grabbing[i].object;
+        //     // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
+        // }
     },
 
     onGrabEndButton: function (evt) {
         const el = this.el;
         const data = this.data;
 
-        console.log('grab end');
+        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
 
         var grabbed;
-        var object3D;
+
+        // console.log('grab end');
+
         const objPos = new THREE.Vector3();
         const objRot = new THREE.Quaternion();
 
+        var object3D = !remoteControllerEnabled ? el.object3D : el.remoteObject3D;
+
+        const _this = this;
         for (var i = 0; i < this.grabbing.length; i++) {
             grabbed = this.grabbing[i].object;
+
             grabbed.getWorldPosition(objPos);
             grabbed.getWorldQuaternion(objRot);
 
-            object3D = el.object3D;
-            if (el.getAttribute('remote-controller').enabled) {
-                object3D = el.remoteObject3D;
-            }
-
-            object3D.remove(grabbed);
             if (grabbed.userData.renderingMedium === RenderingMedium.Local) {
+                object3D.remove(grabbed);
                 this.localScene.add(grabbed);
+                grabbed.position.copy(objPos);
+                grabbed.rotation.setFromQuaternion(objRot);
             }
             else if (grabbed.userData.renderingMedium === RenderingMedium.Remote) {
-                this.remoteScene.add(grabbed);
+                const object = grabbed;
+                window.setTimeout(() => {
+                    object3D.remove(object);
+                    _this.remoteScene.add(object);
+                    object.position.copy(objPos);
+                    object.rotation.setFromQuaternion(objRot);
+                }, _this.remoteLocal.latency);
             }
-
-            grabbed.position.copy(objPos);
-            grabbed.rotation.setFromQuaternion(objRot);
 
             // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
         }

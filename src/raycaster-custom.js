@@ -121,10 +121,6 @@ AFRAME.registerComponent('raycaster-custom', {
                 continue;
             }
 
-            if (!intersection.object.userData.grabbable) {
-                continue;
-            }
-
             this.intersections.push(intersection);
         }
 
