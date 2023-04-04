@@ -102,10 +102,12 @@ AFRAME.registerComponent('raycaster-custom', {
         const el = this.el;
         const data = this.data;
 
+        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
+
         var intersection;
 
         var objects = Object.values(this.localScene.children);
-        if (el.getAttribute('remote-controller').enabled) {
+        if (remoteControllerEnabled) {
             objects = Object.values(this.remoteScene.children)
         }
 
@@ -126,7 +128,8 @@ AFRAME.registerComponent('raycaster-custom', {
 
         if (this.intersections.length > 0) {
             this.intersectionDetail.intersections = this.intersections;
-            el.emit(EVENTS.INTERSECT, this.intersectionDetail);
+            const intersectionDetail = this.intersectionDetail;
+            el.emit(EVENTS.RAYCASTER_INTERSECT, intersectionDetail);
         }
 	},
 
