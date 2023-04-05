@@ -3,7 +3,6 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
-// import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
 
 import { Experiments, RenderingMedium } from './constants';
 

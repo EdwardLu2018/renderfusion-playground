@@ -1,12 +1,4 @@
-import { EVENTS, Experiments } from './constants';
-
-const mouse = new THREE.Vector2();
-mouse.x = mouse.y = null;
-
-window.addEventListener( 'pointermove', ( event ) => {
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-	mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
-} );
+import { EVENTS } from './constants';
 
 AFRAME.registerComponent('raycaster-custom', {
     schema: {
@@ -22,7 +14,8 @@ AFRAME.registerComponent('raycaster-custom', {
 
         this.raycaster = new THREE.Raycaster();
         this.rawIntersections = [];
-        this.intersections = [];
+        this.intersectionsLocal = [];
+        this.intersectionsRemote = [];
 
         const sceneEl = el.sceneEl;
         if (!sceneEl.hasLoaded) {
@@ -43,8 +36,6 @@ AFRAME.registerComponent('raycaster-custom', {
         this.handLeft = document.getElementById('handLeft');
         this.handRight = document.getElementById('handRight');
 
-        this.intersectionDetail = {};
-
         this.controllerConnected = false;
         this.controllerModelReady = false;
 
@@ -62,74 +53,86 @@ AFRAME.registerComponent('raycaster-custom', {
         });
     },
 
-	updateOriginDirection: (function() {
+	updateOriginDirection: function(object3D) {
         var direction = new THREE.Vector3();
         var originVec3 = new THREE.Vector3();
 
-        return function updateOriginDirection () {
-            // this.raycaster.setFromCamera( mouse, this.localCamera );
+        var el = this.el;
+        var data = this.data;
 
-            var el = this.el;
-            var data = this.data;
+        const raycaster = el.getAttribute('raycaster');
 
-            const raycaster = el.getAttribute('raycaster');
+        object3D.updateMatrixWorld();
+        originVec3.setFromMatrixPosition(object3D.matrixWorld);
 
-            var object3D = el.object3D;
-            if (el.getAttribute('remote-controller').enabled) {
-                object3D = el.remoteObject3D;
-            }
+        // If non-zero origin, translate the origin into world space.
+        if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) {
+            originVec3 = object3D.localToWorld(originVec3.copy(raycaster.origin));
+        }
 
-            object3D.updateMatrixWorld();
-            originVec3.setFromMatrixPosition(object3D.matrixWorld);
+        // three.js raycaster direction is relative to 0, 0, 0 NOT the origin / offset we
+        // provide. Apply the offset to the direction, then rotation from the object,
+        // and normalize.
+        direction.copy(raycaster.direction).transformDirection(object3D.matrixWorld).normalize();
 
-            // If non-zero origin, translate the origin into world space.
-            if (raycaster.origin.x !== 0 || raycaster.origin.y !== 0 || raycaster.origin.z !== 0) {
-                originVec3 = object3D.localToWorld(originVec3.copy(raycaster.origin));
-            }
-
-            // three.js raycaster direction is relative to 0, 0, 0 NOT the origin / offset we
-            // provide. Apply the offset to the direction, then rotation from the object,
-            // and normalize.
-            direction.copy(raycaster.direction).transformDirection(object3D.matrixWorld).normalize();
-
-            // Apply offset and direction, in world coordinates.
-            this.raycaster.set(originVec3, direction);
-            // this.localScene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, 300, 0xff0000) );
-          };
-    })(),
+        // Apply offset and direction, in world coordinates.
+        this.raycaster.set(originVec3, direction);
+        // this.localScene.add(new THREE.ArrowHelper(this.raycaster.ray.direction, this.raycaster.ray.origin, 300, 0xff0000) );
+    },
 
     checkIntersections: function() {
         const el = this.el;
         const data = this.data;
 
-        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
-
         var intersection;
 
-        var objects = Object.values(this.localScene.children);
-        if (remoteControllerEnabled) {
-            objects = Object.values(this.remoteScene.children)
-        }
+        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
 
-        this.updateOriginDirection();
+        var localObjects = Object.values(this.localScene.children);
+        var remoteObjects = Object.values(this.remoteScene.children);
+
+        // local intersections
+        this.updateOriginDirection(el.object3D);
         this.rawIntersections.length = 0;
-        this.raycaster.intersectObjects(objects, true, this.rawIntersections);
+        this.raycaster.intersectObjects(localObjects, true, this.rawIntersections);
 
-        this.intersections.length = 0;
+        this.intersectionsLocal.length = 0;
         for (var i = 0; i < this.rawIntersections.length; i++) {
             intersection = this.rawIntersections[i];
-            if (intersection.object === this.handLeft.getObject3D('line') ||
-                intersection.object === this.handRight.getObject3D('line')) {
+            if (intersection.object.type === 'Line') {
                 continue;
             }
 
-            this.intersections.push(intersection);
+            this.intersectionsLocal.push(intersection);
         }
 
-        if (this.intersections.length > 0) {
-            this.intersectionDetail.intersections = this.intersections;
-            const intersectionDetail = this.intersectionDetail;
-            el.emit(EVENTS.RAYCASTER_INTERSECT, intersectionDetail);
+        if (this.intersectionsLocal.length > 0) {
+            const intersectionDetail = {};
+            intersectionDetail.intersections = this.intersectionsLocal;
+            el.emit(EVENTS.RAYCASTER_INTERSECT_LOCAL, intersectionDetail);
+        }
+
+        // remote intersections
+        if (remoteControllerEnabled) {
+            this.updateOriginDirection(el.remoteObject3D);
+        }
+        this.rawIntersections.length = 0;
+        this.raycaster.intersectObjects(remoteObjects, true, this.rawIntersections);
+
+        this.intersectionsRemote.length = 0;
+        for (var i = 0; i < this.rawIntersections.length; i++) {
+            intersection = this.rawIntersections[i];
+            if (intersection.object.type === 'Line') {
+                continue;
+            }
+
+            this.intersectionsRemote.push(intersection);
+        }
+
+        if (this.intersectionsRemote.length > 0) {
+            const intersectionDetail = {};
+            intersectionDetail.intersections = this.intersectionsRemote;
+            el.emit(EVENTS.RAYCASTER_INTERSECT_REMOTE, intersectionDetail);
         }
 	},
 

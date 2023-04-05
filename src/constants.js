@@ -20,5 +20,6 @@ export const Resolution = Object.freeze({
 });
 
 export const EVENTS = Object.freeze({
-    RAYCASTER_INTERSECT:    'raycaster-custom-intersected',
+    RAYCASTER_INTERSECT_LOCAL:      'raycaster-custom-intersected-local',
+    RAYCASTER_INTERSECT_REMOTE:     'raycaster-custom-intersected-remote',
 });

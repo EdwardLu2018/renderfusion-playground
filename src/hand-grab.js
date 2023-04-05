@@ -26,14 +26,20 @@ AFRAME.registerComponent('hand-grab', {
         const el = this.el;
         const data = this.data;
 
+        this.intersections = {
+            local: [],
+            remote: [],
+        };
+        this.grabbing = {
+            local: [],
+            remote: [],
+        };
+
         const sceneEl = el.sceneEl;
         if (!sceneEl.hasLoaded) {
             sceneEl.addEventListener('renderstart', this.init.bind(this));
             return;
         }
-
-        this.intersections = [];
-        this.grabbing = [];
 
         this.remoteLocal = el.sceneEl.systems['remote-local'];
         this.compositor = el.sceneEl.systems['compositor'];
@@ -47,14 +53,14 @@ AFRAME.registerComponent('hand-grab', {
         this.grabStartTimeout = null;
         this.grabEndTimeout = null;
 
-        this.gotIntersectedObjects = this.gotIntersectedObjects.bind(this);
+        this.getContainerObjByChild = this.getContainerObjByChild.bind(this);
+        this.gotIntersectedObjectsLocal = this.gotIntersectedObjectsLocal.bind(this);
+        this.gotIntersectedObjectsRemote = this.gotIntersectedObjectsRemote.bind(this);
         this.onGrabStartButtonHelper = this.onGrabStartButtonHelper.bind(this);
         this.onGrabEndButtonHelper = this.onGrabEndButtonHelper.bind(this);
-        this.onGrabStartButton = this.onGrabStartButton.bind(this);
-        this.onGrabEndButton = this.onGrabEndButton.bind(this);
-        this.getContainerObjByChild = this.getContainerObjByChild.bind(this);
 
-        el.addEventListener(EVENTS.RAYCASTER_INTERSECT, this.gotIntersectedObjects);
+        el.addEventListener(EVENTS.RAYCASTER_INTERSECT_LOCAL, this.gotIntersectedObjectsLocal);
+        el.addEventListener(EVENTS.RAYCASTER_INTERSECT_REMOTE, this.gotIntersectedObjectsRemote);
 
         data.grabStartButtons.forEach(b => {
             this.el.addEventListener(b, this.onGrabStartButtonHelper);
@@ -71,58 +77,55 @@ AFRAME.registerComponent('hand-grab', {
         else return null;
     },
 
-    gotIntersectedObjects: function(evt) {
-        this.intersections = evt.detail.intersections;
+    gotIntersectedObjectsLocal: function(evt) {
+        this.intersections.local = evt.detail.intersections;
+    },
+
+    gotIntersectedObjectsRemote: function(evt) {
+        this.intersections.remote = evt.detail.intersections;
     },
 
     onGrabStartButtonHelper: function(evt) {
         const el = this.el;
         const data = this.data;
 
-        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
+        this.onGrabStartButton(this.intersections.local, RenderingMedium.Local);
+
         const _this = this;
-        if (!remoteControllerEnabled) {
-            this.onGrabStartButton(this.intersections);
-        }
-        else {
-            this.grabStartTimeout = window.setTimeout(() => {
-                _this.onGrabStartButton(this.intersections);
-            }, _this.remoteLocal.latency);
-        }
+        window.clearInterval(this.grabStartTimeout);
+        this.grabStartTimeout = window.setTimeout(() => {
+            const intersections = this.intersections.remote;
+            _this.onGrabStartButton(intersections, RenderingMedium.Remote);
+        }, this.remoteLocal.latency);
     },
 
     onGrabEndButtonHelper: function(evt) {
         const el = this.el;
         const data = this.data;
 
-        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
+        this.onGrabEndButton(RenderingMedium.Local);
+
         const _this = this;
-        if (!remoteControllerEnabled) {
-            this.onGrabEndButton(this.intersections);
-        }
-        else {
-            this.grabEndTimeout = window.setTimeout(() => {
-                _this.onGrabEndButton(this.intersections);
-            }, _this.remoteLocal.latency);
-        }
+        window.clearInterval(this.grabEndTimeout);
+        this.grabEndTimeout = window.setTimeout(() => {
+            _this.onGrabEndButton(RenderingMedium.Remote);
+        }, this.remoteLocal.latency);
     },
 
-    onGrabStartButton: function(intersections) {
+    onGrabStartButton: function(intersections, medium) {
         const el = this.el;
         const data = this.data;
 
-        const remoteControllerEnabled = el.getAttribute('remote-controller').enabled;
+        // console.log('grab start');
+        var grabbing;
+        if (medium == RenderingMedium.Local) {
+            grabbing = this.grabbing.local;
+        }
+        else if (medium == RenderingMedium.Remote) {
+            grabbing = this.grabbing.remote;
+        }
 
         var i;
-        var grabbed;
-
-        // console.log('grab start');
-
-        const objPos = new THREE.Vector3();
-        const grabPos = new THREE.Vector3();
-
-        const object3D = !remoteControllerEnabled ? el.object3D : el.remoteObject3D;
-
         var intersection;
         for (i = 0; i < intersections.length; i++) {
             intersection = intersections[i];
@@ -131,19 +134,18 @@ AFRAME.registerComponent('hand-grab', {
                 continue;
             }
 
-            distance = intersection.object.getWorldPosition(objPos).distanceTo(object3D.getWorldPosition(grabPos));
-            this.grabbing.push({
+            grabbing.push({
                 object: this.getContainerObjByChild(intersection.object),
             });
         }
 
-        // for (i = 0; i < this.grabbing.length; i++) {
-        //     grabbed = this.grabbing[i].object;
+        // for (i = 0; i < grabbing.length; i++) {
+        //     grabbed = grabbing[i].object;
         //     if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
         // }
     },
 
-    onGrabEndButton: function(intersections) {
+    onGrabEndButton: function(medium) {
         const el = this.el;
         const data = this.data;
 
@@ -152,14 +154,21 @@ AFRAME.registerComponent('hand-grab', {
         var grabbed;
 
         // console.log('grab end');
+        var grabbing;
+        if (medium == RenderingMedium.Local) {
+            grabbing = this.grabbing.local;
+        }
+        else if (medium == RenderingMedium.Remote) {
+            grabbing = this.grabbing.remote;
+        }
 
         const objPos = new THREE.Vector3();
         const objRot = new THREE.Quaternion();
 
         const object3D = !remoteControllerEnabled ? el.object3D : el.remoteObject3D;
 
-        for (var i = 0; i < this.grabbing.length; i++) {
-            grabbed = this.grabbing[i].object;
+        for (var i = 0; i < grabbing.length; i++) {
+            grabbed = grabbing[i].object;
 
             grabbed.getWorldPosition(objPos);
             grabbed.getWorldQuaternion(objRot);
@@ -177,8 +186,11 @@ AFRAME.registerComponent('hand-grab', {
             // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
         }
 
-        this.grabbing = [];
-        if (remoteControllerEnabled) {
+        if (medium == RenderingMedium.Local) {
+            this.grabbing.local = [];
+        }
+        else if (medium == RenderingMedium.Remote) {
+            this.grabbing.remote = [];
             window.clearInterval(this.grabStartTimeout);
             window.clearInterval(this.grabEndTimeout);
         }
@@ -192,9 +204,14 @@ AFRAME.registerComponent('hand-grab', {
 
         const object3D = !remoteControllerEnabled ? el.object3D : el.remoteObject3D;
 
+        var i;
         var grabbed;
-        for (var i = 0; i < this.grabbing.length; i++) {
-            grabbed = this.grabbing[i].object;
+        for (i = 0; i < this.grabbing.local.length; i++) {
+            grabbed = this.grabbing.local[i].object;
+            object3D.attach(grabbed);
+        }
+        for (i = 0; i < this.grabbing.remote.length; i++) {
+            grabbed = this.grabbing.remote[i].object;
             object3D.attach(grabbed);
         }
     }
