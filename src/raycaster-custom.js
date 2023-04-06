@@ -113,9 +113,7 @@ AFRAME.registerComponent('raycaster-custom', {
         }
 
         // remote intersections
-        if (remoteControllerEnabled) {
-            this.updateOriginDirection(el.remoteObject3D);
-        }
+        this.updateOriginDirection(el.remoteObject3D);
         this.rawIntersections.length = 0;
         this.raycaster.intersectObjects(remoteObjects, true, this.rawIntersections);
 

@@ -1,5 +1,3 @@
-import Stats from 'three/examples/jsm/libs/stats.module.js';
-
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
@@ -25,10 +23,6 @@ AFRAME.registerComponent('local-scene', {
             sceneEl.addEventListener('renderstart', this.init.bind(this));
             return;
         }
-
-        this.stats = new Stats();
-        this.stats.showPanel(0);
-        document.getElementById('local-stats').appendChild(this.stats.dom);
 
         this.compositor = sceneEl.systems['compositor'];
         this.experimentManager = sceneEl.systems['experiment-manager'];
@@ -156,15 +150,10 @@ AFRAME.registerComponent('local-scene', {
         const el = this.el;
         const data = this.data;
 
-        // this.elapsed += this.clock.getDelta() * 1000;
-        // if (this.elapsed > 1000 / data.fps) {
-            // this.elapsed = 0;
-            ThreeMeshUI.update();
-            this.stats.update();
+        ThreeMeshUI.update();
 
-            this.box.rotation.x += 0.01; // * 60 / data.fps;
-            this.box.rotation.y += 0.01; // * 60 / data.fps;
-            this.box.rotation.z += 0.01; // * 60 / data.fps;
-        // }
+        this.box.rotation.x += 0.01;
+        this.box.rotation.y += 0.01;
+        this.box.rotation.z += 0.01;
     }
 });

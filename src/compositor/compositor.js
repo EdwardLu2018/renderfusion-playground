@@ -1,3 +1,5 @@
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+
 import {CompositorPass} from './compositor-pass';
 
 AFRAME.registerSystem('compositor', {
@@ -20,6 +22,10 @@ AFRAME.registerSystem('compositor', {
         const camera = sceneEl.camera;
 
         const renderer = sceneEl.renderer;
+
+        this.stats = new Stats();
+        this.stats.showPanel(0);
+        document.getElementById('local-stats').appendChild(this.stats.dom);
 
         this.cameras = [];
 
@@ -133,6 +139,7 @@ AFRAME.registerSystem('compositor', {
                 elapsed += clock.getDelta() * 1000;
                 if (data.fps === -1 || elapsed > 1000 / data.fps) {
                     elapsed = 0;
+                    system.stats.update();
                     // store "normal" rendering output to this.renderTarget
                     this.setRenderTarget(system.renderTarget);
                     // update local vr camera if in vr
