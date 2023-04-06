@@ -122,8 +122,8 @@ void main() {
     vec4 localColor  = texture2D( tLocalColor, coordLocalColor );
     float localDepth = readDepth( tLocalDepth, coordLocalDepth );
 
-    vec4 remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
-    float remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
+    vec4 remoteColor;  // = texture2D( tRemoteColor, coordRemoteNormalized );
+    float remoteDepth; // = readDepth( tRemoteDepth, coordRemoteNormalized );
 
     if (doAsyncTimeWarp) {
         vec3 cameraTopLeft, cameraTopRight, cameraBotLeft, cameraBotRight;
@@ -218,10 +218,10 @@ void main() {
             remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
         }
         else {
-            coordRemoteNormalized.x = max(coordRemoteNormalized.x, xMin);
-            coordRemoteNormalized.x = min(coordRemoteNormalized.x, xMax);
-            coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);
-            coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);
+            // coordRemoteNormalized.x = max(coordRemoteNormalized.x, xMin);
+            // coordRemoteNormalized.x = min(coordRemoteNormalized.x, xMax);
+            // coordRemoteNormalized.y = max(coordRemoteNormalized.y, 0.0);
+            // coordRemoteNormalized.y = min(coordRemoteNormalized.y, 1.0);
             remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
             remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
         }

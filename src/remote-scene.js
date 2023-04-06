@@ -240,7 +240,7 @@ AFRAME.registerComponent('remote-scene', {
             this.stats.update();
 
             if (this.experimentManager.objects['helmet']) {
-                this.experimentManager.objects['helmet'].rotation.y -= 0.01;
+                this.experimentManager.objects['helmet'].rotation.y -= 0.01 * 60 / data.fps;
             }
         }
     }

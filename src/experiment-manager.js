@@ -7,6 +7,8 @@ import FontImage from '/assets/fonts/Roboto-msdf.png';
 
 AFRAME.registerSystem('experiment-manager', {
     schema: {
+        lowPolyLocalFPS: {type: 'number', default: 90},
+        highPolyLocalFPS: {type: 'number', default: 11},
     },
 
     init: function () {
@@ -136,6 +138,10 @@ AFRAME.registerSystem('experiment-manager', {
     },
 
     changeExperiment(experiment) {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el.sceneEl;
+
         this.experiment = experiment;
         this.experimentText.set( { content: this.experiment } );
 
@@ -146,6 +152,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.Low);
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Local);
                 break;
 
@@ -155,6 +162,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.highPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Local);
                 break;
 
@@ -164,6 +172,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Remote);
                 break;
 
@@ -173,6 +182,7 @@ AFRAME.registerSystem('experiment-manager', {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Remote);
                 break;
 
@@ -193,6 +203,7 @@ AFRAME.registerSystem('experiment-manager', {
                         }
                     }
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Local);
                 break;
 
@@ -213,6 +224,7 @@ AFRAME.registerSystem('experiment-manager', {
                         }
                     }
                 }
+                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
                 this.swapControllers(RenderingMedium.Local);
                 break;
 

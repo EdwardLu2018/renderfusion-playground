@@ -1,5 +1,3 @@
-import Stats from 'three/examples/jsm/libs/stats.module.js';
-
 import {CompositorPass} from './compositor-pass';
 
 AFRAME.registerSystem('compositor', {
@@ -7,7 +5,7 @@ AFRAME.registerSystem('compositor', {
         doAsyncTimeWarp: {type: 'bool', default: true},
         stretchBorders: {type: 'bool', default: true},
         preferLocal: {type: 'bool', default: false},
-        fps: {type: 'number', default: -1},
+        fps: {type: 'number', default: 90},
     },
 
     init: function() {
@@ -22,10 +20,6 @@ AFRAME.registerSystem('compositor', {
         const camera = sceneEl.camera;
 
         const renderer = sceneEl.renderer;
-
-        this.stats = new Stats();
-        this.stats.showPanel(0);
-        document.getElementById('local-stats').appendChild(this.stats.dom);
 
         this.cameras = [];
 
@@ -136,22 +130,16 @@ AFRAME.registerSystem('compositor', {
                     system.remoteRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
 
-                // update vr camera if in vr
+                // store "normal" rendering output to this.renderTarget
+                this.setRenderTarget(system.renderTarget);
+                // update local vr camera if in vr
                 if (this.xr.enabled === true && this.xr.isPresenting === true) {
                     this.xr.updateCamera( cameraVR, system.sceneEl.camera );
                 }
-                // store "normal" rendering output to this.renderTarget
-                this.setRenderTarget(system.renderTarget);
-                elapsed += clock.getDelta() * 1000;
-                if (data.fps === -1 || elapsed > 1000 / data.fps) {
-                    elapsed = 0;
-                    system.stats.update();
-                    render.apply(this, arguments);
-                }
+                render.apply(this, arguments);
                 this.setRenderTarget(currentRenderTarget);
 
                 currentShadowAutoUpdate = this.shadowMap.autoUpdate;
-
                 this.shadowMap.autoUpdate = false;
 
                 let hasDualCameras;
@@ -171,7 +159,6 @@ AFRAME.registerSystem('compositor', {
                     if (this.xr.enabled === true && this.xr.isPresenting === true) {
                         const cameraL = cameraVR.cameras[0];
                         const cameraR = cameraVR.cameras[1];
-
                         system.pass.setCameraMats(cameraL, cameraR);
                     }
                     else {
@@ -180,7 +167,7 @@ AFRAME.registerSystem('compositor', {
                     }
                 }
 
-                // update vr camera if in vr
+                // update remote vr camera if in vr
                 if (this.xr.enabled === true && this.xr.isPresenting === true) {
                     this.xr.updateCamera( cameraVR, system.remoteCamera );
 

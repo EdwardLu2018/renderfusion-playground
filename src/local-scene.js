@@ -1,3 +1,5 @@
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+
 // import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -24,6 +26,10 @@ AFRAME.registerComponent('local-scene', {
             return;
         }
 
+        this.stats = new Stats();
+        this.stats.showPanel(0);
+        document.getElementById('local-stats').appendChild(this.stats.dom);
+
         this.compositor = sceneEl.systems['compositor'];
         this.experimentManager = sceneEl.systems['experiment-manager'];
 
@@ -32,6 +38,9 @@ AFRAME.registerComponent('local-scene', {
         const camera = sceneEl.camera;
 
         const _this = this;
+
+        this.elapsed = 0;
+        this.clock = new THREE.Clock();
 
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
@@ -138,16 +147,24 @@ AFRAME.registerComponent('local-scene', {
     update(oldData) {
         const data = this.data;
 
-        if (data.fps != oldData.fps) {
+        if (data.fps !== oldData.fps) {
             this.compositor.data.fps = data.fps;
         }
     },
 
     tick: function () {
-        ThreeMeshUI.update();
+        const el = this.el;
+        const data = this.data;
 
-        this.box.rotation.x -= 0.01;
-        this.box.rotation.y -= 0.01;
-        this.box.rotation.z -= 0.01;
+        this.elapsed += this.clock.getDelta() * 1000;
+        if (this.elapsed > 1000 / data.fps) {
+            this.elapsed = 0;
+            ThreeMeshUI.update();
+            this.stats.update();
+
+            this.box.rotation.x += 0.01 * 60 / data.fps;
+            this.box.rotation.y += 0.01 * 60 / data.fps;
+            this.box.rotation.z += 0.01 * 60 / data.fps;
+        }
     }
 });

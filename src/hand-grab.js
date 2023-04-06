@@ -18,6 +18,7 @@ AFRAME.registerComponent('hand-grab', {
                 'thumbstickup'
             ]
         },
+        scaleUpBy: {type: 'number', default: 1.1},
     },
 
     dependencies: ['remote-controller'],
@@ -139,10 +140,11 @@ AFRAME.registerComponent('hand-grab', {
             });
         }
 
-        // for (i = 0; i < grabbing.length; i++) {
-        //     grabbed = grabbing[i].object;
-        //     if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
-        // }
+        for (i = 0; i < grabbing.length; i++) {
+            grabbed = grabbing[i].object;
+            grabbed.scale.multiplyScalar(data.scaleUpBy);
+            // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0xffffff );
+        }
     },
 
     onGrabEndButton: function(medium) {
@@ -183,6 +185,7 @@ AFRAME.registerComponent('hand-grab', {
             grabbed.position.copy(objPos);
             grabbed.rotation.setFromQuaternion(objRot);
 
+            grabbed.scale.multiplyScalar(1 / data.scaleUpBy);
             // if (grabbed.material && grabbed.material.color) grabbed.material.color.setHex( 0x000000 );
         }
 

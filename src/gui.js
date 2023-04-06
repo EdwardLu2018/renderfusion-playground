@@ -16,9 +16,8 @@ AFRAME.registerSystem('gui', {
         this.experimentManager = sceneEl.systems['experiment-manager'];
 
         const options = {
-            timeWarp: true,
             stretchBorders: true,
-            fpsLocal: 90,
+            // fpsLocal: 90,
             fpsRemote: 90,
             latency: 200,
             decreaseResolution: 1,
@@ -28,11 +27,11 @@ AFRAME.registerSystem('gui', {
         const _this = this;
 
         const gui = new GUI()
-        gui.add(options, 'fpsLocal', 1, 90)
-            .name('FPS (Local)')
-            .onChange( function() {
-                sceneEl.setAttribute('local-scene', 'fps', this.getValue());
-            } );
+        // gui.add(options, 'fpsLocal', 1, 90)
+        //     .name('FPS (Local)')
+        //     .onChange( function() {
+        //         sceneEl.setAttribute('local-scene', 'fps', this.getValue());
+        //     } );
 
         gui.add(options, 'fpsRemote', 1, 90)
             .name('FPS (Remote)')
