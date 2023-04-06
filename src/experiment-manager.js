@@ -86,8 +86,8 @@ AFRAME.registerSystem('experiment-manager', {
             } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
-                this.remoteScene.background = null;
-                this.remoteScene.environment = null;
+                this.remoteScene.background = object;
+                this.remoteScene.environment = object;
                 this.compositor.data.preferLocal = true;
             }
         } else { // swap local to remote
@@ -95,8 +95,8 @@ AFRAME.registerSystem('experiment-manager', {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
             } else if (objectId === 'background') {
-                this.localScene.background = null;
-                this.localScene.environment = null;
+                this.localScene.background = object;
+                this.localScene.environment = object;
                 this.remoteScene.background = object;
                 this.remoteScene.environment = object;
                 this.compositor.data.preferLocal = false;

@@ -1,8 +1,8 @@
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-// import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
-// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 
 import ThreeMeshUI from 'three-mesh-ui';
 
@@ -48,7 +48,7 @@ AFRAME.registerComponent('local-scene', {
         this.box.position.set(0, 1.1, -1);
         this.box.castShadow = true;
         this.box.receiveShadow = true;
-        _this.addToScene( 'redBox', this.box ); // add to local scene
+        this.addToScene( 'redBox', this.box ); // add to local scene
         this.box.userData.originalMedium = RenderingMedium.Local;
         this.box.userData.grabbable = true;
 

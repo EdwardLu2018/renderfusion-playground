@@ -35,6 +35,9 @@ AFRAME.registerComponent('remote-scene', {
         this.remoteScene = sceneEl.systems['remote-local'].remoteScene;
         this.remoteCamera = sceneEl.systems['remote-local'].remoteCamera;
 
+        this.localScene = sceneEl.object3D;
+        this.localCamera = sceneEl.camera;
+
         // This is the remote scene init //
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
