@@ -130,14 +130,18 @@ AFRAME.registerSystem('compositor', {
                     system.remoteRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
 
-                // store "normal" rendering output to this.renderTarget
-                this.setRenderTarget(system.renderTarget);
-                // update local vr camera if in vr
-                if (this.xr.enabled === true && this.xr.isPresenting === true) {
-                    this.xr.updateCamera( cameraVR, system.sceneEl.camera );
+                elapsed += clock.getDelta() * 1000;
+                if (data.fps === -1 || elapsed > 1000 / data.fps) {
+                    elapsed = 0;
+                    // store "normal" rendering output to this.renderTarget
+                    this.setRenderTarget(system.renderTarget);
+                    // update local vr camera if in vr
+                    if (this.xr.enabled === true && this.xr.isPresenting === true) {
+                        this.xr.updateCamera( cameraVR, system.sceneEl.camera );
+                    }
+                    render.apply(this, arguments);
+                    this.setRenderTarget(currentRenderTarget);
                 }
-                render.apply(this, arguments);
-                this.setRenderTarget(currentRenderTarget);
 
                 currentShadowAutoUpdate = this.shadowMap.autoUpdate;
                 this.shadowMap.autoUpdate = false;
@@ -160,8 +164,7 @@ AFRAME.registerSystem('compositor', {
                         const cameraL = cameraVR.cameras[0];
                         const cameraR = cameraVR.cameras[1];
                         system.pass.setCameraMats(cameraL, cameraR);
-                    }
-                    else {
+                    } else {
                         system.pass.setCameraMats(camera);
                         system.pass.setCameraMatsRemote(system.remoteCamera);
                     }

@@ -7,7 +7,7 @@ import FontImage from '/assets/fonts/Roboto-msdf.png';
 
 AFRAME.registerSystem('experiment-manager', {
     schema: {
-        lowPolyLocalFPS: {type: 'number', default: 90},
+        lowPolyLocalFPS: {type: 'number', default: -1},
         highPolyLocalFPS: {type: 'number', default: 11},
     },
 
@@ -83,21 +83,18 @@ AFRAME.registerSystem('experiment-manager', {
             if (object.userData.renderingMedium === RenderingMedium.Remote) {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
-            }
-            else if (objectId === 'background') {
+            } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
                 this.remoteScene.background = null;
                 this.remoteScene.environment = null;
                 this.compositor.data.preferLocal = true;
             }
-        }
-        else { // swap local to remote
+        } else { // swap local to remote
             if (object.userData.renderingMedium === RenderingMedium.Local) {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
-            }
-            else if (objectId === 'background') {
+            } else if (objectId === 'background') {
                 this.localScene.background = null;
                 this.localScene.environment = null;
                 this.remoteScene.background = object;
@@ -113,8 +110,7 @@ AFRAME.registerSystem('experiment-manager', {
         if (renderingMediumType === RenderingMedium.Local) {
             handLeft.setAttribute('remote-controller', 'enabled', false);
             handRight.setAttribute('remote-controller', 'enabled', false);
-        }
-        else if (renderingMediumType === RenderingMedium.Remote) {
+        } else if (renderingMediumType === RenderingMedium.Remote) {
             handLeft.setAttribute('remote-controller', 'enabled', true);
             handRight.setAttribute('remote-controller', 'enabled', true);
         }
@@ -192,13 +188,11 @@ AFRAME.registerSystem('experiment-manager', {
                     if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         this.swapResolution(objectId, Resolution.High);
-                    }
-                    else if (object.userData.originalMedium === RenderingMedium.Local) {
+                    } else if (object.userData.originalMedium === RenderingMedium.Local) {
                         if (!objectId.includes('model')) {
                             this.swapRenderingMedium(objectId, RenderingMedium.Local);
                             this.swapResolution(objectId, Resolution.Low);
-                        }
-                        else {
+                        } else {
                             this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         }
                     }
@@ -213,13 +207,11 @@ AFRAME.registerSystem('experiment-manager', {
                     if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         this.swapResolution(objectId, Resolution.High);
-                    }
-                    else if (object.userData.originalMedium === RenderingMedium.Local) {
+                    } else if (object.userData.originalMedium === RenderingMedium.Local) {
                         if (!objectId.includes('model')) {
                             this.swapRenderingMedium(objectId, RenderingMedium.Local);
                             this.swapResolution(objectId, Resolution.Low);
-                        }
-                        else {
+                        } else {
                             this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         }
                     }

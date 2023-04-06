@@ -187,8 +187,7 @@ AFRAME.registerComponent('remote-scene', {
                     _this.addToScene( `modelLow${i}`, model );
                     model.userData.originalMedium = 'local';
                     model.visible = false;
-                }
-                else {
+                } else {
                     _this.addToScene( `modelHigh${i}`, model );
                     model.userData.originalMedium = RenderingMedium.Remote;
                     model.visible = true;

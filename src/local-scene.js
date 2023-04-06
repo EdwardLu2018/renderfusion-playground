@@ -156,15 +156,15 @@ AFRAME.registerComponent('local-scene', {
         const el = this.el;
         const data = this.data;
 
-        this.elapsed += this.clock.getDelta() * 1000;
-        if (this.elapsed > 1000 / data.fps) {
-            this.elapsed = 0;
+        // this.elapsed += this.clock.getDelta() * 1000;
+        // if (this.elapsed > 1000 / data.fps) {
+            // this.elapsed = 0;
             ThreeMeshUI.update();
             this.stats.update();
 
-            this.box.rotation.x += 0.01 * 60 / data.fps;
-            this.box.rotation.y += 0.01 * 60 / data.fps;
-            this.box.rotation.z += 0.01 * 60 / data.fps;
-        }
+            this.box.rotation.x += 0.01; // * 60 / data.fps;
+            this.box.rotation.y += 0.01; // * 60 / data.fps;
+            this.box.rotation.z += 0.01; // * 60 / data.fps;
+        // }
     }
 });

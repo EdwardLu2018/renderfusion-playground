@@ -121,8 +121,7 @@ AFRAME.registerComponent('hand-grab', {
         var grabbing;
         if (medium == RenderingMedium.Local) {
             grabbing = this.grabbing.local;
-        }
-        else if (medium == RenderingMedium.Remote) {
+        } else if (medium == RenderingMedium.Remote) {
             grabbing = this.grabbing.remote;
         }
 
@@ -159,8 +158,7 @@ AFRAME.registerComponent('hand-grab', {
         var grabbing;
         if (medium == RenderingMedium.Local) {
             grabbing = this.grabbing.local;
-        }
-        else if (medium == RenderingMedium.Remote) {
+        } else if (medium == RenderingMedium.Remote) {
             grabbing = this.grabbing.remote;
         }
 
@@ -178,8 +176,7 @@ AFRAME.registerComponent('hand-grab', {
             object3D.remove(grabbed);
             if (grabbed.userData.renderingMedium === RenderingMedium.Local) {
                 this.localScene.add(grabbed);
-            }
-            else if (grabbed.userData.renderingMedium === RenderingMedium.Remote) {
+            } else if (grabbed.userData.renderingMedium === RenderingMedium.Remote) {
                 this.remoteScene.add(grabbed);
             }
             grabbed.position.copy(objPos);
@@ -191,8 +188,7 @@ AFRAME.registerComponent('hand-grab', {
 
         if (medium == RenderingMedium.Local) {
             this.grabbing.local = [];
-        }
-        else if (medium == RenderingMedium.Remote) {
+        } else if (medium == RenderingMedium.Remote) {
             this.grabbing.remote = [];
             window.clearInterval(this.grabStartTimeout);
             window.clearInterval(this.grabEndTimeout);

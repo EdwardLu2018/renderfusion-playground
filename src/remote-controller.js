@@ -45,8 +45,7 @@ AFRAME.registerComponent('remote-controller', {
         if (data.enabled === true) {
             el.remoteObject3D.visible = true;
             el.object3D.visible = false;
-        }
-        else {
+        } else {
             el.remoteObject3D.visible = false;
             el.object3D.visible = true;
             return;
