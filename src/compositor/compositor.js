@@ -102,8 +102,6 @@ AFRAME.registerSystem('compositor', {
         renderer.xr.cameraAutoUpdate = false;
         this.binded = true;
 
-        let currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
-
         this.sceneEl.object3D.onBeforeRender = function(renderer, scene, camera) {
             if (camera instanceof THREE.ArrayCamera) {
                 system.cameras = camera.cameras;
@@ -150,9 +148,6 @@ AFRAME.registerSystem('compositor', {
                     this.setRenderTarget(currentRenderTarget);
                 }
 
-                currentShadowAutoUpdate = this.shadowMap.autoUpdate;
-                this.shadowMap.autoUpdate = false;
-
                 let hasDualCameras;
                 if (system.cameras.length > 1) {
                     // we have two cameras here (vr mode or headset ar mode)
@@ -193,8 +188,6 @@ AFRAME.registerSystem('compositor', {
                 // the composer will take the "local" frame and merge it with the "remote" frame from
                 // the video by calling the compositor pass and executing the shaders.
                 system.pass.render(this, currentRenderTarget, system.renderTarget);
-
-                this.shadowMap.autoUpdate = currentShadowAutoUpdate;
 
                 // restore render state
                 this.setRenderTarget(currentRenderTarget);

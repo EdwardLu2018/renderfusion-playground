@@ -9,9 +9,11 @@ import { Experiments, RenderingMedium } from './constants';
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 90},
-        latency: {type: 'number', default: 200}, // ms
+        latency: {type: 'number', default: 150}, // ms
         numLights: {type: 'number', default: 3},
         numModels: {type: 'number', default: 8},
+        reset: {type: 'boolean'},
+        helmetRotateDirection: {type: 'number', default: -1},
     },
 
     init: async function () {
@@ -225,6 +227,10 @@ AFRAME.registerComponent('remote-scene', {
         if (data.latency != oldData.latency) {
             this.remoteLocal.setLatency(data.latency);
         }
+
+        if (data.reset) {
+            this.experimentManager.objects['blueBox'].position.set(0.75, 1.1, -1);
+        }
     },
 
     tick: function () {
@@ -242,7 +248,7 @@ AFRAME.registerComponent('remote-scene', {
             this.stats.update();
 
             if (this.experimentManager.objects['helmet']) {
-                this.experimentManager.objects['helmet'].rotation.y -= 0.01 * 60 / data.fps;
+                this.experimentManager.objects['helmet'].rotation.y += data.helmetRotateDirection * 0.01 * 60 / data.fps;
             }
         }
     }

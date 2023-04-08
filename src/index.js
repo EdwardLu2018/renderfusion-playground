@@ -4,3 +4,4 @@ import './experiment-manager';
 import './raycaster-custom';
 import './hand-grab';
 import './gui';
+import './task';

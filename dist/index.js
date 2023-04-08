@@ -563,8 +563,9 @@ var _experimentManager = require("./experiment-manager");
 var _raycasterCustom = require("./raycaster-custom");
 var _handGrab = require("./hand-grab");
 var _gui = require("./gui");
+var _task = require("./task");
 
-},{"./remote-local":"apuLr","./compositor":"8e7Kf","./experiment-manager":"hjCCg","./raycaster-custom":"aXOVj","./gui":"8CMk2","./hand-grab":"78at7"}],"apuLr":[function(require,module,exports) {
+},{"./remote-local":"apuLr","./compositor":"8e7Kf","./experiment-manager":"hjCCg","./raycaster-custom":"aXOVj","./gui":"8CMk2","./hand-grab":"78at7","./task":"2NAfy"}],"apuLr":[function(require,module,exports) {
 var _localScene = require("./local-scene");
 var _remoteScene = require("./remote-scene");
 var _remoteController = require("./remote-controller");
@@ -789,6 +790,9 @@ AFRAME.registerComponent("local-scene", {
         fps: {
             type: "number",
             default: 90
+        },
+        reset: {
+            type: "boolean"
         }
     },
     init: function() {
@@ -880,7 +884,7 @@ AFRAME.registerComponent("local-scene", {
             model = gltf.scene;
             model.scale.set(0.25, 0.25, 0.25);
             model.position.set(-0.75, 1.5, -1);
-            model.rotation.y += Math.PI / 2;
+            model.rotation.y = Math.PI / 2;
             model.traverse(function(node) {
                 if (node.isMesh) {
                     node.castShadow = true;
@@ -889,7 +893,26 @@ AFRAME.registerComponent("local-scene", {
                 }
             });
             model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
-            _this.addToScene("swordLeft", model);
+            _this.addToScene("sword", model);
+        });
+        loader.setPath("assets/models/").load("sword.glb", function(gltf) {
+            model = gltf.scene;
+            model.scale.set(0.25, 0.25, 0.25);
+            model.position.set(0, 1.5, 1.2);
+            model.rotation.z += Math.PI;
+            model.rotation.y += Math.PI;
+            model.traverse(function(node) {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                    if (node.material) {
+                        node.material.transparent = true;
+                        node.material.opacity = 0.3;
+                    }
+                }
+            });
+            model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+            _this.addToScene("sword2", model);
         });
     },
     addToScene (objectId, object) {
@@ -907,6 +930,11 @@ AFRAME.registerComponent("local-scene", {
     update (oldData) {
         const data = this.data;
         if (data.fps !== oldData.fps) this.compositor.data.fps = data.fps;
+        if (data.reset) {
+            this.experimentManager.objects["sword"].position.set(-0.75, 1.5, -1);
+            this.experimentManager.objects["sword"].rotation.set(0, Math.PI / 2, 0);
+            this.experimentManager.objects["redBox"].position.set(0, 1.1, -1);
+        }
     },
     tick: function() {
         const el = this.el;
@@ -41258,6 +41286,7 @@ parcelHelpers.export(exports, "Experiments", ()=>Experiments);
 parcelHelpers.export(exports, "ExperimentsList", ()=>ExperimentsList);
 parcelHelpers.export(exports, "RenderingMedium", ()=>RenderingMedium);
 parcelHelpers.export(exports, "Resolution", ()=>Resolution);
+parcelHelpers.export(exports, "TaskState", ()=>TaskState);
 parcelHelpers.export(exports, "EVENTS", ()=>EVENTS);
 const Experiments = Object.freeze({
     LowPolyLocal: "Low Poly Local",
@@ -41275,6 +41304,12 @@ const RenderingMedium = Object.freeze({
 const Resolution = Object.freeze({
     Low: "low",
     High: "high"
+});
+const TaskState = Object.freeze({
+    Start: "start",
+    Boxes: "boxes",
+    Menu: "menu",
+    Done: "done"
 });
 const EVENTS = Object.freeze({
     RAYCASTER_INTERSECT_LOCAL: "raycaster-custom-intersected-local",
@@ -41534,7 +41569,7 @@ AFRAME.registerComponent("remote-scene", {
         },
         latency: {
             type: "number",
-            default: 200
+            default: 150
         },
         numLights: {
             type: "number",
@@ -41543,6 +41578,13 @@ AFRAME.registerComponent("remote-scene", {
         numModels: {
             type: "number",
             default: 8
+        },
+        reset: {
+            type: "boolean"
+        },
+        helmetRotateDirection: {
+            type: "number",
+            default: -1
         }
     },
     init: async function() {
@@ -41723,6 +41765,7 @@ AFRAME.registerComponent("remote-scene", {
         const data = this.data;
         if (data.fps != oldData.fps) this.remoteLocal.updateFPS(data.fps);
         if (data.latency != oldData.latency) this.remoteLocal.setLatency(data.latency);
+        if (data.reset) this.experimentManager.objects["blueBox"].position.set(0.75, 1.1, -1);
     },
     tick: function() {
         const el = this.el;
@@ -41734,7 +41777,7 @@ AFRAME.registerComponent("remote-scene", {
         if (this.elapsed > 1000 / data.fps) {
             this.elapsed = 0;
             this.stats.update();
-            if (this.experimentManager.objects["helmet"]) this.experimentManager.objects["helmet"].rotation.y -= 0.6 / data.fps;
+            if (this.experimentManager.objects["helmet"]) this.experimentManager.objects["helmet"].rotation.y += data.helmetRotateDirection * 0.6 / data.fps;
         }
     }
 });
@@ -41848,7 +41891,7 @@ AFRAME.registerComponent("remote-controller", {
         },
         latency: {
             type: "number",
-            default: 200
+            default: 150
         }
     },
     init: function() {
@@ -41999,7 +42042,6 @@ AFRAME.registerSystem("compositor", {
         this.originalRenderFunc = render;
         renderer.xr.cameraAutoUpdate = false;
         this.binded = true;
-        let currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
         this.sceneEl.object3D.onBeforeRender = function(renderer, scene, camera) {
             if (camera instanceof THREE.ArrayCamera) system.cameras = camera.cameras;
             else system.cameras.push(camera);
@@ -42034,8 +42076,6 @@ AFRAME.registerSystem("compositor", {
                     render.apply(this, arguments);
                     this.setRenderTarget(currentRenderTarget);
                 }
-                currentShadowAutoUpdate = this.shadowMap.autoUpdate;
-                this.shadowMap.autoUpdate = false;
                 let hasDualCameras;
                 if (system.cameras.length > 1) // we have two cameras here (vr mode or headset ar mode)
                 hasDualCameras = !isWebXRViewer; // webarviewer seens to have 2 cameras, but uses one...
@@ -42070,7 +42110,6 @@ AFRAME.registerSystem("compositor", {
                 // the composer will take the "local" frame and merge it with the "remote" frame from
                 // the video by calling the compositor pass and executing the shaders.
                 system.pass.render(this, currentRenderTarget, system.renderTarget);
-                this.shadowMap.autoUpdate = currentShadowAutoUpdate;
                 // restore render state
                 this.setRenderTarget(currentRenderTarget);
                 // call this part of the conditional again on the next call to render()
@@ -42407,6 +42446,8 @@ AFRAME.registerSystem("experiment-manager", {
         };
         const block1 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
         const block2 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
+        buttonOptions.height = 0.5;
+        const block3 = new (0, _threeMeshUiDefault.default).Block(buttonOptions);
         block1.add(new (0, _threeMeshUiDefault.default).Text({
             content: "Current Experiment:"
         }));
@@ -42414,6 +42455,10 @@ AFRAME.registerSystem("experiment-manager", {
             content: ""
         });
         block2.add(this.experimentText);
+        this.instructionsText = new (0, _threeMeshUiDefault.default).Text({
+            content: ""
+        });
+        block3.add(this.instructionsText);
         this.infoBlock = new (0, _threeMeshUiDefault.default).Block({
             justifyContent: "center",
             contentDirection: "column",
@@ -42423,7 +42468,7 @@ AFRAME.registerSystem("experiment-manager", {
             padding: 0.02,
             borderRadius: 0.11
         });
-        this.infoBlock.add(block1, block2);
+        this.infoBlock.add(block1, block2, block3);
         this.infoBlock.scale.set(1, 1, 1);
         this.infoBlock.position.set(2, 1.2, -1);
         this.infoBlock.rotation.set(0, -Math.PI / 4, 0);
@@ -42431,6 +42476,12 @@ AFRAME.registerSystem("experiment-manager", {
         this.infoBlock.userData.originalMedium = (0, _constants.RenderingMedium).Local;
         this.infoBlock.userData.renderingMedium = (0, _constants.RenderingMedium).Local;
         this.objects["experiment-text"] = this.infoBlock;
+        sceneEl.setAttribute("task", "");
+    },
+    updateInstructions (text) {
+        this.instructionsText.set({
+            content: text
+        });
     },
     swapRenderingMedium (objectId, renderingMediumType) {
         const el = this.el;
@@ -42654,7 +42705,7 @@ AFRAME.registerComponent("raycaster-custom", {
             el.emit((0, _constants.EVENTS).RAYCASTER_INTERSECT_LOCAL, intersectionDetail);
         }
         // remote intersections
-        this.updateOriginDirection(el.remoteObject3D);
+        if (remoteControllerEnabled) this.updateOriginDirection(el.remoteObject3D);
         this.rawIntersections.length = 0;
         this.raycaster.intersectObjects(remoteObjects, true, this.rawIntersections);
         this.intersectionsRemote.length = 0;
@@ -42700,7 +42751,7 @@ AFRAME.registerSystem("gui", {
             stretchBorders: true,
             // fpsLocal: 90,
             fpsRemote: 90,
-            latency: 200,
+            latency: 150,
             decreaseResolution: 1,
             experiment: (0, _constantsJs.ExperimentsList)[0]
         };
@@ -45204,6 +45255,77 @@ AFRAME.registerComponent("hand-grab", {
         for(i = 0; i < this.grabbing.remote.length; i++){
             grabbed1 = this.grabbing.remote[i].object;
             object3D.attach(grabbed1);
+        }
+    }
+});
+
+},{"./constants":"9jgXK"}],"2NAfy":[function(require,module,exports) {
+var _constants = require("./constants");
+AFRAME.registerComponent("task", {
+    schema: {},
+    init: async function() {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el;
+        if (!sceneEl.hasLoaded) {
+            sceneEl.addEventListener("renderstart", this.init.bind(this));
+            return;
+        }
+        this.experimentManager = sceneEl.systems["experiment-manager"];
+        this.remoteLocal = sceneEl.systems["remote-local"];
+        this.remoteScene = sceneEl.systems["remote-local"].remoteScene;
+        this.remoteCamera = sceneEl.systems["remote-local"].remoteCamera;
+        this.localScene = sceneEl.object3D;
+        this.localCamera = sceneEl.camera;
+        this.state = (0, _constants.TaskState).Start;
+        this.toggleReset = true;
+    },
+    update (oldData) {
+        const data = this.data;
+    },
+    tick: function() {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el;
+        var pos1 = new THREE.Vector3();
+        var pos2 = new THREE.Vector3();
+        var pos3 = new THREE.Vector3();
+        switch(this.state){
+            case (0, _constants.TaskState).Start:
+                {
+                    if (this.experimentManager.objects["sword"] === undefined || this.experimentManager.objects["sword2"] === undefined) return;
+                    this.experimentManager.updateInstructions("(1) Move the sword in the helmet to match the sword behind you. Then, look back here for the next steps.");
+                    pos1.copy(this.experimentManager.objects["sword"].position);
+                    pos2.copy(this.experimentManager.objects["sword2"].position);
+                    let direction = new THREE.Vector3(0, 0, 1), direction2 = new THREE.Vector3(0, 0, 1);
+                    direction.applyQuaternion(this.experimentManager.objects["sword"].quaternion).add(pos1);
+                    direction2.applyQuaternion(this.experimentManager.objects["sword2"].quaternion).add(pos2);
+                    if (pos1.distanceTo(pos2) <= 0.05 && direction.angleTo(direction2) <= 0.5) this.state = (0, _constants.TaskState).Boxes;
+                    break;
+                }
+            case (0, _constants.TaskState).Boxes:
+                if (this.experimentManager.objects["blueBox"] === undefined || this.experimentManager.objects["redBox"] === undefined || this.experimentManager.objects["helmet"] === undefined) return;
+                this.experimentManager.updateInstructions("(2) Now, move the boxes closer to the helmet!");
+                pos1.copy(this.experimentManager.objects["blueBox"].position);
+                pos2.copy(this.experimentManager.objects["redBox"].position);
+                pos3.copy(this.experimentManager.objects["helmet"].position);
+                if (pos3.distanceTo(pos1) <= 0.25 && pos3.distanceTo(pos2) <= 0.25) {
+                    this.state = (0, _constants.TaskState).Menu;
+                    sceneEl.setAttribute("remote-scene", "helmetRotateDirection", 1);
+                }
+                break;
+            case (0, _constants.TaskState).Menu:
+                this.experimentManager.updateInstructions("(3) Finally, click Done on the menu!");
+                this.state = (0, _constants.TaskState).Done;
+                break;
+            case (0, _constants.TaskState).Done:
+                sceneEl.setAttribute("local-scene", "reset", this.toggleReset);
+                sceneEl.setAttribute("remote-scene", "reset", this.toggleReset);
+                this.toggleReset = !this.toggleReset;
+                this.state = (0, _constants.TaskState).Start;
+                break;
+            default:
+                break;
         }
     }
 });

@@ -42,13 +42,16 @@ AFRAME.registerSystem('experiment-manager', {
             margin: 0.02,
             borderRadius: 0.075
         };
-
         const block1 = new ThreeMeshUI.Block( buttonOptions );
         const block2 = new ThreeMeshUI.Block( buttonOptions );
+        buttonOptions.height = 0.5;
+        const block3 = new ThreeMeshUI.Block( buttonOptions );
 
         block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
         this.experimentText = new ThreeMeshUI.Text( { content: '' });
         block2.add( this.experimentText );
+        this.instructionsText = new ThreeMeshUI.Text( { content: '' });
+        block3.add( this.instructionsText );
 
         this.infoBlock = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -59,7 +62,7 @@ AFRAME.registerSystem('experiment-manager', {
             padding: 0.02,
             borderRadius: 0.11
         } );
-        this.infoBlock.add(block1, block2);
+        this.infoBlock.add(block1, block2, block3);
         this.infoBlock.scale.set(1, 1, 1);
         this.infoBlock.position.set(2, 1.2, -1);
         this.infoBlock.rotation.set(0, -Math.PI / 4, 0);
@@ -67,6 +70,12 @@ AFRAME.registerSystem('experiment-manager', {
         this.infoBlock.userData.originalMedium = RenderingMedium.Local;
         this.infoBlock.userData.renderingMedium = RenderingMedium.Local;
         this.objects['experiment-text'] = this.infoBlock;
+
+        sceneEl.setAttribute('task', '');
+    },
+
+    updateInstructions(text) {
+        this.instructionsText.set( { content: text } );
     },
 
     swapRenderingMedium(objectId, renderingMediumType) {

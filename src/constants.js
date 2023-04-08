@@ -19,6 +19,13 @@ export const Resolution = Object.freeze({
     High:   'high',
 });
 
+export const TaskState = Object.freeze({
+    Start:  'start',
+    Boxes:  'boxes',
+    Menu:   'menu',
+    Done:   'done',
+});
+
 export const EVENTS = Object.freeze({
     RAYCASTER_INTERSECT_LOCAL:      'raycaster-custom-intersected-local',
     RAYCASTER_INTERSECT_REMOTE:     'raycaster-custom-intersected-remote',

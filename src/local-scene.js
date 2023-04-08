@@ -12,6 +12,7 @@ import { RenderingMedium } from './constants';
 AFRAME.registerComponent('local-scene', {
     schema: {
         fps: {type: 'number', default: 90},
+        reset: {type: 'boolean'},
     },
 
     init: function () {
@@ -108,7 +109,7 @@ AFRAME.registerComponent('local-scene', {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
                 model.position.set(-0.75, 1.5, -1);
-                model.rotation.y += Math.PI / 2;
+                model.rotation.y = Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) {
                         node.castShadow = true;
@@ -117,7 +118,29 @@ AFRAME.registerComponent('local-scene', {
                     }
                 } );
                 model.userData.originalMedium = RenderingMedium.Local;
-                _this.addToScene( 'swordLeft', model );
+                _this.addToScene( 'sword', model );
+            } );
+
+        loader
+            .setPath( 'assets/models/' )
+            .load( 'sword.glb', function ( gltf ) {
+                model = gltf.scene;
+                model.scale.set(0.25, 0.25, 0.25);
+                model.position.set(0, 1.5, 1.2);
+                model.rotation.z += Math.PI;
+                model.rotation.y += Math.PI;
+                model.traverse( function( node ) {
+                    if ( node.isMesh ) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        if (node.material) {
+                            node.material.transparent = true;
+                            node.material.opacity = 0.3;
+                        }
+                    }
+                } );
+                model.userData.originalMedium = RenderingMedium.Local;
+                _this.addToScene( 'sword2', model );
             } );
     },
 
@@ -143,6 +166,12 @@ AFRAME.registerComponent('local-scene', {
 
         if (data.fps !== oldData.fps) {
             this.compositor.data.fps = data.fps;
+        }
+
+        if (data.reset) {
+            this.experimentManager.objects['sword'].position.set(-0.75, 1.5, -1);
+            this.experimentManager.objects['sword'].rotation.set(0, Math.PI / 2, 0);
+            this.experimentManager.objects['redBox'].position.set(0, 1.1, -1);
         }
     },
 
