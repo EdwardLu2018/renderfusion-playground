@@ -7,7 +7,7 @@ import ThreeMeshUI from 'three-mesh-ui';
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
 
-import { RenderingMedium } from './constants';
+import { ExperimentsList, RenderingMedium, EVENTS } from './constants';
 
 AFRAME.registerComponent('local-scene', {
     schema: {
@@ -36,7 +36,7 @@ AFRAME.registerComponent('local-scene', {
 
         this.elapsed = 0;
         this.clock = new THREE.Clock();
-
+        var currentExp = 0;
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
@@ -64,15 +64,81 @@ AFRAME.registerComponent('local-scene', {
             borderRadius: 0.075
         };
 
+        const hoveredStateAttributes = {
+            state: 'hovered',
+            attributes: {
+                offset: 0.035,
+                backgroundColor: new THREE.Color( 0x999999 ),
+                backgroundOpacity: 1,
+                fontColor: new THREE.Color( 0xffffff )
+            },
+        };
+
+        const idleStateAttributes = {
+            state: 'idle',
+            attributes: {
+                offset: 0.035,
+                backgroundColor: new THREE.Color( 0x666666 ),
+                backgroundOpacity: 0.3,
+                fontColor: new THREE.Color( 0xffffff )
+            },
+        };
+
+        const selectedAttributes = {
+            offset: 0.02,
+            backgroundColor: new THREE.Color( 0x777777 ),
+            fontColor: new THREE.Color( 0x222222 )
+        };
+
         const button1 = new ThreeMeshUI.Block( buttonOptions );
         const button2 = new ThreeMeshUI.Block( buttonOptions );
         const button3 = new ThreeMeshUI.Block( buttonOptions );
         const button4 = new ThreeMeshUI.Block( buttonOptions );
-
         button1.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
         button2.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
         button3.add( new ThreeMeshUI.Text( { content: 'I Give Up' } ) );
         button4.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
+        const buttonList = [button1, button2, button3, button4];
+
+        button1.setupState( {
+            state: 'selected',
+            attributes: selectedAttributes,
+            onSet: () => {
+
+                currentExp -= 1;
+			    if ( currentExp < 0 ) currentExp = 5;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
+
+            }
+        });
+        button1.setupState( hoveredStateAttributes );
+        button1.setupState( idleStateAttributes );
+
+        button2.setupState( {
+            state: 'selected',
+            attributes: selectedAttributes,
+            onSet: () => {
+
+                currentExp = ( currentExp + 1 ) % 6;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
+
+		    }
+        });
+        button2.setupState( hoveredStateAttributes );
+        button2.setupState( idleStateAttributes );
+
+        button4.setupState( {
+            state: 'selected',
+            attributes: selectedAttributes,
+            onSet: () => {
+                el.emit(EVENTS.BUTTON_DONE_PRESSED, {});
+
+		    }
+        });
+        button4.setupState( hoveredStateAttributes );
+        button4.setupState( idleStateAttributes );
+
+
 
         const container = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -100,6 +166,10 @@ AFRAME.registerComponent('local-scene', {
         this.menu.rotation.set(0, Math.PI / 4, 0);
         this.addToScene( 'menu', this.menu );
         this.menu.userData.originalMedium = RenderingMedium.Local;
+
+        buttonList.forEach( ( obj ) => {
+            obj.setState( 'idle' );
+        } );
 
         var model;
         const loader = new GLTFLoader();

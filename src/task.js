@@ -1,4 +1,4 @@
-import { TaskState } from './constants';
+import { TaskState, EVENTS } from './constants';
 
 AFRAME.registerComponent('task', {
     schema: {
@@ -25,12 +25,21 @@ AFRAME.registerComponent('task', {
 
         this.state = TaskState.Start;
         this.toggleReset = true;
+
+        this.onButtonDonePressed = this.onButtonDonePressed.bind(this);
+        el.addEventListener(EVENTS.BUTTON_DONE_PRESSED, this.onButtonDonePressed);
     },
 
-    update(oldData) {
+    update: function(oldData) {
         const data = this.data;
     },
 
+    onButtonDonePressed: function() {
+        if (this.state  == TaskState.Menu){
+            this.state = TaskState.Done;
+        }
+    },
+ 
     tick: function() {
         const el = this.el;
         const data = this.data;
@@ -40,7 +49,6 @@ AFRAME.registerComponent('task', {
         var pos1 = new THREE.Vector3();
         var pos2 = new THREE.Vector3();
         var pos3 = new THREE.Vector3();
-
         switch (this.state)  {
             case TaskState.Start: {
                 if (this.experimentManager.objects['sword'] === undefined ||
@@ -87,7 +95,7 @@ AFRAME.registerComponent('task', {
 
             case TaskState.Menu: {
                 this.experimentManager.updateInstructions("(3) Finally, click Done on the menu!");
-                this.state = TaskState.Done;
+                // this.state = TaskState.Done;
 
                 break;
             }
