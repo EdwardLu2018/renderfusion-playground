@@ -7,7 +7,7 @@ AFRAME.registerSystem('remote-local', {
         fps: {type: 'number', default: 90},
     },
 
-    init: function () {
+    init: function() {
         const el = this.el;
         const data = this.data;
 
@@ -111,7 +111,7 @@ AFRAME.registerSystem('remote-local', {
 		}
 
         const system = this;
-		renderer.xr.updateCamera = function ( cameraVR, camera ) {
+		renderer.xr.updateCamera = function( cameraVR, camera ) {
             const cameraL = cameraVR.cameras[0];
             const cameraR = cameraVR.cameras[1];
 

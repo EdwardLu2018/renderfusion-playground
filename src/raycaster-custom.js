@@ -8,7 +8,7 @@ AFRAME.registerComponent('raycaster-custom', {
 
     dependencies: ['remote-controller'],
 
-    init: function () {
+    init: function() {
         const el = this.el;
         const data = this.data;
 
@@ -136,7 +136,7 @@ AFRAME.registerComponent('raycaster-custom', {
         }
 	},
 
-    update: function (oldData) {
+    update: function(oldData) {
         var data = this.data;
         var el = this.el;
         var raycaster = this.raycaster;

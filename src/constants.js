@@ -29,4 +29,8 @@ export const TaskState = Object.freeze({
 export const EVENTS = Object.freeze({
     RAYCASTER_INTERSECT_LOCAL:      'raycaster-custom-intersected-local',
     RAYCASTER_INTERSECT_REMOTE:     'raycaster-custom-intersected-remote',
+    HAND_GRAB_START_LOCAL:          'hand-grab-start-local',
+    HAND_GRAB_START_REMOTE:         'hand-grab-start-remote',
+    HAND_GRAB_END_LOCAL:            'hand-grab-end-local',
+    HAND_GRAB_END_REMOTE:           'hand-grab-end-remote',
 });

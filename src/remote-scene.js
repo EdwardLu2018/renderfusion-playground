@@ -16,7 +16,7 @@ AFRAME.registerComponent('remote-scene', {
         helmetRotateDirection: {type: 'number', default: -1},
     },
 
-    init: async function () {
+    init: async function() {
         const el = this.el;
         const data = this.data;
 
@@ -91,7 +91,7 @@ AFRAME.registerComponent('remote-scene', {
 
         // new EXRLoader()
         //     .setPath( 'assets/textures/' )
-        //     .load( 'starmap_2020_4k_gal.exr', function ( texture ) {
+        //     .load( 'starmap_2020_4k_gal.exr', function( texture ) {
         //         texture.mapping = THREE.EquirectangularReflectionMapping;
         //         scene.background = texture;
         //         scene.environment = texture;
@@ -101,7 +101,7 @@ AFRAME.registerComponent('remote-scene', {
 
         new RGBELoader()
             .setPath( 'assets/textures/' )
-            .load( 'farm_field_puresky_1k.hdr', function ( texture ) {
+            .load( 'farm_field_puresky_1k.hdr', function( texture ) {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.background = texture;
                 scene.environment = texture;
@@ -111,11 +111,11 @@ AFRAME.registerComponent('remote-scene', {
 
         textureLoader
             .setPath( 'assets/textures/' )
-            .load( 'height_map.png' , function ( texture ) {
+            .load( 'height_map.png' , function( texture ) {
                 texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
                 texture.repeat.set(1, 1);
 
-                textureLoader.load('park_dirt_diff_1k.png', function ( groundTexture ) {
+                textureLoader.load('park_dirt_diff_1k.png', function( groundTexture ) {
                     groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
                     groundTexture.anisotropy = 16;
                     groundTexture.encoding = THREE.sRGBEncoding;
@@ -141,7 +141,7 @@ AFRAME.registerComponent('remote-scene', {
         var model;
         gltfLoader
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
-            .load( 'DamagedHelmet.gltf', function ( gltf ) {
+            .load( 'DamagedHelmet.gltf', function( gltf ) {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
                 model.position.set(-0.75, 1.1, -1);
@@ -154,7 +154,7 @@ AFRAME.registerComponent('remote-scene', {
 
         // gltfLoader
         //     .setPath( 'assets/models/' )
-        //     .load( 'sword.glb', function ( gltf ) {
+        //     .load( 'sword.glb', function( gltf ) {
         //         model = gltf.scene;
         //         model.scale.set(0.25, 0.25, 0.25);
         //         model.position.set(0.75, 1.5, -1);
@@ -233,7 +233,7 @@ AFRAME.registerComponent('remote-scene', {
         }
     },
 
-    tick: function () {
+    tick: function() {
         const el = this.el;
         const data = this.data;
 

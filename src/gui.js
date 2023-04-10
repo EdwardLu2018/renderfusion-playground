@@ -2,7 +2,7 @@ import { GUI } from 'dat.gui';
 import { ExperimentsList } from './constants.js';
 
 AFRAME.registerSystem('gui', {
-    init: function () {
+    init: function() {
         const el = this.el;
 
         const sceneEl = this.sceneEl;

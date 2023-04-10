@@ -15,7 +15,7 @@ AFRAME.registerComponent('local-scene', {
         reset: {type: 'boolean'},
     },
 
-    init: function () {
+    init: function() {
         const el = this.el;
         const data = this.data;
 
@@ -49,7 +49,7 @@ AFRAME.registerComponent('local-scene', {
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
-        //     .load( 'san_giuseppe_bridge_2k.hdr', function ( texture ) {
+        //     .load( 'san_giuseppe_bridge_2k.hdr', function( texture ) {
         //         texture.mapping = THREE.EquirectangularReflectionMapping;
         //         scene.background = texture;
         //         scene.environment = texture;
@@ -105,7 +105,7 @@ AFRAME.registerComponent('local-scene', {
         const loader = new GLTFLoader();
         loader
             .setPath( 'assets/models/' )
-            .load( 'sword.glb', function ( gltf ) {
+            .load( 'sword.glb', function( gltf ) {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
                 model.position.set(-0.75, 1.5, -1);
@@ -123,7 +123,7 @@ AFRAME.registerComponent('local-scene', {
 
         loader
             .setPath( 'assets/models/' )
-            .load( 'sword.glb', function ( gltf ) {
+            .load( 'sword.glb', function( gltf ) {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
                 model.position.set(0, 1.5, 1.2);
@@ -175,7 +175,7 @@ AFRAME.registerComponent('local-scene', {
         }
     },
 
-    tick: function () {
+    tick: function() {
         const el = this.el;
         const data = this.data;
 

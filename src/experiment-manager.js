@@ -11,7 +11,7 @@ AFRAME.registerSystem('experiment-manager', {
         highPolyLocalFPS: {type: 'number', default: 11},
     },
 
-    init: function () {
+    init: function() {
         const el = this.el;
         const data = this.data;
 

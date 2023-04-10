@@ -4,7 +4,7 @@ AFRAME.registerComponent('task', {
     schema: {
     },
 
-    init: async function () {
+    init: async function() {
         const el = this.el;
         const data = this.data;
 
@@ -31,7 +31,7 @@ AFRAME.registerComponent('task', {
         const data = this.data;
     },
 
-    tick: function () {
+    tick: function() {
         const el = this.el;
         const data = this.data;
 

@@ -5,7 +5,7 @@ AFRAME.registerComponent('remote-controller', {
         latency: {type: 'number', default: 150}, // ms
     },
 
-    init: function () {
+    init: function() {
         const el = this.el;
         const data = this.data;
 
@@ -31,7 +31,7 @@ AFRAME.registerComponent('remote-controller', {
         });
     },
 
-    tick: function () {
+    tick: function() {
         const el = this.el;
         const data = this.data;
 
