@@ -90,55 +90,46 @@ AFRAME.registerComponent('local-scene', {
             fontColor: new THREE.Color( 0x222222 )
         };
 
-        const button1 = new ThreeMeshUI.Block( buttonOptions );
-        const button2 = new ThreeMeshUI.Block( buttonOptions );
-        const button3 = new ThreeMeshUI.Block( buttonOptions );
-        const button4 = new ThreeMeshUI.Block( buttonOptions );
-        button1.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
-        button2.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
-        button3.add( new ThreeMeshUI.Text( { content: 'I Give Up' } ) );
-        button4.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
-        const buttonList = [button1, button2, button3, button4];
+        const prevButton = new ThreeMeshUI.Block( buttonOptions );
+        const nextButton = new ThreeMeshUI.Block( buttonOptions );
+        const doneButton = new ThreeMeshUI.Block( buttonOptions );
+        prevButton.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
+        nextButton.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
+        doneButton.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
+        const buttonList = [prevButton, nextButton, doneButton];
 
-        button1.setupState( {
+        prevButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-
                 currentExp -= 1;
-			    if ( currentExp < 0 ) currentExp = 5;
+			    if ( currentExp < 0 ) currentExp = ExperimentsList.length - 1;
                 this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
-
             }
         });
-        button1.setupState( hoveredStateAttributes );
-        button1.setupState( idleStateAttributes );
+        prevButton.setupState( hoveredStateAttributes );
+        prevButton.setupState( idleStateAttributes );
 
-        button2.setupState( {
+        nextButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-
-                currentExp = ( currentExp + 1 ) % 6;
+                currentExp = ( currentExp + 1 ) % ExperimentsList.length;
                 this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
-
 		    }
         });
-        button2.setupState( hoveredStateAttributes );
-        button2.setupState( idleStateAttributes );
+        nextButton.setupState( hoveredStateAttributes );
+        nextButton.setupState( idleStateAttributes );
 
-        button4.setupState( {
+        doneButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
                 el.emit(EVENTS.BUTTON_DONE_PRESSED, {});
-
 		    }
         });
-        button4.setupState( hoveredStateAttributes );
-        button4.setupState( idleStateAttributes );
-
-
+        doneButton.setupState( hoveredStateAttributes );
+        doneButton.setupState( idleStateAttributes );
 
         const container = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -149,7 +140,7 @@ AFRAME.registerComponent('local-scene', {
             padding: 0.02,
             borderRadius: 0.11
         } );
-        container.add( button1, button2 );
+        container.add( prevButton, nextButton );
 
         this.menu = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -160,7 +151,7 @@ AFRAME.registerComponent('local-scene', {
             padding: 0.02,
             borderRadius: 0.11
         } );
-        this.menu.add( container, button3, button4 );
+        this.menu.add( container, doneButton );
         this.menu.scale.set(1, 1, 1);
         this.menu.position.set(-2, 1.2, -1);
         this.menu.rotation.set(0, Math.PI / 4, 0);

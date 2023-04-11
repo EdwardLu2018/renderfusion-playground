@@ -2,19 +2,14 @@ import { EVENTS, RenderingMedium, Buttons } from './constants';
 
 AFRAME.registerComponent('hand-click', {
     schema: {
-        
+
     },
 
-    dependencies: ['remote-controller'],
+    dependencies: ['interaction-manager'],
 
     init: function() {
         const el = this.el;
         const data = this.data;
-
-        this.intersections = {
-            local: [],
-            remote: [],
-        };
 
         this.clicking = {
             local: [],
@@ -41,8 +36,6 @@ AFRAME.registerComponent('hand-click', {
         this.selectState = false;
 
         this.getContainerObjByChild = this.getContainerObjByChild.bind(this);
-        this.gotIntersectedObjectsLocal = this.gotIntersectedObjectsLocal.bind(this);
-        this.gotIntersectedObjectsRemote = this.gotIntersectedObjectsRemote.bind(this);
         this.onClickButtonLocal = this.onClickButtonLocal.bind(this);
         this.onClickButtonRemote = this.onClickButtonRemote.bind(this);
         this.onUnclickButtonLocal = this.onUnclickButtonLocal.bind(this);
@@ -60,18 +53,9 @@ AFRAME.registerComponent('hand-click', {
         else return null;
     },
 
-    gotIntersectedObjectsLocal: function(evt) {
-        this.intersections.local = evt.detail.intersections;
-    },
-
-    gotIntersectedObjectsRemote: function(evt) {
-        this.intersections.remote = evt.detail.intersections;
-    },
-
     onClickButtonLocal: function(evt) {
         const intersections = evt.detail.intersections;
         this.onClickButton(intersections, RenderingMedium.Local);
-
     },
 
     onClickButtonRemote: function(evt) {
@@ -81,7 +65,6 @@ AFRAME.registerComponent('hand-click', {
 
     onUnclickButtonLocal: function(evt) {
         this.onUnclickButton(RenderingMedium.Local);
-
     },
 
     onUnclickButtonRemote: function(evt) {
@@ -91,16 +74,15 @@ AFRAME.registerComponent('hand-click', {
     onClickButton: function(intersections, medium) {
         const el = this.el;
         const data = this.data;
-    
+
+        const clicking = (medium === RenderingMedium.Local) ? this.clicking.local : this.clicking.remote;
+
         var i;
         var intersection;
-        const clicking = (medium === RenderingMedium.Local) ? this.clicking.local : this.clicking.remote;
         for (i = 0; i < intersections.length; i++) {
             intersection = this.getContainerObjByChild(intersections[i].object);
             if (intersection && intersection.isUI) {
-                clicking.push({
-                    object: intersection,
-                });
+                clicking.push({ object: intersection });
                 intersection.setState( 'selected' );
             }
         }
@@ -108,15 +90,17 @@ AFRAME.registerComponent('hand-click', {
 
     onUnclickButton: function(medium) {
         const clicking = (medium === RenderingMedium.Local) ? this.clicking.local : this.clicking.remote;
+
         for (i = 0; i < clicking.length; i++) {
-            clicking[i].object.setState( 'idle' );                
+            clicking[i].object.setState( 'idle' );
         }
+
         if (medium === RenderingMedium.Local){
-            clicking.local = [];
+            this.clicking.local = [];
         } else {
-            clicking.remote = [];
+            this.clicking.remote = [];
         }
-        
+
     },
 
 });

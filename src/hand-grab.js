@@ -83,9 +83,8 @@ AFRAME.registerComponent('hand-grab', {
                 continue;
             }
 
-            grabbing.push({
-                object: this.getContainerObjByChild(intersection.object),
-            });
+            intersection = this.getContainerObjByChild(intersection.object);
+            grabbing.push({ object: intersection });
         }
 
         for (i = 0; i < grabbing.length; i++) {
