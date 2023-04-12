@@ -81,7 +81,7 @@ AFRAME.registerComponent('hand-click', {
         var intersection;
         for (i = 0; i < intersections.length; i++) {
             intersection = this.getContainerObjByChild(intersections[i].object);
-            if (intersection && intersection.isUI) {
+            if (intersection.isUI && intersection?.states?.['selected']) {
                 clicking.push({ object: intersection });
                 intersection.setState( 'selected' );
             }
@@ -100,7 +100,6 @@ AFRAME.registerComponent('hand-click', {
         } else {
             this.clicking.remote = [];
         }
-
     },
 
 });

@@ -120,6 +120,7 @@ AFRAME.registerComponent('local-scene', {
         });
         nextButton.setupState( hoveredStateAttributes );
         nextButton.setupState( idleStateAttributes );
+        console.log(nextButton)
 
         doneButton.setupState( {
             state: 'selected',

@@ -149,7 +149,7 @@ AFRAME.registerSystem('experiment-manager', {
 
         this.experiment = experiment;
         this.experimentText.set( { content: this.experiment } );
-        
+
         switch (this.experiment) {
             case Experiments.LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
