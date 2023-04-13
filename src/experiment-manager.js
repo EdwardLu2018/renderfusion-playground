@@ -1,4 +1,4 @@
-import { Experiments, RenderingMedium, Resolution, ButtonOptions } from './constants';
+import { Experiments, RenderingMedium, Resolution, ButtonOptions, EVENTS } from './constants';
 
 import ThreeMeshUI from 'three-mesh-ui';
 
@@ -226,5 +226,6 @@ AFRAME.registerSystem('experiment-manager', {
             default:
                 break;
         }
+        sceneEl.emit(EVENTS.BUTTON_RESET_PRESSED, {});
     },
 });

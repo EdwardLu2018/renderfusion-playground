@@ -178,9 +178,9 @@ AFRAME.registerComponent('local-scene', {
             .load( 'sword.glb', function( gltf ) {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
-                model.position.set(2, 1.5, 0);
+                model.position.set(1, 1.5, 0);
                 model.rotation.z = Math.PI;
-                model.rotation.y = Math.PI / 2;
+                model.rotation.y = -Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) {
                         node.castShadow = true;
@@ -221,6 +221,7 @@ AFRAME.registerComponent('local-scene', {
         }
 
         if (data.reset) {
+            if (this.experimentManager.objects['sword'] === undefined) return;
             this.experimentManager.objects['sword'].position.set(-0.75, 1.5, -1);
             this.experimentManager.objects['sword'].rotation.set(0, Math.PI / 2, 0);
             this.experimentManager.objects['redBox'].position.set(0, 1.1, -1);

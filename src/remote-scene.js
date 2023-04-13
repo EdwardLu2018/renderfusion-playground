@@ -242,7 +242,7 @@ AFRAME.registerComponent('remote-scene', {
         const camera = this.remoteCamera;
 
         const duration = 2500;
-        const scaleFactor = 1.025;
+        const scaleFactor = 1.1;
 
         this.elapsed += this.clock.getDelta() * 1000;
         if (this.elapsed > 1000 / data.fps) {

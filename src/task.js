@@ -31,8 +31,8 @@ AFRAME.registerComponent('task', {
 
         this.successesIncremented = false;
 
-        this.onButtonResetPressed = this.onButtonResetPressed.bind(this);
-        el.addEventListener(EVENTS.BUTTON_RESET_PRESSED, this.onButtonResetPressed);
+        this.onResetButtonPressed = this.onResetButtonPressed.bind(this);
+        el.addEventListener(EVENTS.BUTTON_RESET_PRESSED, this.onResetButtonPressed);
     },
 
     incrementSuccesses() {
@@ -52,13 +52,14 @@ AFRAME.registerComponent('task', {
         const data = this.data;
 
         if (data.currTask !== oldData.currTask) {
-            this.task = data.currTask;
+            this.task = Task.Done;
             this.successes = 0;
         }
     },
 
-    onButtonResetPressed: function() {
+    onResetButtonPressed: function() {
         this.task = Task.Done;
+        this.successes = 0;
     },
 
     tick: function() {
@@ -67,15 +68,19 @@ AFRAME.registerComponent('task', {
 
         const sceneEl = el;
 
+        if (this.experimentManager.objects['sword'] === undefined ||
+            this.experimentManager.objects['sword2'] === undefined) return;
+
+        if (this.experimentManager.objects['blueBox'] === undefined ||
+            this.experimentManager.objects['redBox'] === undefined ||
+            this.experimentManager.objects['helmet'] === undefined) return;
+
         var pos1 = new THREE.Vector3();
         var pos2 = new THREE.Vector3();
         var pos3 = new THREE.Vector3();
 
         switch (this.task) {
             case Task.HighDexterity: {
-                if (this.experimentManager.objects['sword'] === undefined ||
-                    this.experimentManager.objects['sword2'] === undefined) return;
-
                 this.experimentManager.updateInstructions(
                     `Move the sword in the helmet to match the transparent sword next to me!\n\nScore: ${this.successes}`
                 );
@@ -87,7 +92,7 @@ AFRAME.registerComponent('task', {
                 direction.applyQuaternion(this.experimentManager.objects['sword'].quaternion).add(pos1);
                 direction2.applyQuaternion(this.experimentManager.objects['sword2'].quaternion).add(pos2);
 
-                if (pos1.distanceTo(pos2) <= 0.05 && direction.angleTo(direction2) <= 0.5) {
+                if (pos1.distanceTo(pos2) <= 0.5 && direction.angleTo(direction2) <= 0.25) {
                     this.incrementSuccesses();
                     this.task = Task.Done;
                 }
@@ -98,10 +103,6 @@ AFRAME.registerComponent('task', {
             }
 
             case Task.LowDexterity: {
-                if (this.experimentManager.objects['blueBox'] === undefined ||
-                    this.experimentManager.objects['redBox'] === undefined ||
-                    this.experimentManager.objects['helmet'] === undefined) return;
-
                 this.experimentManager.updateInstructions(
                     `Move the two boxes inside the helmet!\n\nScore: ${this.successes}`
                 );
@@ -110,7 +111,7 @@ AFRAME.registerComponent('task', {
                 pos2.copy(this.experimentManager.objects['redBox'].position);
                 pos3.copy(this.experimentManager.objects['helmet'].position);
 
-                if (pos3.distanceTo(pos1) <= 0.25 && pos3.distanceTo(pos2) <= 0.25) {
+                if (pos3.distanceTo(pos1) <= 0.2 && pos3.distanceTo(pos2) <= 0.2) {
                     this.incrementSuccesses();
                     this.task = Task.Done;
                 }

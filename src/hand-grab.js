@@ -2,7 +2,7 @@ import { EVENTS, RenderingMedium } from './constants';
 
 AFRAME.registerComponent('hand-grab', {
     schema: {
-        scaleUpBy: {type: 'number', default: 1.15},
+        scaleUpBy: {type: 'number', default: 1.05},
     },
 
     dependencies: ['interaction-manager'],
