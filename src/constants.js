@@ -37,7 +37,7 @@ export const EVENTS = Object.freeze({
     HAND_GRAB_START_REMOTE:         'hand-grab-start-remote',
     HAND_GRAB_END_LOCAL:            'hand-grab-end-local',
     HAND_GRAB_END_REMOTE:           'hand-grab-end-remote',
-    BUTTON_DONE_PRESSED:            'button-done-pressed',
+    BUTTON_RESET_PRESSED:            'button-done-pressed',
 });
 
 export const Task = Object.freeze({

@@ -38,7 +38,7 @@ AFRAME.registerComponent('local-scene', {
         this.clock = new THREE.Clock();
         var currentExp = 0;
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
-        const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(0, 1.1, -1);
         this.box.castShadow = true;
@@ -83,11 +83,11 @@ AFRAME.registerComponent('local-scene', {
 
         const prevButton = new ThreeMeshUI.Block( ButtonOptions );
         const nextButton = new ThreeMeshUI.Block( ButtonOptions );
-        const doneButton = new ThreeMeshUI.Block( ButtonOptions );
+        const resetButton = new ThreeMeshUI.Block( ButtonOptions );
         prevButton.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
         nextButton.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
-        doneButton.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
-        const buttonList = [prevButton, nextButton, doneButton];
+        resetButton.add( new ThreeMeshUI.Text( { content: 'Reset' } ) );
+        const buttonList = [prevButton, nextButton, resetButton];
 
         prevButton.setupState( {
             state: 'selected',
@@ -112,15 +112,15 @@ AFRAME.registerComponent('local-scene', {
         nextButton.setupState( hoveredStateAttributes );
         nextButton.setupState( idleStateAttributes );
 
-        doneButton.setupState( {
+        resetButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-                el.emit(EVENTS.BUTTON_DONE_PRESSED, {});
+                el.emit(EVENTS.BUTTON_RESET_PRESSED, {});
 		    }
         });
-        doneButton.setupState( hoveredStateAttributes );
-        doneButton.setupState( idleStateAttributes );
+        resetButton.setupState( hoveredStateAttributes );
+        resetButton.setupState( idleStateAttributes );
 
         const container = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -142,7 +142,7 @@ AFRAME.registerComponent('local-scene', {
             padding: 0.02,
             borderRadius: 0.11
         } );
-        this.menu.add( container, doneButton );
+        this.menu.add( container, resetButton );
         this.menu.scale.set(1, 1, 1);
         this.menu.position.set(-2, 1.2, -1);
         this.menu.rotation.set(0, Math.PI / 4, 0);
@@ -178,16 +178,16 @@ AFRAME.registerComponent('local-scene', {
             .load( 'sword.glb', function( gltf ) {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
-                model.position.set(0, 1.5, 1.2);
-                model.rotation.z += Math.PI;
-                model.rotation.y += Math.PI;
+                model.position.set(2, 1.5, 0);
+                model.rotation.z = Math.PI;
+                model.rotation.y = Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) {
                         node.castShadow = true;
                         node.receiveShadow = true;
                         if (node.material) {
                             node.material.transparent = true;
-                            node.material.opacity = 0.3;
+                            node.material.opacity = 0.35;
                         }
                     }
                 } );

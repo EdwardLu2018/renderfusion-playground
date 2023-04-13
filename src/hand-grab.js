@@ -2,7 +2,7 @@ import { EVENTS, RenderingMedium } from './constants';
 
 AFRAME.registerComponent('hand-grab', {
     schema: {
-        scaleUpBy: {type: 'number', default: 1.1},
+        scaleUpBy: {type: 'number', default: 1.15},
     },
 
     dependencies: ['interaction-manager'],
@@ -84,7 +84,9 @@ AFRAME.registerComponent('hand-grab', {
             }
 
             intersection = this.getContainerObjByChild(intersection.object);
-            grabbing.push({ object: intersection });
+            if (intersection) {
+                grabbing.push({ object: intersection });
+            }
         }
 
         for (i = 0; i < grabbing.length; i++) {

@@ -29,8 +29,22 @@ AFRAME.registerComponent('task', {
 
         this.successes = 0;
 
-        this.onButtonDonePressed = this.onButtonDonePressed.bind(this);
-        el.addEventListener(EVENTS.BUTTON_DONE_PRESSED, this.onButtonDonePressed);
+        this.successesIncremented = false;
+
+        this.onButtonResetPressed = this.onButtonResetPressed.bind(this);
+        el.addEventListener(EVENTS.BUTTON_RESET_PRESSED, this.onButtonResetPressed);
+    },
+
+    incrementSuccesses() {
+        if (this.successesIncremented === true) return;
+
+        this.successes++;
+        this.successesIncremented = true;
+
+        const _this = this;
+        setTimeout(() => {
+            _this.successesIncremented = false;
+        }, 100);
     },
 
     update: function(oldData) {
@@ -43,10 +57,8 @@ AFRAME.registerComponent('task', {
         }
     },
 
-    onButtonDonePressed: function() {
-        if (this.task === Task.Menu) {
-            this.task = Task.Done;
-        }
+    onButtonResetPressed: function() {
+        this.task = Task.Done;
     },
 
     tick: function() {
@@ -65,7 +77,7 @@ AFRAME.registerComponent('task', {
                     this.experimentManager.objects['sword2'] === undefined) return;
 
                 this.experimentManager.updateInstructions(
-                    `Move the sword in the helmet to match the sword behind you.\nScore: ${this.successes}`
+                    `Move the sword in the helmet to match the transparent sword next to me!\n\nScore: ${this.successes}`
                 );
 
                 pos1.copy(this.experimentManager.objects['sword'].position);
@@ -76,6 +88,7 @@ AFRAME.registerComponent('task', {
                 direction2.applyQuaternion(this.experimentManager.objects['sword2'].quaternion).add(pos2);
 
                 if (pos1.distanceTo(pos2) <= 0.05 && direction.angleTo(direction2) <= 0.5) {
+                    this.incrementSuccesses();
                     this.task = Task.Done;
                 }
 
@@ -90,7 +103,7 @@ AFRAME.registerComponent('task', {
                     this.experimentManager.objects['helmet'] === undefined) return;
 
                 this.experimentManager.updateInstructions(
-                    `Move the boxes inside the helmet!\nScore: ${this.successes}`
+                    `Move the two boxes inside the helmet!\n\nScore: ${this.successes}`
                 );
 
                 pos1.copy(this.experimentManager.objects['blueBox'].position);
@@ -98,6 +111,7 @@ AFRAME.registerComponent('task', {
                 pos3.copy(this.experimentManager.objects['helmet'].position);
 
                 if (pos3.distanceTo(pos1) <= 0.25 && pos3.distanceTo(pos2) <= 0.25) {
+                    this.incrementSuccesses();
                     this.task = Task.Done;
                 }
 
@@ -110,7 +124,6 @@ AFRAME.registerComponent('task', {
                 this.experimentManager.updateInstructions(
                     "Click Done on the menu!"
                 );
-                // this.task = Task.Done;
 
                 break;
             }
@@ -121,7 +134,10 @@ AFRAME.registerComponent('task', {
                 this.toggleReset = !this.toggleReset;
 
                 this.task = data.currTask;
-                this.successes++;
+
+                if (this.task == Task.HighDexterity) {
+                    this.experimentManager.objects['sword2'].rotation.z = 2 * Math.PI * Math.random();
+                }
 
                 break;
             }

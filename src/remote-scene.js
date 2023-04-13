@@ -79,7 +79,7 @@ AFRAME.registerComponent('remote-scene', {
         }
 
         const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
-        const boxGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(0.75, 1.1, -1);
         this.box.castShadow = true;
@@ -142,7 +142,7 @@ AFRAME.registerComponent('remote-scene', {
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function( gltf ) {
                 model = gltf.scene;
-                model.scale.set(0.25, 0.25, 0.25);
+                model.scale.set(0.27, 0.27, 0.27);
                 model.position.set(-0.75, 1.1, -1);
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
@@ -232,7 +232,7 @@ AFRAME.registerComponent('remote-scene', {
         }
     },
 
-    tick: function() {
+    tick: function(dt) {
         const el = this.el;
         const data = this.data;
 
@@ -241,6 +241,9 @@ AFRAME.registerComponent('remote-scene', {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
+        const duration = 2500;
+        const scaleFactor = 1.025;
+
         this.elapsed += this.clock.getDelta() * 1000;
         if (this.elapsed > 1000 / data.fps) {
             this.elapsed = 0;
@@ -248,6 +251,17 @@ AFRAME.registerComponent('remote-scene', {
 
             if (this.experimentManager.objects['helmet']) {
                 this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / data.fps;
+            }
+
+            for (var i = 0; i < data.numModels; i++) {
+                if (this.experimentManager.objects[`modelLow${i}`] === undefined ||
+                    this.experimentManager.objects[`modelHigh${i}`] === undefined) continue;
+
+                const origModelScale = new THREE.Vector3(2.5, 2.5, 2.5);
+                const scale = origModelScale.multiplyScalar(1 + (Math.sin(dt / duration * Math.PI * 2) * 0.5 + 0.5) * (scaleFactor - 1));
+
+                this.experimentManager.objects[`modelLow${i}`].scale.copy(scale);
+                this.experimentManager.objects[`modelHigh${i}`].scale.copy(scale);
             }
         }
     }

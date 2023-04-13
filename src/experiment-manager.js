@@ -38,7 +38,7 @@ AFRAME.registerSystem('experiment-manager', {
         ButtonOptions1.width = 1.0;
         const block1 = new ThreeMeshUI.Block( ButtonOptions1 );
         const block2 = new ThreeMeshUI.Block( ButtonOptions1 );
-        ButtonOptions1.height = 0.5;
+        ButtonOptions1.height = 0.55;
         const block3 = new ThreeMeshUI.Block( ButtonOptions1 );
 
         block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
