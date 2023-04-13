@@ -37,14 +37,15 @@ export const EVENTS = Object.freeze({
     HAND_GRAB_START_REMOTE:         'hand-grab-start-remote',
     HAND_GRAB_END_LOCAL:            'hand-grab-end-local',
     HAND_GRAB_END_REMOTE:           'hand-grab-end-remote',
-    BUTTON_RESET_PRESSED:            'button-done-pressed',
+    BUTTON_RESET_PRESSED:           'button-reset-pressed',
 });
 
 export const Task = Object.freeze({
+    Idle:           'Idle',
+    Reset:          'Reset',
     HighDexterity:  'High Dexterity',
     LowDexterity:   'Low Dexterity',
-    Menu:           'menu',
-    Done:           'done',
+    Done:           'Done',
 });
 
-export const TaskList = Object.values([Task.HighDexterity, Task.LowDexterity, Task.Menu]);
+export const TaskList = Object.values([Task.HighDexterity, Task.LowDexterity]);

@@ -66,9 +66,9 @@ AFRAME.registerSystem('gui', {
             } );
 
         gui.add(options, 'task', TaskList)
-            .name('Task')
+            .name('task')
             .onChange( function() {
-                sceneEl.setAttribute('task', 'currTask', this.getValue());
+                sceneEl.setAttribute('task-manager', 'currTask', this.getValue());
             } );
 
         gui.open()

@@ -1,8 +1,9 @@
 import { Task, EVENTS } from './constants';
 
-AFRAME.registerComponent('task', {
+AFRAME.registerComponent('task-manager', {
     schema: {
         currTask: {type: 'string', default: Task.HighDexterity},
+        taskDuration: {type: 'number', default: 30},
     },
 
     init: async function() {
@@ -24,7 +25,10 @@ AFRAME.registerComponent('task', {
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
 
-        this.task = Task.HighDexterity;
+        this.elapsed = 0;
+        this.clock = new THREE.Clock();
+
+        this.state = Task.Idle;
         this.toggleReset = true;
 
         this.successes = 0;
@@ -52,13 +56,13 @@ AFRAME.registerComponent('task', {
         const data = this.data;
 
         if (data.currTask !== oldData.currTask) {
-            this.task = Task.Done;
-            this.successes = 0;
+            this.state = Task.Idle;
         }
     },
 
     onResetButtonPressed: function() {
-        this.task = Task.Done;
+        this.state = Task.Reset;
+        this.elapsed = 0;
         this.successes = 0;
     },
 
@@ -68,18 +72,33 @@ AFRAME.registerComponent('task', {
 
         const sceneEl = el;
 
-        if (this.experimentManager.objects['sword'] === undefined ||
+        if (this.experimentManager.objects['sword']  === undefined ||
             this.experimentManager.objects['sword2'] === undefined) return;
 
         if (this.experimentManager.objects['blueBox'] === undefined ||
-            this.experimentManager.objects['redBox'] === undefined ||
-            this.experimentManager.objects['helmet'] === undefined) return;
+            this.experimentManager.objects['redBox']  === undefined ||
+            this.experimentManager.objects['helmet']  === undefined) return;
+
+        this.elapsed += this.clock.getDelta();
+        if (this.state !== Task.Idle && this.state !== Task.Reset && this.state !== Task.Done) {
+            this.experimentManager.updateTimer(Math.round(this.elapsed));
+
+            if (this.elapsed > data.taskDuration) this.state = Task.Done;
+        }
 
         var pos1 = new THREE.Vector3();
         var pos2 = new THREE.Vector3();
         var pos3 = new THREE.Vector3();
 
-        switch (this.task) {
+        switch (this.state) {
+            case Task.Idle: {
+                this.experimentManager.updateInstructions(
+                    `Click Reset to play again!\n\nScore: ${this.successes}`
+                );
+
+                break;
+            }
+
             case Task.HighDexterity: {
                 this.experimentManager.updateInstructions(
                     `Move the sword in the helmet to match the transparent sword next to me!\n\nScore: ${this.successes}`
@@ -94,7 +113,7 @@ AFRAME.registerComponent('task', {
 
                 if (pos1.distanceTo(pos2) <= 0.5 && direction.angleTo(direction2) <= 0.25) {
                     this.incrementSuccesses();
-                    this.task = Task.Done;
+                    this.state = Task.Reset;
                 }
 
                 // this.experimentManager.updateInstructions(parseFloat(pos1.distanceTo(pos2)) + " " + parseFloat(direction.angleTo(direction2)));
@@ -113,7 +132,7 @@ AFRAME.registerComponent('task', {
 
                 if (pos3.distanceTo(pos1) <= 0.2 && pos3.distanceTo(pos2) <= 0.2) {
                     this.incrementSuccesses();
-                    this.task = Task.Done;
+                    this.state = Task.Reset;
                 }
 
                 // this.experimentManager.updateInstructions(parseFloat(pos3.distanceTo(pos1)) + " " + parseFloat(pos3.distanceTo(pos2)));
@@ -121,24 +140,23 @@ AFRAME.registerComponent('task', {
                 break;
             }
 
-            case Task.Menu: {
-                this.experimentManager.updateInstructions(
-                    "Click Done on the menu!"
-                );
+            case Task.Reset: {
+                sceneEl.setAttribute('local-scene', 'reset', this.toggleReset);
+                sceneEl.setAttribute('remote-scene', 'reset', this.toggleReset);
+                this.toggleReset = !this.toggleReset;
+
+                this.state = data.currTask;
+
+                if (this.state == Task.HighDexterity) {
+                    this.experimentManager.objects['sword2'].rotation.z = 2 * Math.PI * Math.random();
+                }
 
                 break;
             }
 
             case Task.Done: {
-                sceneEl.setAttribute('local-scene', 'reset', this.toggleReset);
-                sceneEl.setAttribute('remote-scene', 'reset', this.toggleReset);
-                this.toggleReset = !this.toggleReset;
-
-                this.task = data.currTask;
-
-                if (this.task == Task.HighDexterity) {
-                    this.experimentManager.objects['sword2'].rotation.z = 2 * Math.PI * Math.random();
-                }
+                this.state = Task.Idle;
+                this.elapsed = 0;
 
                 break;
             }

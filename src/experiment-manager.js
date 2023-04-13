@@ -38,14 +38,17 @@ AFRAME.registerSystem('experiment-manager', {
         ButtonOptions1.width = 1.0;
         const block1 = new ThreeMeshUI.Block( ButtonOptions1 );
         const block2 = new ThreeMeshUI.Block( ButtonOptions1 );
-        ButtonOptions1.height = 0.55;
         const block3 = new ThreeMeshUI.Block( ButtonOptions1 );
+        ButtonOptions1.height = 0.55;
+        const block4 = new ThreeMeshUI.Block( ButtonOptions1 );
 
         block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
         this.experimentText = new ThreeMeshUI.Text( { content: '' });
         block2.add( this.experimentText );
+        this.timerText = new ThreeMeshUI.Text( { content: 'Time Left: None' });
+        block3.add( this.timerText );
         this.instructionsText = new ThreeMeshUI.Text( { content: '' });
-        block3.add( this.instructionsText );
+        block4.add( this.instructionsText );
 
         this.infoBlock = new ThreeMeshUI.Block( {
             justifyContent: 'center',
@@ -56,20 +59,24 @@ AFRAME.registerSystem('experiment-manager', {
             padding: 0.02,
             borderRadius: 0.11
         } );
-        this.infoBlock.add(block1, block2, block3);
+        this.infoBlock.add(block1, block2, block3, block4);
         this.infoBlock.scale.set(1, 1, 1);
         this.infoBlock.position.set(2, 1.2, -1);
         this.infoBlock.rotation.set(0, -Math.PI / 4, 0);
         this.localScene.add(this.infoBlock);
         this.infoBlock.userData.originalMedium = RenderingMedium.Local;
         this.infoBlock.userData.renderingMedium = RenderingMedium.Local;
-        this.objects['experiment-text'] = this.infoBlock;
+        this.objects['info-block'] = this.infoBlock;
 
-        sceneEl.setAttribute('task', '');
+        sceneEl.setAttribute('task-manager', '');
     },
 
     updateInstructions(text) {
         this.instructionsText.set( { content: text } );
+    },
+
+    updateTimer(timeLeft) {
+        this.timerText.set( { content: `Time Left: ${timeLeft}s` } );
     },
 
     swapRenderingMedium(objectId, renderingMediumType) {
