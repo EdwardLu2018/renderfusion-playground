@@ -4,16 +4,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 
-import { Experiments, RenderingMedium } from './constants';
+import { Experiments, RenderingMedium, DefaultLatency } from './constants';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 90},
-        latency: {type: 'number', default: 150}, // ms
+        latency: {type: 'number', default: DefaultLatency}, // ms
         numLights: {type: 'number', default: 3},
         numModels: {type: 'number', default: 8},
         reset: {type: 'boolean'},
-        helmetRotateDirection: {type: 'number', default: -1},
     },
 
     init: async function() {
@@ -248,7 +247,7 @@ AFRAME.registerComponent('remote-scene', {
             this.stats.update();
 
             if (this.experimentManager.objects['helmet']) {
-                this.experimentManager.objects['helmet'].rotation.y += data.helmetRotateDirection * 0.01 * 60 / data.fps;
+                this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / data.fps;
             }
         }
     }

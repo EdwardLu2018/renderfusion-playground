@@ -1,4 +1,4 @@
-import { Experiments, RenderingMedium, Resolution } from './constants';
+import { Experiments, RenderingMedium, Resolution, ButtonOptions } from './constants';
 
 import ThreeMeshUI from 'three-mesh-ui';
 
@@ -34,18 +34,12 @@ AFRAME.registerSystem('experiment-manager', {
         this.localScene = sceneEl.object3D;
         this.localCamera = sceneEl.camera;
 
-        const buttonOptions = {
-            width: 1.0,
-            height: 0.15,
-            justifyContent: 'center',
-            offset: 0.05,
-            margin: 0.02,
-            borderRadius: 0.075
-        };
-        const block1 = new ThreeMeshUI.Block( buttonOptions );
-        const block2 = new ThreeMeshUI.Block( buttonOptions );
-        buttonOptions.height = 0.5;
-        const block3 = new ThreeMeshUI.Block( buttonOptions );
+        const ButtonOptions1 = { ...ButtonOptions };
+        ButtonOptions1.width = 1.0;
+        const block1 = new ThreeMeshUI.Block( ButtonOptions1 );
+        const block2 = new ThreeMeshUI.Block( ButtonOptions1 );
+        ButtonOptions1.height = 0.5;
+        const block3 = new ThreeMeshUI.Block( ButtonOptions1 );
 
         block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
         this.experimentText = new ThreeMeshUI.Text( { content: '' });
@@ -171,7 +165,7 @@ AFRAME.registerSystem('experiment-manager', {
                 this.swapControllers(RenderingMedium.Local);
                 break;
 
-            case Experiments.HighPolyRemote:
+            case Experiments.Remote:
                 this.compositor.data.doAsyncTimeWarp = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
@@ -181,7 +175,7 @@ AFRAME.registerSystem('experiment-manager', {
                 this.swapControllers(RenderingMedium.Remote);
                 break;
 
-            case Experiments.HighPolyRemoteATW:
+            case Experiments.RemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);

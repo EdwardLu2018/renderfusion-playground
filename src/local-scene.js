@@ -1,5 +1,5 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+// import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 // import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 
 import ThreeMeshUI from 'three-mesh-ui';
@@ -7,7 +7,7 @@ import ThreeMeshUI from 'three-mesh-ui';
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
 
-import { ExperimentsList, RenderingMedium, EVENTS } from './constants';
+import { ExperimentsList, RenderingMedium, EVENTS, ButtonOptions } from './constants';
 
 AFRAME.registerComponent('local-scene', {
     schema: {
@@ -55,15 +55,6 @@ AFRAME.registerComponent('local-scene', {
         //         scene.environment = texture;
         //     } );
 
-        const buttonOptions = {
-            width: 0.4,
-            height: 0.15,
-            justifyContent: 'center',
-            offset: 0.05,
-            margin: 0.02,
-            borderRadius: 0.075
-        };
-
         const hoveredStateAttributes = {
             state: 'hovered',
             attributes: {
@@ -90,9 +81,9 @@ AFRAME.registerComponent('local-scene', {
             fontColor: new THREE.Color( 0x222222 )
         };
 
-        const prevButton = new ThreeMeshUI.Block( buttonOptions );
-        const nextButton = new ThreeMeshUI.Block( buttonOptions );
-        const doneButton = new ThreeMeshUI.Block( buttonOptions );
+        const prevButton = new ThreeMeshUI.Block( ButtonOptions );
+        const nextButton = new ThreeMeshUI.Block( ButtonOptions );
+        const doneButton = new ThreeMeshUI.Block( ButtonOptions );
         prevButton.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
         nextButton.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
         doneButton.add( new ThreeMeshUI.Text( { content: 'Done' } ) );
@@ -120,7 +111,6 @@ AFRAME.registerComponent('local-scene', {
         });
         nextButton.setupState( hoveredStateAttributes );
         nextButton.setupState( idleStateAttributes );
-        console.log(nextButton)
 
         doneButton.setupState( {
             state: 'selected',

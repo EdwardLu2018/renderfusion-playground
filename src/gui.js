@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { ExperimentsList } from './constants.js';
+import { ExperimentsList, TaskList, DefaultLatency } from './constants.js';
 
 AFRAME.registerSystem('gui', {
     init: function() {
@@ -19,14 +19,16 @@ AFRAME.registerSystem('gui', {
             stretchBorders: true,
             // fpsLocal: 90,
             fpsRemote: 90,
-            latency: 150,
+            latency: DefaultLatency,
             decreaseResolution: 1,
             experiment: ExperimentsList[0],
+            task: TaskList[0],
         };
 
         const _this = this;
 
-        const gui = new GUI()
+        const gui = new GUI();
+
         // gui.add(options, 'fpsLocal', 1, 90)
         //     .name('FPS (Local)')
         //     .onChange( function() {
@@ -61,6 +63,12 @@ AFRAME.registerSystem('gui', {
             .name('Experiment')
             .onChange( function() {
                 _this.experimentManager.changeExperiment(this.getValue());
+            } );
+
+        gui.add(options, 'task', TaskList)
+            .name('Task')
+            .onChange( function() {
+                sceneEl.setAttribute('task', 'currTask', this.getValue());
             } );
 
         gui.open()

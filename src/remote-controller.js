@@ -1,8 +1,10 @@
+import { DefaultLatency } from './constants.js';
+
 AFRAME.registerComponent('remote-controller', {
     schema: {
         fps: {type: 'number', default: 90},
         enabled: {type: 'bool', default: false},
-        latency: {type: 'number', default: 150}, // ms
+        latency: {type: 'number', default: DefaultLatency}, // ms
     },
 
     init: function() {
