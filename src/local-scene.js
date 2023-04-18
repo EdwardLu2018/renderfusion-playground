@@ -196,7 +196,7 @@ AFRAME.registerComponent('local-scene', {
             } );
     },
 
-    addToScene(objectId, object) {
+    addToScene: function(objectId, object) {
         const el = this.el;
         const data = this.data;
 
@@ -213,7 +213,7 @@ AFRAME.registerComponent('local-scene', {
         this.experimentManager.objects[objectId] = object;
     },
 
-    update(oldData) {
+    update: function(oldData) {
         const data = this.data;
 
         if (data.fps !== oldData.fps) {

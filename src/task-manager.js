@@ -39,7 +39,7 @@ AFRAME.registerComponent('task-manager', {
         el.addEventListener(EVENTS.BUTTON_RESET_PRESSED, this.onResetButtonPressed);
     },
 
-    incrementSuccesses() {
+    incrementSuccesses: function() {
         if (this.successesIncremented === true) return;
 
         this.successes++;

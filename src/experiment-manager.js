@@ -71,15 +71,15 @@ AFRAME.registerSystem('experiment-manager', {
         sceneEl.setAttribute('task-manager', '');
     },
 
-    updateInstructions(text) {
+    updateInstructions: function(text) {
         this.instructionsText.set( { content: text } );
     },
 
-    updateTimer(timeLeft) {
+    updateTimer: function(timeLeft) {
         this.timerText.set( { content: `Time Left: ${timeLeft}s` } );
     },
 
-    swapRenderingMedium(objectId, renderingMediumType) {
+    swapRenderingMedium: function(objectId, renderingMediumType) {
         const el = this.el;
         const data = this.data;
 
@@ -114,7 +114,7 @@ AFRAME.registerSystem('experiment-manager', {
         }
     },
 
-    swapControllers(renderingMediumType) {
+    swapControllers: function(renderingMediumType) {
         const handLeft = document.getElementById('handLeft');
         const handRight = document.getElementById('handRight');
         if (renderingMediumType === RenderingMedium.Local) {
@@ -126,7 +126,7 @@ AFRAME.registerSystem('experiment-manager', {
         }
     },
 
-    swapResolution(objectId, resolutionType) {
+    swapResolution: function(objectId, resolutionType) {
         const object = this.objects[objectId];
 
         if (objectId.includes('model')) {
@@ -143,7 +143,7 @@ AFRAME.registerSystem('experiment-manager', {
         }
     },
 
-    changeExperiment(experiment) {
+    changeExperiment: function(experiment) {
         const el = this.el;
         const data = this.data;
         const sceneEl = el.sceneEl;
@@ -162,25 +162,25 @@ AFRAME.registerSystem('experiment-manager', {
                 this.swapControllers(RenderingMedium.Local);
                 break;
 
-            case Experiments.HighPolyLocal:
-                this.compositor.data.doAsyncTimeWarp = false;
-                for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, RenderingMedium.Local);
-                    this.swapResolution(objectId, Resolution.High);
-                }
-                sceneEl.setAttribute('local-scene', 'fps', data.highPolyLocalFPS);
-                this.swapControllers(RenderingMedium.Local);
-                break;
+            // case Experiments.HighPolyLocal:
+            //     this.compositor.data.doAsyncTimeWarp = false;
+            //     for (const [objectId, object] of Object.entries(this.objects)) {
+            //         this.swapRenderingMedium(objectId, RenderingMedium.Local);
+            //         this.swapResolution(objectId, Resolution.High);
+            //     }
+            //     sceneEl.setAttribute('local-scene', 'fps', data.highPolyLocalFPS);
+            //     this.swapControllers(RenderingMedium.Local);
+            //     break;
 
-            case Experiments.Remote:
-                this.compositor.data.doAsyncTimeWarp = false;
-                for (const [objectId, object] of Object.entries(this.objects)) {
-                    this.swapRenderingMedium(objectId, RenderingMedium.Remote);
-                    this.swapResolution(objectId, Resolution.High);
-                }
-                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
-                this.swapControllers(RenderingMedium.Remote);
-                break;
+            // case Experiments.Remote:
+            //     this.compositor.data.doAsyncTimeWarp = false;
+            //     for (const [objectId, object] of Object.entries(this.objects)) {
+            //         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+            //         this.swapResolution(objectId, Resolution.High);
+            //     }
+            //     sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
+            //     this.swapControllers(RenderingMedium.Remote);
+            //     break;
 
             case Experiments.RemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
@@ -192,24 +192,24 @@ AFRAME.registerSystem('experiment-manager', {
                 this.swapControllers(RenderingMedium.Remote);
                 break;
 
-            case Experiments.Mixed:
-                this.compositor.data.doAsyncTimeWarp = false;
-                for (const [objectId, object] of Object.entries(this.objects)) {
-                    if (object.userData.originalMedium === RenderingMedium.Remote) {
-                        this.swapRenderingMedium(objectId, RenderingMedium.Remote);
-                        this.swapResolution(objectId, Resolution.High);
-                    } else if (object.userData.originalMedium === RenderingMedium.Local) {
-                        if (!objectId.includes('model')) {
-                            this.swapRenderingMedium(objectId, RenderingMedium.Local);
-                            this.swapResolution(objectId, Resolution.Low);
-                        } else {
-                            this.swapRenderingMedium(objectId, RenderingMedium.Remote);
-                        }
-                    }
-                }
-                sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
-                this.swapControllers(RenderingMedium.Local);
-                break;
+            // case Experiments.Mixed:
+            //     this.compositor.data.doAsyncTimeWarp = false;
+            //     for (const [objectId, object] of Object.entries(this.objects)) {
+            //         if (object.userData.originalMedium === RenderingMedium.Remote) {
+            //             this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+            //             this.swapResolution(objectId, Resolution.High);
+            //         } else if (object.userData.originalMedium === RenderingMedium.Local) {
+            //             if (!objectId.includes('model')) {
+            //                 this.swapRenderingMedium(objectId, RenderingMedium.Local);
+            //                 this.swapResolution(objectId, Resolution.Low);
+            //             } else {
+            //                 this.swapRenderingMedium(objectId, RenderingMedium.Remote);
+            //             }
+            //         }
+            //     }
+            //     sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
+            //     this.swapControllers(RenderingMedium.Local);
+            //     break;
 
             case Experiments.MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;

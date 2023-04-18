@@ -28,7 +28,6 @@ AFRAME.registerComponent('remote-scene', {
         this.stats = new Stats();
         this.stats.showPanel(0);
         document.getElementById('remote-stats').appendChild(this.stats.dom);
-        this.stats.dom.style.top = '50px';
 
         this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
@@ -202,7 +201,7 @@ AFRAME.registerComponent('remote-scene', {
         this.experimentManager.changeExperiment(Experiments.LowPolyLocal);
     },
 
-    addToScene(objectId, object) {
+    addToScene: function(objectId, object) {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
@@ -216,14 +215,14 @@ AFRAME.registerComponent('remote-scene', {
         this.experimentManager.objects[objectId] = object;
     },
 
-    update(oldData) {
+    update: function(oldData) {
         const data = this.data;
 
-        if (data.fps != oldData.fps) {
+        if (data.fps !== oldData.fps) {
             this.remoteLocal.updateFPS(data.fps);
         }
 
-        if (data.latency != oldData.latency) {
+        if (data.latency !== oldData.latency) {
             this.remoteLocal.setLatency(data.latency);
         }
 
@@ -245,12 +244,16 @@ AFRAME.registerComponent('remote-scene', {
         const scaleFactor = 1.1;
 
         this.elapsed += this.clock.getDelta() * 1000;
-        if (this.elapsed > 1000 / data.fps) {
+        if (this.experimentManager.experiment === Experiments.LowPolyLocal ||
+            this.elapsed > 1000 / data.fps) {
             this.elapsed = 0;
             this.stats.update();
 
             if (this.experimentManager.objects['helmet']) {
-                this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / data.fps;
+                if (this.experimentManager.experiment !== Experiments.LowPolyLocal)
+                    this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / data.fps;
+                else
+                    this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / 90;
             }
 
             for (var i = 0; i < data.numModels; i++) {
