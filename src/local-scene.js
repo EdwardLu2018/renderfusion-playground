@@ -12,7 +12,6 @@ import { ExperimentsList, RenderingMedium, EVENTS, ButtonOptions } from './const
 AFRAME.registerComponent('local-scene', {
     schema: {
         fps: {type: 'number', default: 90},
-        reset: {type: 'boolean'},
     },
 
     init: function() {
@@ -171,6 +170,7 @@ AFRAME.registerComponent('local-scene', {
                 } );
                 model.userData.originalMedium = RenderingMedium.Local;
                 _this.addToScene( 'sword', model );
+                _this.sword = model;
             } );
 
         loader
@@ -219,12 +219,16 @@ AFRAME.registerComponent('local-scene', {
         if (data.fps !== oldData.fps) {
             this.compositor.data.fps = data.fps;
         }
+    },
 
-        if (data.reset) {
-            if (this.experimentManager.objects['sword'] === undefined) return;
-            this.experimentManager.objects['sword'].position.set(-0.75, 1.5, -1);
-            this.experimentManager.objects['sword'].rotation.set(0, Math.PI / 2, 0);
-            this.experimentManager.objects['redBox'].position.set(0, 1.1, -1);
+    reset: function() {
+        if (this.sword) {
+            this.sword.position.set(-0.75, 1.5, -1);
+            this.sword.rotation.set(0, Math.PI / 2, 0);
+        }
+
+        if (this.box) {
+            this.box.position.set(0, 1.1, -1);
         }
     },
 
@@ -234,8 +238,10 @@ AFRAME.registerComponent('local-scene', {
 
         ThreeMeshUI.update();
 
-        this.box.rotation.x += 0.01;
-        this.box.rotation.y += 0.01;
-        this.box.rotation.z += 0.01;
+        if (this.box) {
+            this.box.rotation.x += 0.01;
+            this.box.rotation.y += 0.01;
+            this.box.rotation.z += 0.01;
+        }
     }
 });

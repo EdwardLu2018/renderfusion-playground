@@ -130,6 +130,8 @@ void main() {
         vec3 remoteTopLeft, remoteTopRight, remoteBotLeft, remoteBotRight;
 
         if (!hasDualCameras) {
+            float x = vUv.x;
+
             cameraTopLeft  = unprojectCamera(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
             cameraTopRight = unprojectCamera(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
             cameraBotLeft  = unprojectCamera(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
@@ -138,10 +140,10 @@ void main() {
             remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
             remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
             remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-            remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+            // remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
 
-            vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, vUv.x),
-                                     mix(cameraBotLeft, cameraBotRight, vUv.x),
+            vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
+                                     mix(cameraBotLeft, cameraBotRight, x),
                                      1.0 - vUv.y );
             vec3 cameraPos = matrixWorldToPosition(cameraLMatrixWorld);
 
@@ -163,7 +165,7 @@ void main() {
                 remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
                 remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
                 remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-                remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+                // remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
 
                 vec3 cameraLVector = mix( mix(cameraTopLeft, cameraTopRight, x),
                                           mix(cameraBotLeft, cameraBotRight, x),
@@ -188,7 +190,7 @@ void main() {
                 remoteTopLeft  = unprojectCamera(vec2(0.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
                 remoteTopRight = unprojectCamera(vec2(1.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
                 remoteBotLeft  = unprojectCamera(vec2(0.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
-                remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+                // remoteBotRight = unprojectCamera(vec2(1.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
 
                 vec3 cameraRVector = mix( mix(cameraTopLeft, cameraTopRight, x),
                                           mix(cameraBotLeft, cameraBotRight, x),
@@ -206,7 +208,7 @@ void main() {
         }
 
         float xMin = ((!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5);
-        float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5) - 0.005;
+        float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5);
         if (!stretchBorders) {
             remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
             if (coordRemoteNormalized.x < xMin ||
