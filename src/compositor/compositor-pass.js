@@ -55,6 +55,7 @@ export class CompositorPass extends Pass {
         if (cameraL) {
             this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
             this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+            cameraL.getWorldDirection(this.material.uniforms.remoteLForward.value);
         }
 
         if (cameraR) {

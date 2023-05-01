@@ -66,6 +66,9 @@ export const CompositorShader = {
         remoteRMatrixWorld: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
+        remoteLForward: {
+            type: 'vec3', value: new THREE.Vector3(),
+        }
     },
 
     vertexShader: require('./shaders/vert.glsl'),

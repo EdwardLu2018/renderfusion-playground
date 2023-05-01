@@ -1,4 +1,4 @@
-export const DefaultLatency = 150;
+export const DefaultLatency = 100;
 
 export const ButtonOptions = Object.freeze({
     width: 0.4,
