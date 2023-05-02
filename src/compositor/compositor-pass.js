@@ -19,7 +19,7 @@ export class CompositorPass extends Pass {
 
         this.material.uniforms.tRemoteColor.value = this.remoteRenderTarget.texture;
         this.material.uniforms.tRemoteDepth.value = this.remoteRenderTarget.depthTexture;
-        this.material.uniforms.streamSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
+        this.material.uniforms.remoteSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
         this.material.uniforms.cameraNear.value = camera.near;
         this.material.uniforms.cameraFar.value = camera.far;
 
@@ -32,7 +32,7 @@ export class CompositorPass extends Pass {
     }
 
     setSize(width, height) {
-        this.material.uniforms.windowSize.value = [width, height];
+        this.material.uniforms.localSize.value = [width, height];
     }
 
     setHasDualCameras(hasDualCameras) {

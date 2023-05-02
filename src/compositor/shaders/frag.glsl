@@ -18,8 +18,8 @@ uniform bool doAsyncTimeWarp;
 uniform bool stretchBorders;
 uniform bool preferLocal;
 
-uniform ivec2 windowSize;
-uniform ivec2 streamSize;
+uniform ivec2 localSize;
+uniform ivec2 remoteSize;
 
 uniform mat4 cameraLProjectionMatrix;
 uniform mat4 cameraLMatrixWorld;
@@ -60,23 +60,23 @@ float LinearEyeDepth(float depth) {
     // return viewZ;
 }
 
-vec3 getWorldPos(vec3 cameraVector, vec3 CameraForward, vec3 CameraPos, vec2 uv) {
-    float d = dot(CameraForward, cameraVector);
-    float SceneDistance = (texture2D(tRemoteDepth, uv).x) / d;
-    vec3 worldPos = CameraPos + cameraVector * SceneDistance;
+vec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {
+    float d = dot(cameraForward, cameraVector);
+    float sceneDistance = (texture2D(tRemoteDepth, uv).x) / d;
+    vec3 worldPos = cameraPos + cameraVector * sceneDistance;
     return worldPos;
 }
 
-vec2 worldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 CameraPosition) {
+vec2 worldToScreenPos(vec3 pos, mat4 cameraProjection, mat4 worldToCamera, vec3 cameraPosition) {
     float nearPlane = cameraNear;
     float farPlane = cameraFar;
-    float textureWidth = float(windowSize.x);
-    float textureHeight = float(windowSize.y);
+    float textureWidth = float(localSize.x);
+    float textureHeight = float(localSize.y);
 
-    vec3 samplePos = normalize(pos - CameraPosition) * (nearPlane + (farPlane - nearPlane)) + CameraPosition;
-    vec3 toCam = vec3(WorldToCamera * vec4(samplePos, 1.0));
+    vec3 samplePos = normalize(pos - cameraPosition) * (nearPlane + (farPlane - nearPlane)) + cameraPosition;
+    vec3 toCam = vec3(worldToCamera * vec4(samplePos, 1.0));
     float camPosZ = toCam.z;
-    float height = 2.0 * camPosZ / CameraProjection[1][1];
+    float height = 2.0 * camPosZ / cameraProjection[1][1];
     float width = textureWidth / textureHeight * height;
 
     vec2 uv;
@@ -86,43 +86,32 @@ vec2 worldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 
 }
 
 void main() {
-    ivec2 frameSize = ivec2(streamSize.x, streamSize.y);
-    vec2 frameSizeF = vec2(frameSize);
-    vec2 windowSizeF = vec2(windowSize);
+    vec2 remoteSizeF = vec2(remoteSize);
+    vec2 localSizeF = vec2(localSize);
 
     // calculate new dimensions, maintaining aspect ratio
-    float aspect = frameSizeF.x / frameSizeF.y;
-    int newHeight = windowSize.y;
+    float aspect = remoteSizeF.x / remoteSizeF.y;
+    int newHeight = localSize.y;
     int newWidth = int(float(newHeight) * aspect);
 
     // calculate left and right padding offset
-    int totalPad = abs(windowSize.x - newWidth);
+    int totalPad = abs(localSize.x - newWidth);
     float padding = float(totalPad / 2);
-    float paddingLeft = padding / windowSizeF.x;
+    float paddingLeft = padding / localSizeF.x;
     float paddingRight = 1.0 - paddingLeft;
 
-    bool targetWidthGreater = windowSize.x > newWidth;
+    bool targetWidthGreater = localSize.x > newWidth;
 
     vec2 coordLocalNormalized = vUv;
-    vec2 coordRemoteNormalized = vUv;
-    // if (targetWidthGreater) {
-    //     coordRemoteNormalized = vec2(
-    //         ( (vUv.x * windowSizeF.x - padding) / float(windowSize.x - totalPad) ),
-    //         vUv.y
-    //     );
-    // }
-    // else {
-    //     coordRemoteNormalized = vec2(
-    //         ( (vUv.x * windowSizeF.x + padding) / float(newWidth) ),
-    //         vUv.y
-    //     );
-    // }
-
     vec2 coordLocalColor = coordLocalNormalized;
     vec2 coordLocalDepth = coordLocalNormalized;
 
-    vec4 localColor  = texture2D( tLocalColor, coordLocalColor );
+    vec4 localColor = texture2D( tLocalColor, coordLocalColor );
     float localDepth = readDepth( tLocalDepth, coordLocalDepth );
+
+    vec2 coordRemoteNormalized = vUv;
+    vec2 coordRemoteColor = coordRemoteNormalized;
+    vec2 coordRemoteDepth = coordRemoteNormalized;
 
     vec4 remoteColor;  // = texture2D( tRemoteColor, coordRemoteNormalized );
     float remoteDepth; // = readDepth( tRemoteDepth, coordRemoteNormalized );
@@ -178,31 +167,40 @@ void main() {
             // uv3 = worldToScreenPos(CurrentPos, remoteLProjectionMatrix, inverse(remoteLMatrixWorld), remotePos);
 
             coordRemoteNormalized = uv3;
+            coordRemoteColor = coordRemoteNormalized;
+
+            // if (targetWidthGreater) {
+            //     coordRemoteColor.x = (coordRemoteNormalized.x * localSizeF.x - padding) / float(localSize.x - totalPad);
+            // }
+            // else {
+            //     coordRemoteColor.x = (coordRemoteNormalized.x * localSizeF.x + padding) / float(newWidth);
+            // }
+            // coordRemoteColor.y = coordRemoteNormalized.y;
         }
 
-        remoteColor = texture2D( tRemoteColor, coordRemoteNormalized );
-        remoteDepth = readDepth( tRemoteDepth, coordRemoteNormalized );
+        remoteColor = texture2D( tRemoteColor, coordRemoteColor );
+        remoteDepth = readDepth( tRemoteDepth, coordRemoteColor );
 
         float xMin = ((!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5);
         float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5);
         if (!stretchBorders &&
-            (coordRemoteNormalized.x < xMin || coordRemoteNormalized.x > xMax ||
-            coordRemoteNormalized.y < 0.0  || coordRemoteNormalized.y > 1.0)) {
+            (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||
+             coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0)) {
             remoteColor = vec4(0.0);
         }
 
         // if (occluded) {
-        //     vec2 OffsetUVLeft     = coordRemoteNormalized + vec2(1.0, 0.0)  * 0.01;
-        //     vec2 OffsetUVRight    = coordRemoteNormalized + vec2(0.0, 1.0)  * 0.01;
-        //     vec2 OffsetUVTop      = coordRemoteNormalized + vec2(-1.0, 0.0) * 0.01;
-        //     vec2 OffsetUVDown     = coordRemoteNormalized + vec2(0.0, -1.0) * 0.01;
+        //     vec2 OffsetUVLeft     = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
+        //     vec2 OffsetUVRight    = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
+        //     vec2 OffsetUVTop      = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
+        //     vec2 OffsetUVDown     = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
 
         //     vec4 MainTexLeft      = texture2D(tRemoteColor, OffsetUVLeft );
         //     vec4 MainTexRight     = texture2D(tRemoteColor, OffsetUVRight);
         //     vec4 MainTexTop       = texture2D(tRemoteColor, OffsetUVTop  );
         //     vec4 MainTexDown      = texture2D(tRemoteColor, OffsetUVDown );
 
-        //     float Depth           = LinearEyeDepth(texture2D(tRemoteDepth, coordRemoteNormalized).r);
+        //     float Depth           = LinearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
         //     float DepthLeft       = LinearEyeDepth(texture2D(tRemoteDepth, OffsetUVLeft ).r);
         //     float DepthRight      = LinearEyeDepth(texture2D(tRemoteDepth, OffsetUVRight).r);
         //     float DepthTop        = LinearEyeDepth(texture2D(tRemoteDepth, OffsetUVTop  ).r);
