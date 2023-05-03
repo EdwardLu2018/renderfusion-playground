@@ -12,7 +12,6 @@ AFRAME.registerComponent('remote-scene', {
         latency: {type: 'number', default: DefaultLatency}, // ms
         numLights: {type: 'number', default: 3},
         numModels: {type: 'number', default: 8},
-        reset: {type: 'boolean'},
     },
 
     init: async function() {
@@ -28,7 +27,6 @@ AFRAME.registerComponent('remote-scene', {
         this.stats = new Stats();
         this.stats.showPanel(0);
         document.getElementById('remote-stats').appendChild(this.stats.dom);
-        this.stats.dom.style.top = '50px';
 
         this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
@@ -147,8 +145,9 @@ AFRAME.registerComponent('remote-scene', {
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
-                _this.addToScene( 'helmet', model );
                 model.userData.originalMedium = RenderingMedium.Remote;
+                _this.addToScene( 'helmet', model );
+                _this.helmet = model;
             } );
 
         // gltfLoader
@@ -181,7 +180,7 @@ AFRAME.registerComponent('remote-scene', {
                 model = models[m].clone();
                 model.scale.set(2.5, 2.5, 2.5);
                 model.position.x = 5 * Math.cos((Math.PI / (data.numModels - 1)) * i);
-                model.position.y = -0.1;
+                model.position.y = -0.15;
                 model.position.z = -5 * Math.sin((Math.PI / (data.numModels - 1)) * i);
                 model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
                 model.traverse( function( node ) {
@@ -202,7 +201,7 @@ AFRAME.registerComponent('remote-scene', {
         this.experimentManager.changeExperiment(Experiments.LowPolyLocal);
     },
 
-    addToScene(objectId, object) {
+    addToScene: function(objectId, object) {
         const scene = this.remoteScene;
         const camera = this.remoteCamera;
 
@@ -216,19 +215,21 @@ AFRAME.registerComponent('remote-scene', {
         this.experimentManager.objects[objectId] = object;
     },
 
-    update(oldData) {
+    update: function(oldData) {
         const data = this.data;
 
-        if (data.fps != oldData.fps) {
+        if (data.fps !== oldData.fps) {
             this.remoteLocal.updateFPS(data.fps);
         }
 
-        if (data.latency != oldData.latency) {
+        if (data.latency !== oldData.latency) {
             this.remoteLocal.setLatency(data.latency);
         }
+    },
 
-        if (data.reset) {
-            this.experimentManager.objects['blueBox'].position.set(0.75, 1.1, -1);
+    reset: function() {
+        if (this.box) {
+            this.box.position.set(0.75, 1.1, -1);
         }
     },
 
@@ -245,12 +246,18 @@ AFRAME.registerComponent('remote-scene', {
         const scaleFactor = 1.1;
 
         this.elapsed += this.clock.getDelta() * 1000;
-        if (this.elapsed > 1000 / data.fps) {
+        if (this.experimentManager.experiment === Experiments.LowPolyLocal ||
+            this.elapsed > 1000 / data.fps) {
             this.elapsed = 0;
             this.stats.update();
 
-            if (this.experimentManager.objects['helmet']) {
-                this.experimentManager.objects['helmet'].rotation.y += 0.01 * 60 / data.fps;
+            if (this.helmet) {
+                if (this.experimentManager.experiment !== Experiments.LowPolyLocal) {
+                    this.helmet.rotation.y += 0.01 * 60 / data.fps;
+                }
+                else {
+                    this.helmet.rotation.y += 0.01 * 60 / 90;
+                }
             }
 
             for (var i = 0; i < data.numModels; i++) {

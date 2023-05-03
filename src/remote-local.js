@@ -45,7 +45,7 @@ AFRAME.registerSystem('remote-local', {
         this.bind();
     },
 
-    bind() {
+    bind: function() {
         const el = this.el;
         const data = this.data;
 
@@ -173,7 +173,7 @@ AFRAME.registerSystem('remote-local', {
 		};
     },
 
-    unbind() {
+    unbind: function() {
         const el = this.el;
         const data = this.data;
 
@@ -183,7 +183,7 @@ AFRAME.registerSystem('remote-local', {
         renderer.xr.updateCamera = this.originalUpdateCamera;
     },
 
-    onResize() {
+    onResize: function() {
         const el = this.el;
         const data = this.data;
 

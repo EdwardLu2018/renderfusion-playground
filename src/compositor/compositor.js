@@ -1,5 +1,3 @@
-import Stats from 'three/examples/jsm/libs/stats.module.js';
-
 import {CompositorPass} from './compositor-pass';
 
 AFRAME.registerSystem('compositor', {
@@ -22,10 +20,6 @@ AFRAME.registerSystem('compositor', {
         const camera = sceneEl.camera;
 
         const renderer = sceneEl.renderer;
-
-        this.stats = new Stats();
-        this.stats.showPanel(0);
-        document.getElementById('local-stats').appendChild(this.stats.dom);
 
         this.cameras = [];
 
@@ -72,7 +66,7 @@ AFRAME.registerSystem('compositor', {
         this.bind();
     },
 
-    onResize() {
+    onResize: function() {
         const sceneEl = this.sceneEl;
         const renderer = sceneEl.renderer;
 
@@ -134,19 +128,14 @@ AFRAME.registerSystem('compositor', {
                     system.remoteRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
 
-                elapsed += clock.getDelta() * 1000;
-                if (data.fps === -1 || elapsed > 1000 / data.fps) {
-                    elapsed = 0;
-                    system.stats.update();
-                    // store "normal" rendering output to this.renderTarget
-                    this.setRenderTarget(system.renderTarget);
-                    // update local vr camera if in vr
-                    if (this.xr.enabled === true && this.xr.isPresenting === true) {
-                        this.xr.updateCamera( cameraVR, system.sceneEl.camera );
-                    }
-                    render.apply(this, arguments);
-                    this.setRenderTarget(currentRenderTarget);
+                // store "normal" rendering output to this.renderTarget
+                this.setRenderTarget(system.renderTarget);
+                // update local vr camera if in vr
+                if (this.xr.enabled === true && this.xr.isPresenting === true) {
+                    this.xr.updateCamera( cameraVR, system.sceneEl.camera );
                 }
+                render.apply(this, arguments);
+                this.setRenderTarget(currentRenderTarget);
 
                 let hasDualCameras;
                 if (system.cameras.length > 1) {

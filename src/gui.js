@@ -23,6 +23,7 @@ AFRAME.registerSystem('gui', {
             decreaseResolution: 1,
             experiment: ExperimentsList[0],
             task: TaskList[0],
+            realTimeNetwork: false,
         };
 
         const _this = this;
@@ -69,6 +70,12 @@ AFRAME.registerSystem('gui', {
             .name('task')
             .onChange( function() {
                 sceneEl.setAttribute('task-manager', 'currTask', this.getValue());
+            } );
+
+        gui.add(options, 'realTimeNetwork')
+            .name('real-time network')
+            .onChange( function() {
+                sceneEl.setAttribute('localScene-FPS-manager', 'enable', this.getValue());
             } );
 
         gui.open()

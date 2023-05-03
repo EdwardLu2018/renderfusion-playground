@@ -47,7 +47,7 @@ AFRAME.registerComponent('hand-click', {
         el.addEventListener(EVENTS.HAND_GRAB_END_REMOTE, this.onUnclickButtonRemote);
     },
 
-    getContainerObjByChild(child) {
+    getContainerObjByChild: function(child) {
         if (child.isUI) return child;
         else if (child.parent != null) return this.getContainerObjByChild(child.parent);
         else return null;

@@ -7,3 +7,4 @@ import './interaction-manager';
 import './hand-grab';
 import './hand-click';
 import './gui';
+import './localScene-FPS-manager';

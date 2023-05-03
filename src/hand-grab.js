@@ -43,7 +43,7 @@ AFRAME.registerComponent('hand-grab', {
         el.addEventListener(EVENTS.HAND_GRAB_END_REMOTE, this.gotGrabEndRemote);
     },
 
-    getContainerObjByChild(child) {
+    getContainerObjByChild: function(child) {
         if (child.userData.originalMedium) return child;
         else if (child.parent != null) return this.getContainerObjByChild(child.parent);
         else return null;

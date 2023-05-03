@@ -3,7 +3,7 @@ import { Task, EVENTS } from './constants';
 AFRAME.registerComponent('task-manager', {
     schema: {
         currTask: {type: 'string', default: Task.HighDexterity},
-        taskDuration: {type: 'number', default: 30},
+        taskDuration: {type: 'number', default: 60},
     },
 
     init: async function() {
@@ -29,7 +29,6 @@ AFRAME.registerComponent('task-manager', {
         this.clock = new THREE.Clock();
 
         this.state = Task.Idle;
-        this.toggleReset = true;
 
         this.successes = 0;
 
@@ -39,7 +38,7 @@ AFRAME.registerComponent('task-manager', {
         el.addEventListener(EVENTS.BUTTON_RESET_PRESSED, this.onResetButtonPressed);
     },
 
-    incrementSuccesses() {
+    incrementSuccesses: function() {
         if (this.successesIncremented === true) return;
 
         this.successes++;
@@ -141,9 +140,8 @@ AFRAME.registerComponent('task-manager', {
             }
 
             case Task.Reset: {
-                sceneEl.setAttribute('local-scene', 'reset', this.toggleReset);
-                sceneEl.setAttribute('remote-scene', 'reset', this.toggleReset);
-                this.toggleReset = !this.toggleReset;
+                sceneEl.components['local-scene'].reset();
+                sceneEl.components['remote-scene'].reset();
 
                 this.state = data.currTask;
 
