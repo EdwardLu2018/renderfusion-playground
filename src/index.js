@@ -1,4 +1,5 @@
 import './remote-local';
+import './local-scene-fps-manager';
 import './compositor';
 import './task-manager';
 import './experiment-manager';
@@ -7,4 +8,3 @@ import './interaction-manager';
 import './hand-grab';
 import './hand-click';
 import './gui';
-import './localScene-FPS-manager';

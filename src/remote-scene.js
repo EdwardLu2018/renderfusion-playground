@@ -2,7 +2,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
-// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 
 import { Experiments, RenderingMedium, DefaultLatency } from './constants';
 
@@ -10,8 +10,8 @@ AFRAME.registerComponent('remote-scene', {
     schema: {
         fps: {type: 'number', default: 90},
         latency: {type: 'number', default: DefaultLatency}, // ms
-        numLights: {type: 'number', default: 3},
-        numModels: {type: 'number', default: 8},
+        numLights: {type: 'number', default: 2},
+        numModels: {type: 'number', default: 4},
     },
 
     init: async function() {
@@ -48,7 +48,6 @@ AFRAME.registerComponent('remote-scene', {
 
         scene.background = new THREE.Color(0x87CEEB);
 
-        const textureLoader = new THREE.TextureLoader();
         const gltfLoader = new GLTFLoader();
 
         const sphereGeometry = new THREE.SphereGeometry( 0.3, 32, 16 );
@@ -61,7 +60,7 @@ AFRAME.registerComponent('remote-scene', {
             if (data.numLights % 2 == 0) xPos += 0.5;
 
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 15 * xPos, 10, -3 );
+            sphere.position.set( 10 * xPos, 17, -5 );
             this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = RenderingMedium.Remote;
 
@@ -106,36 +105,9 @@ AFRAME.registerComponent('remote-scene', {
                 texture.userData.originalMedium = RenderingMedium.Remote;
             } );
 
-        textureLoader
-            .setPath( 'assets/textures/' )
-            .load( 'height_map.png' , function( texture ) {
-                texture.wrapS = texture.wrapT = THREE.Repeatwrapping;
-                texture.repeat.set(1, 1);
-
-                textureLoader.load('park_dirt_diff_1k.png', function( groundTexture ) {
-                    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-                    groundTexture.anisotropy = 16;
-                    groundTexture.encoding = THREE.sRGBEncoding;
-                    groundTexture.repeat.set(32, 32);
-
-                    const groundMaterial = new THREE.MeshStandardMaterial({
-                        map: groundTexture,
-                        // wireframe: true,
-                        displacementMap: texture,
-                        displacementScale: 5,
-                    });
-
-                    const groundGeometry = new THREE.PlaneGeometry(120, 120, 5, 5);
-                    groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-                    groundMesh.receiveShadow = true;
-                    groundMesh.rotation.x = -Math.PI / 2;
-                    groundMesh.position.y = -3;
-                    _this.addToScene( 'groundMesh', groundMesh );
-                    groundMesh.userData.originalMedium = RenderingMedium.Remote;
-                } );
-            } );
-
         var model;
+        var models;
+
         gltfLoader
             .setPath( 'assets/models/DamagedHelmet/glTF/' )
             .load( 'DamagedHelmet.gltf', function( gltf ) {
@@ -152,48 +124,70 @@ AFRAME.registerComponent('remote-scene', {
 
         // gltfLoader
         //     .setPath( 'assets/models/' )
-        //     .load( 'sword.glb', function( gltf ) {
+        //     .load( 'gislinge_viking_boat.glb', function( gltf ) {
         //         model = gltf.scene;
-        //         model.scale.set(0.25, 0.25, 0.25);
-        //         model.position.set(0.75, 1.5, -1);
+        //         model.scale.set(0.02, 0.02, 0.02);
+        //         model.position.set(0, -0.15, 6);
         //         model.rotation.y += Math.PI / 2;
         //         model.traverse( function( node ) {
         //             if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
         //         } );
-        //         _this.addToScene( 'swordRight', model );
+        //         _this.addToScene( 'gislinge_viking_boat', model );
         //         model.userData.originalMedium = RenderingMedium.Remote;
         //     } );
 
-        function modelLoader(path) {
-            gltfLoader.setPath( 'assets/models/' );
+        function modelLoader(path, modelName) {
+            gltfLoader.setPath( path );
             return new Promise((resolve, reject) => {
-                gltfLoader.load(path, data => resolve(data), null, reject);
+                gltfLoader.load(modelName, data => resolve(data), null, reject);
             });
         }
 
-        const lowResModel = await modelLoader( 'golden_knight_1kTX_low_poly.glb' );
-        const highResModel = await modelLoader( 'golden_knight_1kTX_high_poly.glb' );
-        const models = [lowResModel.scene, highResModel.scene];
+        const lowResSponza = await modelLoader( 'assets/models/', 'sponza_high_poly.glb' );
+        const highResSponza = await modelLoader( 'assets/models/', 'sponza_low_poly.glb' );
+        models = [highResSponza.scene, lowResSponza.scene]
+        for (var m = 0; m < 2; m++) {
+            model = models[m];
+            model.scale.set(3.25, 3.25, 3.25);
+            model.position.set(0.7, -0.2, 18);
+            model.rotation.set(0, Math.PI/2, 0);
+            model.traverse( function( node ) {
+                if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
+            } );
+            if (m == 0) {
+                model.visible = false;
+                model.userData.originalMedium = RenderingMedium.Local;
+                _this.addToScene( 'sponza-modelLow', model );
+            }
+            else {
+                model.visible = true;
+                model.userData.originalMedium = RenderingMedium.Remote;
+                _this.addToScene( 'sponza-modelHigh', model );
+            }
+        }
 
+        const lowResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_low_poly.glb' );
+        const highResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_high_poly.glb' );
+        models = [lowResKnight.scene, highResKnight.scene];
         for (var i = 0; i < data.numModels; i++) {
             for (var m = 0; m < 2; m++) {
                 model = models[m].clone();
-                model.scale.set(2.5, 2.5, 2.5);
-                model.position.x = 5 * Math.cos((Math.PI / (data.numModels - 1)) * i);
-                model.position.y = -0.15;
-                model.position.z = -5 * Math.sin((Math.PI / (data.numModels - 1)) * i);
+                // model.scale.set(0.1, 0.1, 0.1);
+                model.position.x = 4 * Math.cos((Math.PI / (data.numModels - 1)) * i);
+                model.position.y = -0.25;
+                model.position.z = -4 * Math.sin((Math.PI / (data.numModels - 1)) * i);
                 model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
                 model.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
                 } );
                 if (m == 0) {
-                    _this.addToScene( `modelLow${i}`, model );
-                    model.userData.originalMedium = 'local';
                     model.visible = false;
+                    model.userData.originalMedium = 'local';
+                    _this.addToScene( `modelLow${i}`, model );
                 } else {
-                    _this.addToScene( `modelHigh${i}`, model );
-                    model.userData.originalMedium = RenderingMedium.Remote;
                     model.visible = true;
+                    model.userData.originalMedium = RenderingMedium.Remote;
+                    _this.addToScene( `modelHigh${i}`, model );
                 }
             }
         }

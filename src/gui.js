@@ -75,7 +75,7 @@ AFRAME.registerSystem('gui', {
         gui.add(options, 'realTimeNetwork')
             .name('real-time network')
             .onChange( function() {
-                sceneEl.setAttribute('localScene-FPS-manager', 'enable', this.getValue());
+                sceneEl.setAttribute('local-scene-fps-manager', 'enable', this.getValue());
             } );
 
         gui.open()

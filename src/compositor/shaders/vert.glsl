@@ -20,25 +20,25 @@ vec3 cameraToWorld(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {
 void main() {
     vUv = uv;
 
-    vCameraLTopLeft       = cameraToWorld(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-    vCameraLTopRight      = cameraToWorld(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-    vCameraLBotLeft       = cameraToWorld(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
-    vCameraLBotRight      = cameraToWorld(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+    vCameraLTopLeft      = cameraToWorld(vec2(0.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+    vCameraLTopRight     = cameraToWorld(vec2(1.0, 1.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+    vCameraLBotLeft      = cameraToWorld(vec2(0.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
+    vCameraLBotRight     = cameraToWorld(vec2(1.0, 0.0), cameraLProjectionMatrix, cameraLMatrixWorld);
 
-    vRemoteLTopLeft       = cameraToWorld(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
+    vRemoteLTopLeft      = cameraToWorld(vec2(0.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
     vec3 remoteLTopRight = cameraToWorld(vec2(1.0, 1.0), remoteLProjectionMatrix, remoteLMatrixWorld);
     vec3 remoteLBotLeft  = cameraToWorld(vec2(0.0, 0.0), remoteLProjectionMatrix, remoteLMatrixWorld);
-    vRemoteLPlaneNormal   = cross(remoteLTopRight - vRemoteLTopLeft, remoteLBotLeft - vRemoteLTopLeft);
+    vRemoteLPlaneNormal  = cross(remoteLTopRight - vRemoteLTopLeft, remoteLBotLeft - vRemoteLTopLeft);
 
-    vCameraRTopLeft       = cameraToWorld(vec2(0.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-    vCameraRTopRight      = cameraToWorld(vec2(1.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-    vCameraRBotLeft       = cameraToWorld(vec2(0.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
-    vCameraRBotRight      = cameraToWorld(vec2(1.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+    vCameraRTopLeft      = cameraToWorld(vec2(0.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+    vCameraRTopRight     = cameraToWorld(vec2(1.0, 1.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+    vCameraRBotLeft      = cameraToWorld(vec2(0.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
+    vCameraRBotRight     = cameraToWorld(vec2(1.0, 0.0), cameraRProjectionMatrix, cameraRMatrixWorld);
 
-    vRemoteRTopLeft       = cameraToWorld(vec2(0.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
+    vRemoteRTopLeft      = cameraToWorld(vec2(0.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
     vec3 remoteRTopRight = cameraToWorld(vec2(1.0, 1.0), remoteRProjectionMatrix, remoteRMatrixWorld);
     vec3 remoteRBotLeft  = cameraToWorld(vec2(0.0, 0.0), remoteRProjectionMatrix, remoteRMatrixWorld);
-    vRemoteRPlaneNormal   = cross(remoteRTopRight - vRemoteRTopLeft, remoteRBotLeft - vRemoteRTopLeft);
+    vRemoteRPlaneNormal  = cross(remoteRTopRight - vRemoteRTopLeft, remoteRBotLeft - vRemoteRTopLeft);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     // gl_Position = vec4( position, 1.0 );

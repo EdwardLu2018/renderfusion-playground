@@ -35,7 +35,7 @@ AFRAME.registerComponent('local-scene', {
 
         this.elapsed = 0;
         this.clock = new THREE.Clock();
-        var currentExp = 0;
+
         const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
         const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
@@ -88,13 +88,14 @@ AFRAME.registerComponent('local-scene', {
         resetButton.add( new ThreeMeshUI.Text( { content: 'Reset' } ) );
         const buttonList = [prevButton, nextButton, resetButton];
 
+        var currentExpIdx = 0;
         prevButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-                currentExp -= 1;
-			    if ( currentExp < 0 ) currentExp = ExperimentsList.length - 1;
-                this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
+                currentExpIdx -= 1;
+			    if ( currentExpIdx < 0 ) currentExpIdx = ExperimentsList.length - 1;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
             }
         });
         prevButton.setupState( hoveredStateAttributes );
@@ -104,8 +105,8 @@ AFRAME.registerComponent('local-scene', {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-                currentExp = ( currentExp + 1 ) % ExperimentsList.length;
-                this.experimentManager.changeExperiment(ExperimentsList[currentExp]);
+                currentExpIdx = ( currentExpIdx + 1 ) % ExperimentsList.length;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
 		    }
         });
         nextButton.setupState( hoveredStateAttributes );
@@ -179,6 +180,7 @@ AFRAME.registerComponent('local-scene', {
                 model = gltf.scene;
                 model.scale.set(0.25, 0.25, 0.25);
                 model.position.set(1, 1.5, 0);
+                // model.position.set(0, 1.5, 1.5);
                 model.rotation.z = Math.PI;
                 model.rotation.y = -Math.PI / 2;
                 model.traverse( function( node ) {
