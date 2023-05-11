@@ -122,7 +122,7 @@ AFRAME.registerComponent('task-manager', {
 
             case Task.LowDexterity: {
                 this.experimentManager.updateInstructions(
-                    `Move the two boxes inside the helmet!\n\nScore: ${this.successes}`
+                    `Move the red and blue boxes inside the helmet!\n\nScore: ${this.successes}`
                 );
 
                 pos1.copy(this.experimentManager.objects['blueBox'].position);

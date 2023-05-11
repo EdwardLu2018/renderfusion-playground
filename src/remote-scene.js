@@ -50,7 +50,14 @@ AFRAME.registerComponent('remote-scene', {
 
         const gltfLoader = new GLTFLoader();
 
-        const sphereGeometry = new THREE.SphereGeometry( 0.3, 32, 16 );
+        function modelLoader(path, modelName) {
+            gltfLoader.setPath( path );
+            return new Promise((resolve, reject) => {
+                gltfLoader.load(modelName, data => resolve(data), null, reject);
+            });
+        }
+
+        const sphereGeometry = new THREE.SphereGeometry( 0.1, 32, 16 );
         const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
 
         let j = 0;
@@ -60,11 +67,11 @@ AFRAME.registerComponent('remote-scene', {
             if (data.numLights % 2 == 0) xPos += 0.5;
 
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 10 * xPos, 17, -5 );
+            sphere.position.set( 10 * xPos, 9, 2 );
             this.addToScene( `light${j++}`, sphere );
             sphere.userData.originalMedium = RenderingMedium.Remote;
 
-            light = new THREE.SpotLight( 0xDDDDFF, 2 );
+            light = new THREE.SpotLight( 0xDDDDFF, 1 );
             light.castShadow = true;
             light.shadow.bias = -0.0001;
             light.shadow.mapSize.width = 1024 * 4;
@@ -75,12 +82,10 @@ AFRAME.registerComponent('remote-scene', {
             sphere.add( light );
         }
 
-        const boxMaterial = new THREE.MeshBasicMaterial( { color: 0x7074FF } );
+        const boxMaterial = new THREE.MeshStandardMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(0.75, 1.1, -1);
-        this.box.castShadow = true;
-        this.box.receiveShadow = true;
         this.addToScene( 'blueBox', this.box ); // add to remote scene
         this.box.userData.originalMedium = RenderingMedium.Remote;
         this.box.userData.grabbable = true;
@@ -106,54 +111,24 @@ AFRAME.registerComponent('remote-scene', {
             } );
 
         var model;
+        model = await modelLoader( 'assets/models/DamagedHelmet/glTF/', 'DamagedHelmet.gltf' );
+        const helmet = model.scene;
+        helmet.scale.set(0.27, 0.27, 0.27);
+        helmet.position.set(-0.75, 1.1, -1);
+        helmet.userData.originalMedium = RenderingMedium.Remote;
+        _this.addToScene( 'helmet', helmet );
+        _this.helmet = helmet;
+
         var models;
-
-        gltfLoader
-            .setPath( 'assets/models/DamagedHelmet/glTF/' )
-            .load( 'DamagedHelmet.gltf', function( gltf ) {
-                model = gltf.scene;
-                model.scale.set(0.27, 0.27, 0.27);
-                model.position.set(-0.75, 1.1, -1);
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-                } );
-                model.userData.originalMedium = RenderingMedium.Remote;
-                _this.addToScene( 'helmet', model );
-                _this.helmet = model;
-            } );
-
-        // gltfLoader
-        //     .setPath( 'assets/models/' )
-        //     .load( 'gislinge_viking_boat.glb', function( gltf ) {
-        //         model = gltf.scene;
-        //         model.scale.set(0.02, 0.02, 0.02);
-        //         model.position.set(0, -0.15, 6);
-        //         model.rotation.y += Math.PI / 2;
-        //         model.traverse( function( node ) {
-        //             if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
-        //         } );
-        //         _this.addToScene( 'gislinge_viking_boat', model );
-        //         model.userData.originalMedium = RenderingMedium.Remote;
-        //     } );
-
-        function modelLoader(path, modelName) {
-            gltfLoader.setPath( path );
-            return new Promise((resolve, reject) => {
-                gltfLoader.load(modelName, data => resolve(data), null, reject);
-            });
-        }
 
         const lowResSponza = await modelLoader( 'assets/models/', 'sponza_high_poly.glb' );
         const highResSponza = await modelLoader( 'assets/models/', 'sponza_low_poly.glb' );
         models = [highResSponza.scene, lowResSponza.scene]
         for (var m = 0; m < 2; m++) {
             model = models[m];
-            model.scale.set(3.25, 3.25, 3.25);
-            model.position.set(0.7, -0.2, 18);
+            model.scale.set(3, 3, 3);
+            model.position.set(0.7, -0.2, 17);
             model.rotation.set(0, Math.PI/2, 0);
-            model.traverse( function( node ) {
-                if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-            } );
             if (m == 0) {
                 model.visible = false;
                 model.userData.originalMedium = RenderingMedium.Local;
@@ -172,22 +147,18 @@ AFRAME.registerComponent('remote-scene', {
         for (var i = 0; i < data.numModels; i++) {
             for (var m = 0; m < 2; m++) {
                 model = models[m].clone();
-                // model.scale.set(0.1, 0.1, 0.1);
                 model.position.x = 4 * Math.cos((Math.PI / (data.numModels - 1)) * i);
                 model.position.y = -0.25;
                 model.position.z = -4 * Math.sin((Math.PI / (data.numModels - 1)) * i);
                 model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; }
-                } );
                 if (m == 0) {
                     model.visible = false;
-                    model.userData.originalMedium = 'local';
-                    _this.addToScene( `modelLow${i}`, model );
+                    model.userData.originalMedium = RenderingMedium.Local;
+                    _this.addToScene( `knight-modelLow${i}`, model );
                 } else {
                     model.visible = true;
                     model.userData.originalMedium = RenderingMedium.Remote;
-                    _this.addToScene( `modelHigh${i}`, model );
+                    _this.addToScene( `knight-modelHigh${i}`, model );
                 }
             }
         }
@@ -255,14 +226,14 @@ AFRAME.registerComponent('remote-scene', {
             }
 
             for (var i = 0; i < data.numModels; i++) {
-                if (this.experimentManager.objects[`modelLow${i}`] === undefined ||
-                    this.experimentManager.objects[`modelHigh${i}`] === undefined) continue;
+                if (this.experimentManager.objects[`knight-modelLow${i}`] === undefined ||
+                    this.experimentManager.objects[`knight-modelHigh${i}`] === undefined) continue;
 
-                const origModelScale = new THREE.Vector3(2.5, 2.5, 2.5);
+                const origModelScale = new THREE.Vector3(1.6, 1.6, 1.6);
                 const scale = origModelScale.multiplyScalar(1 + (Math.sin(dt / duration * Math.PI * 2) * 0.5 + 0.5) * (scaleFactor - 1));
 
-                this.experimentManager.objects[`modelLow${i}`].scale.copy(scale);
-                this.experimentManager.objects[`modelHigh${i}`].scale.copy(scale);
+                this.experimentManager.objects[`knight-modelLow${i}`].scale.copy(scale);
+                this.experimentManager.objects[`knight-modelHigh${i}`].scale.copy(scale);
             }
         }
     }

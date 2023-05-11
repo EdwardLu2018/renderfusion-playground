@@ -795,7 +795,7 @@ AFRAME.registerComponent("local-scene", {
             default: 90
         }
     },
-    init: function() {
+    init: async function() {
         const el = this.el;
         const data = this.data;
         const sceneEl = el;
@@ -811,17 +811,13 @@ AFRAME.registerComponent("local-scene", {
         const _this = this;
         this.elapsed = 0;
         this.clock = new THREE.Clock();
-        const boxMaterial = new THREE.MeshBasicMaterial({
-            color: "red"
-        });
-        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(0, 1.1, -1);
-        this.box.castShadow = true;
-        this.box.receiveShadow = true;
-        this.addToScene("redBox", this.box); // add to local scene
-        this.box.userData.originalMedium = (0, _constants.RenderingMedium).Local;
-        this.box.userData.grabbable = true;
+        const gltfLoader = new (0, _gltfloader.GLTFLoader)();
+        function modelLoader(path, modelName) {
+            gltfLoader.setPath(path);
+            return new Promise((resolve, reject)=>{
+                gltfLoader.load(modelName, (data)=>resolve(data), null, reject);
+            });
+        }
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
         //     .load( 'san_giuseppe_bridge_2k.hdr', function( texture ) {
@@ -928,44 +924,78 @@ AFRAME.registerComponent("local-scene", {
         buttonList.forEach((obj)=>{
             obj.setState("idle");
         });
+        const boxMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B0000
+        });
+        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
+        this.box.position.set(0, 1.1, -1);
+        this.addToScene("redBox", this.box); // add to local scene
+        this.box.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        this.box.userData.grabbable = true;
+        const boxMaterial1 = new THREE.MeshStandardMaterial({
+            color: 0x5C4033
+        });
+        const boxGeometry1 = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        var box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(2, 2, 2);
+        box.position.set(0, -0.05, -10);
+        box.rotation.set(0, -Math.PI / 7, 0);
+        this.addToScene("brownBox1", box);
+        box.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(5, 5, 5);
+        box.position.set(-2, 0.2, -8);
+        box.rotation.set(0, Math.PI / 5, 0);
+        this.addToScene("brownBox2", box);
+        box.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(3, 3, 3);
+        box.position.set(5, 0, -6);
+        box.rotation.set(0, Math.PI / 8, 0);
+        this.addToScene("brownBox3", box);
+        box.userData.originalMedium = (0, _constants.RenderingMedium).Local;
         var model;
-        const loader = new (0, _gltfloader.GLTFLoader)();
-        loader.setPath("assets/models/").load("sword.glb", function(gltf) {
-            model = gltf.scene;
-            model.scale.set(0.25, 0.25, 0.25);
-            model.position.set(-0.75, 1.5, -1);
-            model.rotation.y = Math.PI / 2;
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                    node.userData.grabbable = true;
-                }
-            });
-            model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
-            _this.addToScene("sword", model);
-            _this.sword = model;
+        model = await modelLoader("assets/models/", "sword.glb");
+        const sword = model.scene;
+        sword.scale.set(0.25, 0.25, 0.25);
+        sword.position.set(-0.75, 1.5, -1);
+        sword.rotation.y = Math.PI / 2;
+        sword.traverse(function(node) {
+            if (node.isMesh) node.userData.grabbable = true;
         });
-        loader.setPath("assets/models/").load("sword.glb", function(gltf) {
-            model = gltf.scene;
-            model.scale.set(0.25, 0.25, 0.25);
-            model.position.set(1, 1.5, 0);
-            // model.position.set(0, 1.5, 1.5);
-            model.rotation.z = Math.PI;
-            model.rotation.y = -Math.PI / 2;
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                    if (node.material) {
-                        node.material.transparent = true;
-                        node.material.opacity = 0.35;
-                    }
+        sword.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        _this.addToScene("sword", sword);
+        _this.sword = sword;
+        model = await modelLoader("assets/models/", "sword.glb");
+        const sword2 = model.scene;
+        sword2.scale.set(0.25, 0.25, 0.25);
+        sword2.position.set(1, 1.5, 0);
+        // sword2.position.set(0, 1.5, 1.5);
+        sword2.rotation.z = Math.PI;
+        sword2.rotation.y = -Math.PI / 2;
+        sword2.traverse(function(node) {
+            if (node.isMesh) {
+                if (node.material) {
+                    node.material.transparent = true;
+                    node.material.opacity = 0.35;
                 }
-            });
-            model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
-            _this.addToScene("sword2", model);
+            }
         });
+        sword2.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        _this.addToScene("sword2", sword2);
+        model = await modelLoader("assets/models/", "medieval_cloth_001.glb");
+        const cloth1 = model.scene;
+        cloth1.scale.set(0.4, 0.4, 0.4);
+        cloth1.position.set(-5.5, -0.25, -7);
+        _this.addToScene("medieval_cloth_001", cloth1);
+        cloth1.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+        model = await modelLoader("assets/models/", "medieval_corset_002.glb");
+        const cloth2 = model.scene;
+        cloth2.scale.set(0.2, 0.2, 0.2);
+        cloth2.position.set(5.5, -0.25, -7);
+        _this.addToScene("medieval_corset_002", cloth2);
+        cloth2.userData.originalMedium = (0, _constants.RenderingMedium).Local;
     },
     addToScene: function(objectId, object) {
         const el = this.el;
@@ -41446,7 +41476,13 @@ AFRAME.registerComponent("remote-scene", {
         this.clock = new THREE.Clock();
         scene.background = new THREE.Color(0x87CEEB);
         const gltfLoader = new (0, _gltfloader.GLTFLoader)();
-        const sphereGeometry = new THREE.SphereGeometry(0.3, 32, 16);
+        function modelLoader(path, modelName) {
+            gltfLoader.setPath(path);
+            return new Promise((resolve, reject)=>{
+                gltfLoader.load(modelName, (data)=>resolve(data), null, reject);
+            });
+        }
+        const sphereGeometry = new THREE.SphereGeometry(0.1, 32, 16);
         const sphereMaterial = new THREE.MeshBasicMaterial({
             color: 0xDDDDFF
         });
@@ -41456,10 +41492,10 @@ AFRAME.registerComponent("remote-scene", {
             let xPos = i;
             if (data.numLights % 2 == 0) xPos += 0.5;
             sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set(10 * xPos, 17, -5);
+            sphere.position.set(10 * xPos, 9, 2);
             this.addToScene(`light${j++}`, sphere);
             sphere.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
-            light = new THREE.SpotLight(0xDDDDFF, 2);
+            light = new THREE.SpotLight(0xDDDDFF, 1);
             light.castShadow = true;
             light.shadow.bias = -0.0001;
             light.shadow.mapSize.width = 4096;
@@ -41469,14 +41505,12 @@ AFRAME.registerComponent("remote-scene", {
             light.shadow.camera.fov = 30;
             sphere.add(light);
         }
-        const boxMaterial = new THREE.MeshBasicMaterial({
+        const boxMaterial = new THREE.MeshStandardMaterial({
             color: 0x7074FF
         });
         const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         this.box = new THREE.Mesh(boxGeometry, boxMaterial);
         this.box.position.set(0.75, 1.1, -1);
-        this.box.castShadow = true;
-        this.box.receiveShadow = true;
         this.addToScene("blueBox", this.box); // add to remote scene
         this.box.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
         this.box.userData.grabbable = true;
@@ -41497,40 +41531,14 @@ AFRAME.registerComponent("remote-scene", {
             texture.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
         });
         var model;
+        model = await modelLoader("assets/models/DamagedHelmet/glTF/", "DamagedHelmet.gltf");
+        const helmet = model.scene;
+        helmet.scale.set(0.27, 0.27, 0.27);
+        helmet.position.set(-0.75, 1.1, -1);
+        helmet.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
+        _this.addToScene("helmet", helmet);
+        _this.helmet = helmet;
         var models;
-        gltfLoader.setPath("assets/models/DamagedHelmet/glTF/").load("DamagedHelmet.gltf", function(gltf) {
-            model = gltf.scene;
-            model.scale.set(0.27, 0.27, 0.27);
-            model.position.set(-0.75, 1.1, -1);
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
-            model.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
-            _this.addToScene("helmet", model);
-            _this.helmet = model;
-        });
-        // gltfLoader
-        //     .setPath( 'assets/models/' )
-        //     .load( 'gislinge_viking_boat.glb', function( gltf ) {
-        //         model = gltf.scene;
-        //         model.scale.set(0.02, 0.02, 0.02);
-        //         model.position.set(0, -0.15, 6);
-        //         model.rotation.y += Math.PI / 2;
-        //         model.traverse( function( node ) {
-        //             if ( node.isMesh ) { node.castShadow = true; node.receiveShadow = true; node.userData.grabbable = true; }
-        //         } );
-        //         _this.addToScene( 'gislinge_viking_boat', model );
-        //         model.userData.originalMedium = RenderingMedium.Remote;
-        //     } );
-        function modelLoader(path, modelName) {
-            gltfLoader.setPath(path);
-            return new Promise((resolve, reject)=>{
-                gltfLoader.load(modelName, (data)=>resolve(data), null, reject);
-            });
-        }
         const lowResSponza = await modelLoader("assets/models/", "sponza_high_poly.glb");
         const highResSponza = await modelLoader("assets/models/", "sponza_low_poly.glb");
         models = [
@@ -41539,15 +41547,9 @@ AFRAME.registerComponent("remote-scene", {
         ];
         for(var m = 0; m < 2; m++){
             model = models[m];
-            model.scale.set(3.25, 3.25, 3.25);
-            model.position.set(0.7, -0.2, 18);
+            model.scale.set(3, 3, 3);
+            model.position.set(0.7, -0.2, 17);
             model.rotation.set(0, Math.PI / 2, 0);
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
             if (m == 0) {
                 model.visible = false;
                 model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
@@ -41566,25 +41568,18 @@ AFRAME.registerComponent("remote-scene", {
         ];
         for(var i = 0; i < data.numModels; i++)for(var m = 0; m < 2; m++){
             model = models[m].clone();
-            // model.scale.set(0.1, 0.1, 0.1);
             model.position.x = 4 * Math.cos(Math.PI / (data.numModels - 1) * i);
             model.position.y = -0.25;
             model.position.z = -4 * Math.sin(Math.PI / (data.numModels - 1) * i);
             model.rotation.y = Math.PI / (data.numModels - 1) * i - Math.PI / 2;
-            model.traverse(function(node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
             if (m == 0) {
                 model.visible = false;
-                model.userData.originalMedium = "local";
-                _this.addToScene(`modelLow${i}`, model);
+                model.userData.originalMedium = (0, _constants.RenderingMedium).Local;
+                _this.addToScene(`knight-modelLow${i}`, model);
             } else {
                 model.visible = true;
                 model.userData.originalMedium = (0, _constants.RenderingMedium).Remote;
-                _this.addToScene(`modelHigh${i}`, model);
+                _this.addToScene(`knight-modelHigh${i}`, model);
             }
         }
         this.experimentManager.changeExperiment((0, _constants.Experiments).LowPolyLocal);
@@ -41624,11 +41619,11 @@ AFRAME.registerComponent("remote-scene", {
                 else this.helmet.rotation.y += 0.6 / 90;
             }
             for(var i = 0; i < data.numModels; i++){
-                if (this.experimentManager.objects[`modelLow${i}`] === undefined || this.experimentManager.objects[`modelHigh${i}`] === undefined) continue;
-                const origModelScale = new THREE.Vector3(2.5, 2.5, 2.5);
+                if (this.experimentManager.objects[`knight-modelLow${i}`] === undefined || this.experimentManager.objects[`knight-modelHigh${i}`] === undefined) continue;
+                const origModelScale = new THREE.Vector3(1.6, 1.6, 1.6);
                 const scale = origModelScale.multiplyScalar(1 + (Math.sin(dt / duration * Math.PI * 2) * 0.5 + 0.5) * (scaleFactor - 1));
-                this.experimentManager.objects[`modelLow${i}`].scale.copy(scale);
-                this.experimentManager.objects[`modelHigh${i}`].scale.copy(scale);
+                this.experimentManager.objects[`knight-modelLow${i}`].scale.copy(scale);
+                this.experimentManager.objects[`knight-modelHigh${i}`].scale.copy(scale);
             }
         }
     }
@@ -46419,37 +46414,6 @@ AFRAME.registerSystem("experiment-manager", {
             content: `Time Left: ${timeLeft}s`
         });
     },
-    swapRenderingMedium: function(objectId, renderingMediumType) {
-        const el = this.el;
-        const data = this.data;
-        const sceneEl = el.sceneEl;
-        const localSceneSys = sceneEl.components["local-scene"];
-        const remoteSceneSys = sceneEl.components["remote-scene"];
-        const object = this.objects[objectId];
-        if (renderingMediumType === (0, _constants.RenderingMedium).Local) {
-            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Remote) {
-                object.remove();
-                localSceneSys.addToScene(objectId, object);
-            } else if (objectId === "background") {
-                this.localScene.background = object;
-                this.localScene.environment = object;
-                this.remoteScene.background = object;
-                this.remoteScene.environment = object;
-                this.compositor.data.preferLocal = true;
-            }
-        } else {
-            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Local) {
-                object.remove();
-                remoteSceneSys.addToScene(objectId, object);
-            } else if (objectId === "background") {
-                this.localScene.background = object;
-                this.localScene.environment = object;
-                this.remoteScene.background = object;
-                this.remoteScene.environment = object;
-                this.compositor.data.preferLocal = false;
-            }
-        }
-    },
     swapControllers: function(renderingMediumType) {
         const handLeft = document.getElementById("handLeft");
         const handRight = document.getElementById("handRight");
@@ -46461,12 +46425,65 @@ AFRAME.registerSystem("experiment-manager", {
             handRight.setAttribute("remote-controller", "enabled", true);
         }
     },
+    swapRenderingMedium: function(objectId, renderingMediumType) {
+        const el = this.el;
+        const data = this.data;
+        const sceneEl = el.sceneEl;
+        const localSceneSys = sceneEl.components["local-scene"];
+        const remoteSceneSys = sceneEl.components["remote-scene"];
+        const object = this.objects[objectId];
+        if (renderingMediumType === (0, _constants.RenderingMedium).Local) {
+            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Remote) {
+                object.remove();
+                localSceneSys.addToScene(objectId, object);
+                if (objectId.includes("light")) object.children[0].intensity = 1;
+            } else if (objectId === "background") {
+                this.localScene.background = object;
+                this.localScene.environment = object;
+                this.remoteScene.background = object;
+                this.remoteScene.environment = object;
+                this.compositor.data.preferLocal = true;
+            }
+        } else {
+            if (object.userData.renderingMedium === (0, _constants.RenderingMedium).Local) {
+                object.remove();
+                remoteSceneSys.addToScene(objectId, object);
+                if (objectId.includes("light")) object.children[0].intensity = 600;
+            } else if (objectId === "background") {
+                this.localScene.background = object;
+                this.localScene.environment = object;
+                this.remoteScene.background = object;
+                this.remoteScene.environment = object;
+                this.compositor.data.preferLocal = false;
+            }
+        }
+        const castShadow = renderingMediumType === (0, _constants.RenderingMedium).Remote;
+        if (objectId.includes("model")) object.traverse(function(node) {
+            if (node.isMesh) {
+                node.castShadow = castShadow;
+                node.receiveShadow = castShadow;
+            }
+        });
+        else {
+            object.castShadow = castShadow;
+            object.receiveShadow = castShadow;
+        }
+    },
     swapResolution: function(objectId, resolutionType) {
         const object = this.objects[objectId];
+        console.log(objectId);
         if (objectId.includes("model")) {
             const model = object;
             if (resolutionType === (0, _constants.Resolution).High && objectId.includes("High") || resolutionType == (0, _constants.Resolution).Low && objectId.includes("Low")) model.visible = true;
             else if (resolutionType === (0, _constants.Resolution).High && objectId.includes("Low") || resolutionType === (0, _constants.Resolution).Low && objectId.includes("High")) model.visible = false;
+        } else {
+            if (object.material === undefined) return;
+            if (resolutionType === (0, _constants.Resolution).High) object.material = new THREE.MeshStandardMaterial({
+                color: object.material.color
+            });
+            else if (resolutionType === (0, _constants.Resolution).Low) object.material = new THREE.MeshBasicMaterial({
+                color: object.material.color
+            });
         }
     },
     changeExperiment: function(experiment) {
@@ -46480,6 +46497,7 @@ AFRAME.registerSystem("experiment-manager", {
         switch(this.experiment){
             case (0, _constants.Experiments).LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
+                sceneEl.renderer.physicallyCorrectLights = false;
                 for (const [objectId, object] of Object.entries(this.objects)){
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Local);
                     this.swapResolution(objectId, (0, _constants.Resolution).Low);
@@ -46507,6 +46525,7 @@ AFRAME.registerSystem("experiment-manager", {
             //     break;
             case (0, _constants.Experiments).RemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
+                sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)){
                     this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
                     this.swapResolution(objectId, (0, _constants.Resolution).High);
@@ -46521,7 +46540,7 @@ AFRAME.registerSystem("experiment-manager", {
             //             this.swapRenderingMedium(objectId, RenderingMedium.Remote);
             //             this.swapResolution(objectId, Resolution.High);
             //         } else if (object.userData.originalMedium === RenderingMedium.Local) {
-            //             if (!objectId.includes('model')) {
+            //             if (!objectId.includes('knight')) {
             //                 this.swapRenderingMedium(objectId, RenderingMedium.Local);
             //                 this.swapResolution(objectId, Resolution.Low);
             //             } else {
@@ -46534,6 +46553,7 @@ AFRAME.registerSystem("experiment-manager", {
             //     break;
             case (0, _constants.Experiments).MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
+                sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)){
                     if (object.userData.originalMedium === (0, _constants.RenderingMedium).Remote) {
                         this.swapRenderingMedium(objectId, (0, _constants.RenderingMedium).Remote);
@@ -49414,7 +49434,7 @@ AFRAME.registerComponent("task-manager", {
                 }
                 break;
             case (0, _constants.Task).LowDexterity:
-                this.experimentManager.updateInstructions(`Move the two boxes inside the helmet!\n\nScore: ${this.successes}`);
+                this.experimentManager.updateInstructions(`Move the red and blue boxes inside the helmet!\n\nScore: ${this.successes}`);
                 pos1.copy(this.experimentManager.objects["blueBox"].position);
                 pos2.copy(this.experimentManager.objects["redBox"].position);
                 pos3.copy(this.experimentManager.objects["helmet"].position);

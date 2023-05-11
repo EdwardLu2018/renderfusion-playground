@@ -79,6 +79,18 @@ AFRAME.registerSystem('experiment-manager', {
         this.timerText.set( { content: `Time Left: ${timeLeft}s` } );
     },
 
+    swapControllers: function(renderingMediumType) {
+        const handLeft = document.getElementById('handLeft');
+        const handRight = document.getElementById('handRight');
+        if (renderingMediumType === RenderingMedium.Local) {
+            handLeft.setAttribute('remote-controller', 'enabled', false);
+            handRight.setAttribute('remote-controller', 'enabled', false);
+        } else if (renderingMediumType === RenderingMedium.Remote) {
+            handLeft.setAttribute('remote-controller', 'enabled', true);
+            handRight.setAttribute('remote-controller', 'enabled', true);
+        }
+    },
+
     swapRenderingMedium: function(objectId, renderingMediumType) {
         const el = this.el;
         const data = this.data;
@@ -93,6 +105,9 @@ AFRAME.registerSystem('experiment-manager', {
             if (object.userData.renderingMedium === RenderingMedium.Remote) {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
+                if (objectId.includes('light')) {
+                    object.children[0].intensity = 1;
+                }
             } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
@@ -104,6 +119,9 @@ AFRAME.registerSystem('experiment-manager', {
             if (object.userData.renderingMedium === RenderingMedium.Local) {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
+                if (objectId.includes('light')) {
+                    object.children[0].intensity = 600;
+                }
             } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
@@ -112,23 +130,22 @@ AFRAME.registerSystem('experiment-manager', {
                 this.compositor.data.preferLocal = false;
             }
         }
-    },
 
-    swapControllers: function(renderingMediumType) {
-        const handLeft = document.getElementById('handLeft');
-        const handRight = document.getElementById('handRight');
-        if (renderingMediumType === RenderingMedium.Local) {
-            handLeft.setAttribute('remote-controller', 'enabled', false);
-            handRight.setAttribute('remote-controller', 'enabled', false);
-        } else if (renderingMediumType === RenderingMedium.Remote) {
-            handLeft.setAttribute('remote-controller', 'enabled', true);
-            handRight.setAttribute('remote-controller', 'enabled', true);
+        const castShadow = (renderingMediumType === RenderingMedium.Remote);
+        if (objectId.includes('model')) {
+            object.traverse( function( node ) {
+                if ( node.isMesh ) { node.castShadow = castShadow; node.receiveShadow = castShadow; }
+            } );
+        } else {
+            object.castShadow = castShadow;
+            object.receiveShadow = castShadow;
         }
     },
 
     swapResolution: function(objectId, resolutionType) {
         const object = this.objects[objectId];
 
+        console.log(objectId)
         if (objectId.includes('model')) {
             const model = object;
             if ((resolutionType === Resolution.High && objectId.includes('High')) ||
@@ -139,6 +156,15 @@ AFRAME.registerSystem('experiment-manager', {
             if ((resolutionType === Resolution.High && objectId.includes('Low')) ||
                 (resolutionType === Resolution.Low && objectId.includes('High'))) {
                 model.visible = false;
+            }
+        } else {
+            if (object.material === undefined) return;
+            if (resolutionType === Resolution.High) {
+                object.material = new THREE.MeshStandardMaterial({ color: object.material.color });
+            }
+            else
+            if (resolutionType === Resolution.Low) {
+                object.material = new THREE.MeshBasicMaterial({ color: object.material.color });
             }
         }
     },
@@ -154,6 +180,7 @@ AFRAME.registerSystem('experiment-manager', {
         switch (this.experiment) {
             case Experiments.LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
+                sceneEl.renderer.physicallyCorrectLights = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.Low);
@@ -184,6 +211,7 @@ AFRAME.registerSystem('experiment-manager', {
 
             case Experiments.RemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
+                sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
@@ -199,7 +227,7 @@ AFRAME.registerSystem('experiment-manager', {
             //             this.swapRenderingMedium(objectId, RenderingMedium.Remote);
             //             this.swapResolution(objectId, Resolution.High);
             //         } else if (object.userData.originalMedium === RenderingMedium.Local) {
-            //             if (!objectId.includes('model')) {
+            //             if (!objectId.includes('knight')) {
             //                 this.swapRenderingMedium(objectId, RenderingMedium.Local);
             //                 this.swapResolution(objectId, Resolution.Low);
             //             } else {
@@ -213,6 +241,7 @@ AFRAME.registerSystem('experiment-manager', {
 
             case Experiments.MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
+                sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);

@@ -14,7 +14,7 @@ AFRAME.registerComponent('local-scene', {
         fps: {type: 'number', default: 90},
     },
 
-    init: function() {
+    init: async function() {
         const el = this.el;
         const data = this.data;
 
@@ -36,15 +36,14 @@ AFRAME.registerComponent('local-scene', {
         this.elapsed = 0;
         this.clock = new THREE.Clock();
 
-        const boxMaterial = new THREE.MeshBasicMaterial({color: 'red'});
-        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
-        this.box.position.set(0, 1.1, -1);
-        this.box.castShadow = true;
-        this.box.receiveShadow = true;
-        this.addToScene( 'redBox', this.box ); // add to local scene
-        this.box.userData.originalMedium = RenderingMedium.Local;
-        this.box.userData.grabbable = true;
+        const gltfLoader = new GLTFLoader();
+
+        function modelLoader(path, modelName) {
+            gltfLoader.setPath( path );
+            return new Promise((resolve, reject) => {
+                gltfLoader.load(modelName, data => resolve(data), null, reject);
+            });
+        }
 
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
@@ -153,49 +152,83 @@ AFRAME.registerComponent('local-scene', {
             obj.setState( 'idle' );
         } );
 
-        var model;
-        const loader = new GLTFLoader();
-        loader
-            .setPath( 'assets/models/' )
-            .load( 'sword.glb', function( gltf ) {
-                model = gltf.scene;
-                model.scale.set(0.25, 0.25, 0.25);
-                model.position.set(-0.75, 1.5, -1);
-                model.rotation.y = Math.PI / 2;
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                        node.userData.grabbable = true;
-                    }
-                } );
-                model.userData.originalMedium = RenderingMedium.Local;
-                _this.addToScene( 'sword', model );
-                _this.sword = model;
-            } );
+        const boxMaterial = new THREE.MeshStandardMaterial({color: 0x8B0000});
+        const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        this.box = new THREE.Mesh(boxGeometry, boxMaterial);
+        this.box.position.set(0, 1.1, -1);
+        this.addToScene( 'redBox', this.box ); // add to local scene
+        this.box.userData.originalMedium = RenderingMedium.Local;
+        this.box.userData.grabbable = true;
 
-        loader
-            .setPath( 'assets/models/' )
-            .load( 'sword.glb', function( gltf ) {
-                model = gltf.scene;
-                model.scale.set(0.25, 0.25, 0.25);
-                model.position.set(1, 1.5, 0);
-                // model.position.set(0, 1.5, 1.5);
-                model.rotation.z = Math.PI;
-                model.rotation.y = -Math.PI / 2;
-                model.traverse( function( node ) {
-                    if ( node.isMesh ) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                        if (node.material) {
-                            node.material.transparent = true;
-                            node.material.opacity = 0.35;
-                        }
-                    }
-                } );
-                model.userData.originalMedium = RenderingMedium.Local;
-                _this.addToScene( 'sword2', model );
-            } );
+        const boxMaterial1 = new THREE.MeshStandardMaterial({color: 0x5C4033});
+        const boxGeometry1 = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        var box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(2, 2, 2);
+        box.position.set(0, -0.05, -10);
+        box.rotation.set(0, -Math.PI / 7, 0);
+        this.addToScene( 'brownBox1', box );
+        box.userData.originalMedium = RenderingMedium.Local;
+
+        box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(5, 5, 5);
+        box.position.set(-2, 0.2, -8);
+        box.rotation.set(0, Math.PI / 5, 0);
+        this.addToScene( 'brownBox2', box );
+        box.userData.originalMedium = RenderingMedium.Local;
+
+        box = new THREE.Mesh(boxGeometry1, boxMaterial1);
+        box.scale.set(3, 3, 3);
+        box.position.set(5, 0, -6);
+        box.rotation.set(0, Math.PI / 8, 0);
+        this.addToScene( 'brownBox3', box );
+        box.userData.originalMedium = RenderingMedium.Local;
+
+        var model;
+        model = await modelLoader( 'assets/models/', 'sword.glb' );
+        const sword = model.scene;
+        sword.scale.set(0.25, 0.25, 0.25);
+        sword.position.set(-0.75, 1.5, -1);
+        sword.rotation.y = Math.PI / 2;
+        sword.traverse( function( node ) {
+            if ( node.isMesh ) {
+                node.userData.grabbable = true;
+            }
+        } );
+        sword.userData.originalMedium = RenderingMedium.Local;
+        _this.addToScene( 'sword', sword );
+        _this.sword = sword;
+
+        model = await modelLoader( 'assets/models/', 'sword.glb' );
+        const sword2 = model.scene;
+        sword2.scale.set(0.25, 0.25, 0.25);
+        sword2.position.set(1, 1.5, 0);
+        // sword2.position.set(0, 1.5, 1.5);
+        sword2.rotation.z = Math.PI;
+        sword2.rotation.y = -Math.PI / 2;
+        sword2.traverse( function( node ) {
+            if ( node.isMesh ) {
+                if (node.material) {
+                    node.material.transparent = true;
+                    node.material.opacity = 0.35;
+                }
+            }
+        } );
+        sword2.userData.originalMedium = RenderingMedium.Local;
+        _this.addToScene( 'sword2', sword2 );
+
+        model = await modelLoader( 'assets/models/', 'medieval_cloth_001.glb' );
+        const cloth1 = model.scene;
+        cloth1.scale.set(0.4, 0.4, 0.4);
+        cloth1.position.set(-5.5, -0.25, -7);
+        _this.addToScene( 'medieval_cloth_001', cloth1 );
+        cloth1.userData.originalMedium = RenderingMedium.Local;
+
+        model = await modelLoader( 'assets/models/', 'medieval_corset_002.glb' );
+        const cloth2 = model.scene;
+        cloth2.scale.set(0.2, 0.2, 0.2);
+        cloth2.position.set(5.5, -0.25, -7);
+        _this.addToScene( 'medieval_corset_002', cloth2 );
+        cloth2.userData.originalMedium = RenderingMedium.Local;
     },
 
     addToScene: function(objectId, object) {
