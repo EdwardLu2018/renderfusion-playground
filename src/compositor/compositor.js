@@ -157,6 +157,7 @@ AFRAME.registerSystem('compositor', {
                         system.pass.setCameraMats(cameraL, cameraR);
                     } else {
                         system.pass.setCameraMats(camera);
+                        system.remoteLocal.updateRemoteCamera();
                         system.pass.setCameraMatsRemote(system.remoteCamera);
                     }
                 }

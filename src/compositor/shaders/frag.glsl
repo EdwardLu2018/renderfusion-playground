@@ -90,23 +90,22 @@ void main() {
 
     if (doAsyncTimeWarp) {
         float x;
-        vec3 cameraPos;
-        vec3 cameraTopLeft, cameraTopRight, cameraBotLeft, cameraBotRight;
-        vec3 remoteTopLeft, remotePlaneNormal;
-        mat4 remoteProjectionMatrix, remoteMatrixWorld;
 
-        if (oneCamera || leftEye) {
-            if (oneCamera) x = vUv.x;
-            else if (leftEye) x = 2.0 * vUv.x;
-            cameraPos = matrixWorldToPosition(cameraLMatrixWorld);
-            cameraTopLeft = vCameraLTopLeft;
-            cameraTopRight = vCameraLTopRight;
-            cameraBotLeft = vCameraLBotLeft;
-            cameraBotRight = vCameraLBotRight;
-            remoteTopLeft = vRemoteLTopLeft;
-            remotePlaneNormal = vRemoteLPlaneNormal;
-            remoteProjectionMatrix = remoteLProjectionMatrix;
-            remoteMatrixWorld = remoteLMatrixWorld;
+        vec3 cameraPos = matrixWorldToPosition(cameraLMatrixWorld);
+        vec3 cameraTopLeft = vCameraLTopLeft;
+        vec3 cameraTopRight = vCameraLTopRight;
+        vec3 cameraBotLeft = vCameraLBotLeft;
+        vec3 cameraBotRight = vCameraLBotRight;
+        vec3 remoteTopLeft = vRemoteLTopLeft;
+        vec3 remotePlaneNormal = vRemoteLPlaneNormal;
+        mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
+        mat4 remoteMatrixWorld = remoteLMatrixWorld;
+
+        if (oneCamera) {
+            x = vUv.x;
+        }
+        else if (leftEye) {
+            x = 2.0 * vUv.x;
         }
         else if (rightEye) {
             x = 2.0 * (vUv.x - 0.5);
@@ -131,13 +130,13 @@ void main() {
         coordRemoteColor = uv3;
 
         if (oneCamera) {
-            coordRemoteDepth = coordRemoteColor;
             // if (targetWidthGreater) {
             //     coordRemoteColor.x = (coordRemoteColor.x * localSizeF.x - padding) / float(localSize.x - totalPad);
             // }
             // else {
             //     coordRemoteColor.x = (coordRemoteColor.x * localSizeF.x + padding) / float(newWidth);
             // }
+            coordRemoteDepth = coordRemoteColor;
         }
         else if (leftEye) {
             coordRemoteColor.x = coordRemoteColor.x / 2.0;
