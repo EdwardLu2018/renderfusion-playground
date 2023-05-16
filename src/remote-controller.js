@@ -33,6 +33,19 @@ AFRAME.registerComponent('remote-controller', {
         });
     },
 
+    clearPoses: function() {
+        this.poses = [];
+    },
+
+    update: function(oldData) {
+        const el = this.el;
+        const data = this.data;
+
+        if (data.latency !== oldData.latency) {
+            this.clearPoses();
+        }
+    },
+
     tick: function() {
         const el = this.el;
         const data = this.data;
@@ -52,6 +65,7 @@ AFRAME.registerComponent('remote-controller', {
             el.object3D.visible = true;
             return;
         }
+
         if (data.latency === -1) return;
 
         this.elapsed += this.clock.getDelta() * 1000;
@@ -62,8 +76,8 @@ AFRAME.registerComponent('remote-controller', {
             pose.copy(el.object3D.matrixWorld);
             this.poses.push({pose: pose, timestamp: performance.now()});
 
-            if (this.poses.length > 1 &&
-                performance.now() >= this.poses[0].timestamp + data.latency) {
+            if (this.poses.length >= 1 &&
+                (performance.now() >= this.poses[0].timestamp + data.latency)) {
                 const prevPose = this.poses.shift().pose;
 
                 // update remote controller

@@ -110,7 +110,7 @@ AFRAME.registerComponent('task-manager', {
                 direction.applyQuaternion(this.experimentManager.objects['sword'].quaternion).add(pos1);
                 direction2.applyQuaternion(this.experimentManager.objects['sword2'].quaternion).add(pos2);
 
-                if (pos1.distanceTo(pos2) <= 0.5 && direction.angleTo(direction2) <= 0.25) {
+                if (pos1.distanceTo(pos2) <= 0.5) {
                     this.incrementSuccesses();
                     this.state = Task.Reset;
                 }
@@ -145,9 +145,9 @@ AFRAME.registerComponent('task-manager', {
 
                 this.state = data.currTask;
 
-                if (this.state == Task.HighDexterity) {
-                    this.experimentManager.objects['sword2'].rotation.z = 2 * Math.PI * Math.random();
-                }
+                // if (this.state == Task.HighDexterity) {
+                //     this.experimentManager.objects['sword2'].rotation.z = 2 * Math.PI * Math.random();
+                // }
 
                 break;
             }

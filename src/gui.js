@@ -67,13 +67,13 @@ AFRAME.registerSystem('gui', {
             } );
 
         gui.add(options, 'task', TaskList)
-            .name('task')
+            .name('Task')
             .onChange( function() {
                 sceneEl.setAttribute('task-manager', 'currTask', this.getValue());
             } );
 
         gui.add(options, 'realTimeNetwork')
-            .name('real-time network')
+            .name('Real-time network')
             .onChange( function() {
                 sceneEl.setAttribute('local-scene-fps-manager', 'enable', this.getValue());
             } );

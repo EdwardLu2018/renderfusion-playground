@@ -45,7 +45,7 @@ AFRAME.registerSystem('experiment-manager', {
         block1.add( new ThreeMeshUI.Text( { content: 'Current Experiment:' } ) );
         this.experimentText = new ThreeMeshUI.Text( { content: '' });
         block2.add( this.experimentText );
-        this.timerText = new ThreeMeshUI.Text( { content: 'Time Left: None' });
+        this.timerText = new ThreeMeshUI.Text( { content: 'Time Elasped: None' });
         block3.add( this.timerText );
         this.instructionsText = new ThreeMeshUI.Text( { content: '' });
         block4.add( this.instructionsText );
@@ -76,7 +76,7 @@ AFRAME.registerSystem('experiment-manager', {
     },
 
     updateTimer: function(timeLeft) {
-        this.timerText.set( { content: `Time Left: ${timeLeft}s` } );
+        this.timerText.set( { content: `Time Elasped: ${timeLeft}s` } );
     },
 
     swapControllers: function(renderingMediumType) {
@@ -105,9 +105,6 @@ AFRAME.registerSystem('experiment-manager', {
             if (object.userData.renderingMedium === RenderingMedium.Remote) {
                 object.remove();
                 localSceneSys.addToScene(objectId, object);
-                if (objectId.includes('light')) {
-                    object.children[0].intensity = 1;
-                }
             } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
@@ -119,9 +116,6 @@ AFRAME.registerSystem('experiment-manager', {
             if (object.userData.renderingMedium === RenderingMedium.Local) {
                 object.remove();
                 remoteSceneSys.addToScene(objectId, object);
-                if (objectId.includes('light')) {
-                    object.children[0].intensity = 600;
-                }
             } else if (objectId === 'background') {
                 this.localScene.background = object;
                 this.localScene.environment = object;
@@ -145,7 +139,6 @@ AFRAME.registerSystem('experiment-manager', {
     swapResolution: function(objectId, resolutionType) {
         const object = this.objects[objectId];
 
-        console.log(objectId)
         if (objectId.includes('model')) {
             const model = object;
             if ((resolutionType === Resolution.High && objectId.includes('High')) ||
@@ -180,7 +173,7 @@ AFRAME.registerSystem('experiment-manager', {
         switch (this.experiment) {
             case Experiments.LowPolyLocal:
                 this.compositor.data.doAsyncTimeWarp = false;
-                sceneEl.renderer.physicallyCorrectLights = false;
+                // sceneEl.renderer.physicallyCorrectLights = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Local);
                     this.swapResolution(objectId, Resolution.Low);
@@ -211,7 +204,7 @@ AFRAME.registerSystem('experiment-manager', {
 
             case Experiments.RemoteATW:
                 this.compositor.data.doAsyncTimeWarp = true;
-                sceneEl.renderer.physicallyCorrectLights = true;
+                // sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                     this.swapResolution(objectId, Resolution.High);
@@ -241,7 +234,7 @@ AFRAME.registerSystem('experiment-manager', {
 
             case Experiments.MixedATW:
                 this.compositor.data.doAsyncTimeWarp = true;
-                sceneEl.renderer.physicallyCorrectLights = true;
+                // sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
                     if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
