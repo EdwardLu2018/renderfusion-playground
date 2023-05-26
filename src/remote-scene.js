@@ -11,7 +11,7 @@ AFRAME.registerComponent('remote-scene', {
         fps: {type: 'number', default: 90},
         latency: {type: 'number', default: DefaultLatency}, // ms
         numLights: {type: 'number', default: 2},
-        numModels: {type: 'number', default: 4},
+        numModels: {type: 'number', default: 1},
     },
 
     init: async function() {
@@ -121,11 +121,11 @@ AFRAME.registerComponent('remote-scene', {
 
         var models;
 
-        const lowResSponza = await modelLoader( 'assets/models/', 'sponza_high_poly.glb' );
-        const highResSponza = await modelLoader( 'assets/models/', 'sponza_low_poly.glb' );
-        models = [highResSponza.scene, lowResSponza.scene]
+        const lowResSponza = await modelLoader( 'assets/models/', 'sponza_low_poly.glb' );
+        // const highResSponza = await modelLoader( 'assets/models/', 'sponza_high_poly.glb' );
+        models = [lowResSponza.scene, lowResSponza.scene];
         for (var m = 0; m < 2; m++) {
-            model = models[m];
+            model = models[m].clone();
             model.scale.set(3, 3, 3);
             model.position.set(0.7, -0.2, 17);
             model.rotation.set(0, Math.PI/2, 0);
@@ -141,27 +141,27 @@ AFRAME.registerComponent('remote-scene', {
             }
         }
 
-        const lowResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_low_poly.glb' );
-        const highResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_high_poly.glb' );
-        models = [lowResKnight.scene, highResKnight.scene];
-        for (var i = 0; i < data.numModels; i++) {
-            for (var m = 0; m < 2; m++) {
-                model = models[m].clone();
-                model.position.x = 4 * Math.cos((Math.PI / (data.numModels - 1)) * i);
-                model.position.y = -0.25;
-                model.position.z = -4 * Math.sin((Math.PI / (data.numModels - 1)) * i);
-                model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
-                if (m == 0) {
-                    model.visible = false;
-                    model.userData.originalMedium = RenderingMedium.Local;
-                    _this.addToScene( `knight-modelLow${i}`, model );
-                } else {
-                    model.visible = true;
-                    model.userData.originalMedium = RenderingMedium.Remote;
-                    _this.addToScene( `knight-modelHigh${i}`, model );
-                }
-            }
-        }
+        // const lowResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_low_poly.glb' );
+        // const highResKnight = await modelLoader( 'assets/models/', 'golden_knight_1kTX_high_poly.glb' );
+        // models = [lowResKnight.scene, highResKnight.scene];
+        // for (var i = 0; i < data.numModels; i++) {
+        //     for (var m = 0; m < 2; m++) {
+        //         model = models[m].clone();
+        //         model.position.x = 4 * Math.cos((Math.PI / (data.numModels - 1)) * i);
+        //         model.position.y = -0.25;
+        //         model.position.z = -4 * Math.sin((Math.PI / (data.numModels - 1)) * i);
+        //         model.rotation.y = (Math.PI / (data.numModels - 1)) * i - Math.PI / 2;
+        //         if (m == 0) {
+        //             model.visible = false;
+        //             model.userData.originalMedium = RenderingMedium.Local;
+        //             _this.addToScene( `knight-modelLow${i}`, model );
+        //         } else {
+        //             model.visible = true;
+        //             model.userData.originalMedium = RenderingMedium.Remote;
+        //             _this.addToScene( `knight-modelHigh${i}`, model );
+        //         }
+        //     }
+        // }
 
         this.experimentManager.changeExperiment(Experiments.LowPolyLocal);
     },

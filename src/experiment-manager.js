@@ -125,7 +125,7 @@ AFRAME.registerSystem('experiment-manager', {
             }
         }
 
-        const castShadow = (renderingMediumType === RenderingMedium.Remote);
+        const castShadow = false;//(renderingMediumType === RenderingMedium.Remote);
         if (objectId.includes('model')) {
             object.traverse( function( node ) {
                 if ( node.isMesh ) { node.castShadow = castShadow; node.receiveShadow = castShadow; }
@@ -151,14 +151,14 @@ AFRAME.registerSystem('experiment-manager', {
                 model.visible = false;
             }
         } else {
-            if (object.material === undefined) return;
-            if (resolutionType === Resolution.High) {
-                object.material = new THREE.MeshStandardMaterial({ color: object.material.color });
-            }
-            else
-            if (resolutionType === Resolution.Low) {
-                object.material = new THREE.MeshBasicMaterial({ color: object.material.color });
-            }
+            // if (object.material === undefined) return;
+            // if (resolutionType === Resolution.High) {
+            //     object.material = new THREE.MeshStandardMaterial({ color: object.material.color });
+            // }
+            // else
+            // if (resolutionType === Resolution.Low) {
+            //     object.material = new THREE.MeshBasicMaterial({ color: object.material.color });
+            // }
         }
     },
 

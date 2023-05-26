@@ -52,7 +52,7 @@ AFRAME.registerSystem('compositor', {
         this.pass = new CompositorPass(
                         scene, camera,
                         this.remoteScene, this.remoteCamera,
-                        this.remoteRenderTarget
+                        this.remoteRenderTarget,
                     );
 
         this.onResize = this.onResize.bind(this);
