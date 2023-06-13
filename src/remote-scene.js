@@ -121,9 +121,8 @@ AFRAME.registerComponent('remote-scene', {
 
         var models;
 
-        const lowResSponza = await modelLoader( 'assets/models/', 'sponza_low_poly.glb' );
-        // const highResSponza = await modelLoader( 'assets/models/', 'sponza_high_poly.glb' );
-        models = [lowResSponza.scene, lowResSponza.scene];
+        const sponza = await modelLoader( 'assets/models/', 'sponza_256Tx_high_poly.glb' );
+        models = [sponza.scene, sponza.scene];
         for (var m = 0; m < 2; m++) {
             model = models[m].clone();
             model.scale.set(3, 3, 3);

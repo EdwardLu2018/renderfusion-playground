@@ -82,19 +82,19 @@ AFRAME.registerComponent('local-scene', {
         const prevButton = new ThreeMeshUI.Block( ButtonOptions );
         const nextButton = new ThreeMeshUI.Block( ButtonOptions );
         const resetButton = new ThreeMeshUI.Block( ButtonOptions );
-        prevButton.add( new ThreeMeshUI.Text( { content: 'Previous' } ) );
-        nextButton.add( new ThreeMeshUI.Text( { content: 'Next' } ) );
+        prevButton.add( new ThreeMeshUI.Text( { content: 'Previous\nExperiment' } ) );
+        nextButton.add( new ThreeMeshUI.Text( { content: 'Next\nExperiment' } ) );
         resetButton.add( new ThreeMeshUI.Text( { content: 'Reset' } ) );
         const buttonList = [prevButton, nextButton, resetButton];
 
-        // var currentExpIdx = 0;
+        var currentExpIdx = 0;
         prevButton.setupState( {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-                // currentExpIdx -= 1;
-			    // if ( currentExpIdx < 0 ) currentExpIdx = ExperimentsList.length - 1;
-                // this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
+                currentExpIdx -= 1;
+			    if ( currentExpIdx < 0 ) currentExpIdx = ExperimentsList.length - 1;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
             }
         });
         prevButton.setupState( hoveredStateAttributes );
@@ -104,8 +104,8 @@ AFRAME.registerComponent('local-scene', {
             state: 'selected',
             attributes: selectedAttributes,
             onSet: () => {
-                // currentExpIdx = ( currentExpIdx + 1 ) % ExperimentsList.length;
-                // this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
+                currentExpIdx = ( currentExpIdx + 1 ) % ExperimentsList.length;
+                this.experimentManager.changeExperiment(ExperimentsList[currentExpIdx]);
 		    }
         });
         nextButton.setupState( hoveredStateAttributes );
@@ -215,20 +215,6 @@ AFRAME.registerComponent('local-scene', {
         } );
         sword2.userData.originalMedium = RenderingMedium.Local;
         _this.addToScene( 'sword2', sword2 );
-
-        // model = await modelLoader( 'assets/models/', 'medieval_cloth_001.glb' );
-        // const cloth1 = model.scene;
-        // cloth1.scale.set(0.4, 0.4, 0.4);
-        // cloth1.position.set(-5.5, -0.25, -7);
-        // _this.addToScene( 'medieval_cloth_001', cloth1 );
-        // cloth1.userData.originalMedium = RenderingMedium.Local;
-
-        // model = await modelLoader( 'assets/models/', 'medieval_corset_002.glb' );
-        // const cloth2 = model.scene;
-        // cloth2.scale.set(0.2, 0.2, 0.2);
-        // cloth2.position.set(5.5, -0.25, -7);
-        // _this.addToScene( 'medieval_corset_002', cloth2 );
-        // cloth2.userData.originalMedium = RenderingMedium.Local;
     },
 
     addToScene: function(objectId, object) {

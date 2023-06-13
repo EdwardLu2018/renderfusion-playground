@@ -12,10 +12,10 @@
         "build": "parcel build src/index.js --dist-dir ./dist"
     },
     "dependencies": {
-        "ip": "^1.1.5",
         "dat.gui": "^0.7.9",
         "express": "^4.18.2",
-        "live-server": "^1.2.2",
+        "ip": "^1.1.5",
+        "live-server": "^1.1.0",
         "three-mesh-ui": "^6.5.3"
     },
     "devDependencies": {

@@ -141,8 +141,11 @@ AFRAME.registerSystem('compositor', {
                 if (system.cameras.length > 1) {
                     // we have two cameras here (vr mode or headset ar mode)
                     hasDualCameras = !isWebXRViewer; // webarviewer seens to have 2 cameras, but uses one...
+                } else if (system.cameras.length === 1) {
+                    // we just have a single xr camera here
+                    hasDualCameras = false;
                 } else {
-                    // we just have a single camera here
+                    // not in xr mode, just one camera
                     hasDualCameras = false;
                 }
 

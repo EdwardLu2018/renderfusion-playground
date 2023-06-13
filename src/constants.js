@@ -1,8 +1,8 @@
 export const DefaultLatency = 100;
 
 export const ButtonOptions = Object.freeze({
-    width: 0.4,
-    height: 0.15,
+    width: 0.5,
+    height: 0.2,
     justifyContent: 'center',
     offset: 0.05,
     margin: 0.02,
