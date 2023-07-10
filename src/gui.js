@@ -82,11 +82,11 @@ AFRAME.registerSystem('gui', {
                 _this.experimentManager.changeExperiment(this.getValue());
             } );
 
-        gui.add(options, 'task', TaskList)
-            .name('Task')
-            .onChange( function() {
-                sceneEl.setAttribute('task-manager', 'currTask', this.getValue());
-            } );
+        // gui.add(options, 'task', TaskList)
+        //     .name('Task')
+        //     .onChange( function() {
+        //         sceneEl.setAttribute('task-manager', 'currTask', this.getValue());
+        //     } );
 
         // gui.add(options, 'realTimeNetwork')
         //     .name('Real-Time Network')

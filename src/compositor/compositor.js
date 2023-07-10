@@ -29,7 +29,7 @@ AFRAME.registerSystem('compositor', {
         this.baseResolutionHeight = 1080;
 
         this.remoteRenderTarget = new THREE.WebGLRenderTarget(this.baseResolutionWidth, this.baseResolutionHeight);
-        this.remoteRenderTarget.texture.name = 'RemoteScene.rtLeft';
+        this.remoteRenderTarget.texture.name = 'RemoteScene.rt';
         this.remoteRenderTarget.texture.minFilter = THREE.NearestFilter;
         this.remoteRenderTarget.texture.magFilter = THREE.NearestFilter;
         this.remoteRenderTarget.stencilBuffer = false;
@@ -108,8 +108,6 @@ AFRAME.registerSystem('compositor', {
 
         // const cameraLPos = new THREE.Vector3();
         // const cameraRPos = new THREE.Vector3();
-        var clock = new THREE.Clock();
-        var elapsed = 0;
         renderer.render = function() {
             if (isDigest) {
                 // render "normally"

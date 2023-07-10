@@ -5,6 +5,8 @@ export class CompositorPass extends Pass {
     constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget) {
         super();
 
+        this.camera = camera;
+
         this.remoteRenderTarget = remoteRenderTarget;
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
@@ -20,8 +22,6 @@ export class CompositorPass extends Pass {
         this.material.uniforms.tRemoteColor.value = this.remoteRenderTarget.texture;
         this.material.uniforms.tRemoteDepth.value = this.remoteRenderTarget.depthTexture;
         this.material.uniforms.remoteSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
-        this.material.uniforms.cameraNear.value = camera.near;
-        this.material.uniforms.cameraFar.value = camera.far;
 
         this.needsSwap = false;
 
@@ -96,6 +96,9 @@ export class CompositorPass extends Pass {
     render(renderer, writeBuffer, readBuffer /* , deltaTime, maskActive */) {
         this.material.uniforms.tLocalColor.value = readBuffer.texture;
         this.material.uniforms.tLocalDepth.value = readBuffer.depthTexture;
+
+        this.material.uniforms.cameraNear.value = this.camera.near;
+        this.material.uniforms.cameraFar.value = this.camera.far;
 
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);

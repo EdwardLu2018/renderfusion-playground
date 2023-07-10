@@ -100,7 +100,7 @@ AFRAME.registerComponent('task-manager', {
 
             case Task.HighDexterity: {
                 this.experimentManager.updateInstructions(
-                    `Move the sword in the helmet to match the transparent sword next to me!\n\nScore: ${this.successes}`
+                    `Move the sword in the helmet to match the transparent sword!\n\nScore: ${this.successes}`
                 );
 
                 pos1.copy(this.experimentManager.objects['sword'].position);
