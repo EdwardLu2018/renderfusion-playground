@@ -224,7 +224,7 @@ void main() {
             coordRemoteDepth = coordRemoteColor;
         }
         else if (leftEye) {
-            coordRemoteColor.x = coordRemoteColor.x;
+            coordRemoteColor.x = coordRemoteColor.x / 2.0;
             coordRemoteDepth = coordRemoteColor;
         }
         else if (rightEye) {
@@ -261,16 +261,16 @@ void main() {
         vec2 OffsetUVTop      = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
         vec2 OffsetUVDown     = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
 
-        vec4 remoteColorLeft      = texture2D(tRemoteColor, OffsetUVLeft );
-        vec4 remoteColorRight     = texture2D(tRemoteColor, OffsetUVRight);
-        vec4 remoteColorTop       = texture2D(tRemoteColor, OffsetUVTop  );
-        vec4 remoteColorDown      = texture2D(tRemoteColor, OffsetUVDown );
+        vec4 remoteColorLeft  = texture2D(tRemoteColor, OffsetUVLeft );
+        vec4 remoteColorRight = texture2D(tRemoteColor, OffsetUVRight);
+        vec4 remoteColorTop   = texture2D(tRemoteColor, OffsetUVTop  );
+        vec4 remoteColorDown  = texture2D(tRemoteColor, OffsetUVDown );
 
-        float Depth             = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
-        float DepthLeft         = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVLeft ).r);
-        float DepthRight        = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVRight).r);
-        float DepthTop          = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVTop  ).r);
-        float DepthDown         = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVDown ).r);
+        float Depth           = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
+        float DepthLeft       = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVLeft ).r);
+        float DepthRight      = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVRight).r);
+        float DepthTop        = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVTop  ).r);
+        float DepthDown       = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVDown ).r);
 
         // Find the furthest away one of these five samples
         float FurthestDepth = max(max(max(max(Depth, DepthLeft), DepthRight), DepthTop), DepthDown);
