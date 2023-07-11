@@ -14,7 +14,7 @@ vec3 cameraToWorld(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {
     vec2 ndc = 2.0 * uv - 1.0;
     vec4 uv4 = matrixWorld * inverse(projectionMatrix) * vec4(ndc, 1.0, 1.0);
     vec3 uv3 = uv4.xyz / uv4.w;
-    return uv3;
+    return normalize(uv3);
 }
 
 void main() {

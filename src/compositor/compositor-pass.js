@@ -67,6 +67,9 @@ export class CompositorPass extends Pass {
         if (remoteL) {
             this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
             this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+            // const forwardVector = (new THREE.Vector3(0, 0, -1)).applyQuaternion(remoteL.quaternion);
+            // this.material.uniforms.remoteLForward.value = forwardVector;
+            remoteL.getWorldDirection(this.material.uniforms.remoteLForward.value);
         }
 
         if (remoteR) {
