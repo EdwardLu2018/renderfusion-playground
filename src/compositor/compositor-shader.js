@@ -42,6 +42,9 @@ export const CompositorShader = {
         preferLocal: {
             type: 'bool', value: false,
         },
+        reprojectMovement: {
+            type: 'bool', value: false,
+        },
         cameraLProjectionMatrix: {
             type: 'mat4', value: new THREE.Matrix4(),
         },

@@ -5,8 +5,6 @@ export class CompositorPass extends Pass {
     constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget) {
         super();
 
-        this.camera = camera;
-
         this.remoteRenderTarget = remoteRenderTarget;
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
@@ -51,10 +49,17 @@ export class CompositorPass extends Pass {
         this.material.uniforms.preferLocal.value = preferLocal;
     }
 
+    setReprojectMovement(reprojectMovement) {
+        this.material.uniforms.reprojectMovement.value = reprojectMovement;
+    }
+
     setCameraMats(cameraL, cameraR) {
         if (cameraL) {
             this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
             this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+
+            this.material.uniforms.cameraNear.value = cameraL.near;
+            this.material.uniforms.cameraFar.value = cameraL.far;
         }
 
         if (cameraR) {
@@ -98,9 +103,6 @@ export class CompositorPass extends Pass {
     render(renderer, writeBuffer, readBuffer /* , deltaTime, maskActive */) {
         this.material.uniforms.tLocalColor.value = readBuffer.texture;
         this.material.uniforms.tLocalDepth.value = readBuffer.depthTexture;
-
-        this.material.uniforms.cameraNear.value = this.camera.near;
-        this.material.uniforms.cameraFar.value = this.camera.far;
 
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);

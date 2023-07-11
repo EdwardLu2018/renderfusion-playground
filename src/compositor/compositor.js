@@ -4,6 +4,7 @@ AFRAME.registerSystem('compositor', {
     schema: {
         doAsyncTimeWarp: {type: 'bool', default: true},
         stretchBorders: {type: 'bool', default: true},
+        reprojectMovement: {type: 'bool', default: false},
         preferLocal: {type: 'bool', default: false},
         fps: {type: 'number', default: 90},
     },
@@ -149,6 +150,7 @@ AFRAME.registerSystem('compositor', {
 
                 system.pass.setHasDualCameras(hasDualCameras);
                 system.pass.setStretchBorders(data.stretchBorders);
+                system.pass.setReprojectMovement(data.reprojectMovement);
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
                 system.pass.setPreferLocal(data.preferLocal);
                 if (data.doAsyncTimeWarp) {

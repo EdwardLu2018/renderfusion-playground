@@ -7,4 +7,5 @@ import './raycaster-custom';
 import './interaction-manager';
 import './hand-grab';
 import './hand-click';
+import './press-and-move';
 import './gui';

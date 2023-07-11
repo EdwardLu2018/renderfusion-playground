@@ -20,6 +20,7 @@ AFRAME.registerSystem('gui', {
 
         const options = {
             stretchBorders: true,
+            reprojectMovement: false,
             // fpsLocal: 90,
             fpsRemote: 90,
             latency: DefaultLatency,
@@ -74,6 +75,12 @@ AFRAME.registerSystem('gui', {
             .name('Stretch Borders (ATW)')
             .onChange( function() {
                 _this.compositor.data.stretchBorders = this.getValue();
+            } );
+
+        gui.add(options, 'reprojectMovement')
+            .name('Include Movement')
+            .onChange( function() {
+                _this.compositor.data.reprojectMovement = this.getValue();
             } );
 
         gui.add(options, 'experiment', ExperimentsList)
