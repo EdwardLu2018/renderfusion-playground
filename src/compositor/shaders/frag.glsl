@@ -77,13 +77,13 @@ vec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
 vec2 worldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 CameraPosition) {
     float nearPlane = cameraNear;
     float farPlane = cameraFar;
-    float textureWidth = float(localSize.x);
+    float textureWidth = !hasDualCameras ? float(localSize.x) : float(localSize.x) / 2.0;
     float textureHeight = float(localSize.y);
-    vec3 SamplePos = pos;
+    vec3 samplePos = pos;
 
-    SamplePos = normalize(SamplePos - CameraPosition) * (nearPlane + (farPlane - nearPlane)) + CameraPosition;
+    samplePos = normalize(samplePos - CameraPosition) * (nearPlane + (farPlane - nearPlane)) + CameraPosition;
     vec2 uv = vec2(0.0);
-    vec4 toCam = WorldToCamera * vec4(SamplePos, 1.0);
+    vec4 toCam = WorldToCamera * vec4(samplePos, 1.0);
     float camPosZ = toCam.z;
     float height = 2.0 * camPosZ / CameraProjection[1][1];
     float width = textureWidth / textureHeight * height;
@@ -92,9 +92,9 @@ vec2 worldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 
     return 1.0 - uv;
 }
 
-vec3 getWorldPos(sampler2D depthSampler, vec3 CameraVector, vec3 CameraForward, vec3 CameraPos, vec2 uv) {
+vec3 getWorldPos(vec3 CameraVector, vec3 CameraForward, vec3 CameraPos, vec2 uv) {
     float d = dot(CameraForward, CameraVector);
-    float SceneDistance = linearEyeDepth(texture2D(depthSampler, uv).r) / d;
+    float SceneDistance = linearEyeDepth(texture2D(tRemoteDepth, uv).r) / d;
     vec3 worldPos = CameraPos + CameraVector * SceneDistance;
     return worldPos;
 }
@@ -190,7 +190,14 @@ void main() {
             currentPos += (cameraVector * stepSize);
 
             vec2 uv4 = worldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
-            vec3 tracedPos = getWorldPos(tRemoteDepth, normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
+            if (leftEye) {
+                uv4.x = uv4.x / 2.0;
+            }
+            else if (rightEye) {
+                uv4.x = uv4.x / 2.0 + 0.5;
+            }
+
+            vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
 
             float distanceToCurrentPos = distance(remotePos, currentPos);
             float distanceToWorld = distance(remotePos, tracedPos);
@@ -213,17 +220,9 @@ void main() {
         uv3 = worldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
 
         coordRemoteColor = uv3;
+        coordRemoteDepth = coordRemoteColor;
 
-        if (oneCamera) {
-            // if (targetWidthGreater) {
-            //     coordRemoteColor.x = (coordRemoteColor.x * localSizeF.x - padding) / float(localSize.x - totalPad);
-            // }
-            // else {
-            //     coordRemoteColor.x = (coordRemoteColor.x * localSizeF.x + padding) / float(newWidth);
-            // }
-            coordRemoteDepth = coordRemoteColor;
-        }
-        else if (leftEye) {
+        if (leftEye) {
             coordRemoteColor.x = coordRemoteColor.x / 2.0;
             coordRemoteDepth = coordRemoteColor;
         }
@@ -232,8 +231,45 @@ void main() {
             coordRemoteDepth = coordRemoteColor;
         }
 
-        float xMin = ((!hasDualCameras || vUv.x < 0.5) ? 0.0 : 0.5);
-        float xMax = ((!hasDualCameras || vUv.x >= 0.5) ? 1.0 : 0.5);
+        if (occluded) {
+            vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
+            vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
+            vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
+            vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
+
+            vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );
+            vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);
+            vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );
+            vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );
+
+            float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
+            float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft ).r);
+            float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight).r);
+            float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop  ).r);
+            float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown ).r);
+
+            // Find the furthest away one of these five samples
+            float furthestDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
+            if (furthestDepth == remoteDepthLeft) {
+                remoteColor = remoteColorLeft;
+                // remoteDepth = remoteDepthLeft;
+            }
+            if (furthestDepth == remoteDepthRight) {
+                remoteColor = remoteColorRight;
+                // remoteDepth = remoteDepthRight;
+            }
+            if (furthestDepth == remoteDepthTop) {
+                remoteColor = remoteColorTop;
+                // remoteDepth = remoteDepthTop;
+            }
+            if (furthestDepth == remoteDepthDown) {
+                remoteColor = remoteColorDown;
+                // remoteDepth = remoteDepthDown;
+            }
+        }
+
+        float xMin = ((oneCamera || leftEye) ? 0.0 : 0.5);
+        float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
         if (!stretchBorders) {
             remoteColor = texture2D( tRemoteColor, coordRemoteColor );
             remoteDepth = readDepth( tRemoteDepth, coordRemoteDepth );
@@ -243,7 +279,7 @@ void main() {
             }
         }
         else {
-            coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax);
+            coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax - 0.001);
             coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);
             coordRemoteDepth = coordRemoteColor;
             remoteColor = texture2D( tRemoteColor, coordRemoteColor );
@@ -253,35 +289,6 @@ void main() {
     else {
         remoteColor = texture2D( tRemoteColor, coordRemoteColor );
         remoteDepth = readDepth( tRemoteDepth, coordRemoteDepth );
-    }
-
-    if (occluded) {
-        vec2 OffsetUVLeft     = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
-        vec2 OffsetUVRight    = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
-        vec2 OffsetUVTop      = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
-        vec2 OffsetUVDown     = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
-
-        vec4 remoteColorLeft  = texture2D(tRemoteColor, OffsetUVLeft );
-        vec4 remoteColorRight = texture2D(tRemoteColor, OffsetUVRight);
-        vec4 remoteColorTop   = texture2D(tRemoteColor, OffsetUVTop  );
-        vec4 remoteColorDown  = texture2D(tRemoteColor, OffsetUVDown );
-
-        float Depth           = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
-        float DepthLeft       = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVLeft ).r);
-        float DepthRight      = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVRight).r);
-        float DepthTop        = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVTop  ).r);
-        float DepthDown       = linearEyeDepth(texture2D(tRemoteDepth, OffsetUVDown ).r);
-
-        // Find the furthest away one of these five samples
-        float FurthestDepth = max(max(max(max(Depth, DepthLeft), DepthRight), DepthTop), DepthDown);
-        if (FurthestDepth == DepthLeft)
-            remoteColor = remoteColorLeft;
-        if (FurthestDepth == DepthRight)
-            remoteColor = remoteColorRight;
-        if (FurthestDepth == DepthTop)
-            remoteColor = remoteColorTop;
-        if (FurthestDepth == DepthDown)
-            remoteColor = remoteColorDown;
     }
 
     vec4 color = localColor;
