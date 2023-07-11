@@ -26,7 +26,7 @@ uniform mat4 remoteLProjectionMatrix, remoteLMatrixWorld;
 uniform mat4 cameraRProjectionMatrix, cameraRMatrixWorld;
 uniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;
 
-uniform vec3 remoteLForward;
+uniform vec3 remoteLForward, remoteRForward;
 
 // adapted from: https://gist.github.com/hecomi/9580605
 float linear01Depth(float depth) {
@@ -54,7 +54,27 @@ vec3 matrixWorldToPosition(mat4 matrixWorld) {
     return vec3(matrixWorld[3]);
 }
 
-vec2 WorldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 CameraPosition) {
+float intersectPlane(vec3 p0, vec3 n, vec3 l0, vec3 l) {
+    n = normalize(n);
+    l = normalize(l);
+    float t = -1.0;
+    float denom = dot(n, l);
+    if (denom > 1e-6) {
+        vec3 p0l0 = p0 - l0;
+        t = dot(p0l0, n) / denom;
+        return t;
+    }
+    return t;
+}
+
+vec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
+    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);
+    vec3 uv3 = uv4.xyz / uv4.w;
+    vec2 uv2 = uv3.xy / uv3.z;
+    return (uv2 + 1.0) / 2.0;
+}
+
+vec2 worldToScreenPos(vec3 pos, mat4 CameraProjection, mat4 WorldToCamera, vec3 CameraPosition) {
     float nearPlane = cameraNear;
     float farPlane = cameraFar;
     float textureWidth = float(localSize.x);
@@ -128,6 +148,7 @@ void main() {
         vec3 remotePlaneNormal = vRemoteLPlaneNormal;
         mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
         mat4 remoteMatrixWorld = remoteLMatrixWorld;
+        vec3 remoteForward = remoteLForward;
 
         if (oneCamera) {
             x = vUv.x;
@@ -146,35 +167,40 @@ void main() {
             remotePlaneNormal = vRemoteRPlaneNormal;
             remoteProjectionMatrix = remoteRProjectionMatrix;
             remoteMatrixWorld = remoteRMatrixWorld;
+            remoteForward = remoteRForward;
         }
 
         vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
                                  mix(cameraBotLeft, cameraBotRight, x),
                                  1.0 - vUv.y );
 
-        vec2 uv3 = WorldToScreenPos(remotePos + cameraVector, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
+        // float t = intersectPlane(remoteTopLeft, remotePlaneNormal, cameraPos, cameraVector);
+        // vec3 hitPt = cameraPos + cameraVector * t;
+        // vec2 uv3 = worldToCamera(hitPt, remoteProjectionMatrix, remoteMatrixWorld);
+
+        vec2 uv3 = worldToScreenPos(remotePos + cameraVector, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
 
         vec3 currentPos = cameraPos;
 
         int steps = 100;
-        float DistanceFromWorldToPos;
+        float distanceFromWorldToPos;
         for (int i = 0; i < steps; i++)
         {
             float stepSize = 30.0 / float(steps);
             currentPos += (cameraVector * stepSize);
 
-            vec2 uv4 = WorldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
-            vec3 tracedPos = getWorldPos(tRemoteDepth, normalize(currentPos - remotePos), remoteLForward, remotePos, uv4);
+            vec2 uv4 = worldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
+            vec3 tracedPos = getWorldPos(tRemoteDepth, normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
 
-            float DistanceToCurrentPos = distance(remotePos, currentPos);
-            float DistanceToWorld = distance(remotePos, tracedPos);
+            float distanceToCurrentPos = distance(remotePos, currentPos);
+            float distanceToWorld = distance(remotePos, tracedPos);
 
-            DistanceFromWorldToPos = DistanceToCurrentPos - DistanceToWorld;
-            if (DistanceFromWorldToPos > stepSize)
+            distanceFromWorldToPos = distanceToCurrentPos - distanceToWorld;
+            if (distanceFromWorldToPos > stepSize)
             {
                 occluded = true;
             }
-            if (DistanceFromWorldToPos > 0.0)
+            if (distanceFromWorldToPos > 0.0)
             {
                 break;
             }
@@ -184,7 +210,7 @@ void main() {
             }
         }
 
-        uv3 = WorldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
+        uv3 = worldToScreenPos(currentPos, remoteProjectionMatrix, inverse(remoteMatrixWorld), remotePos);
 
         coordRemoteColor = uv3;
 

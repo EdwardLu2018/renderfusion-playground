@@ -69,6 +69,9 @@ export const CompositorShader = {
         remoteLForward: {
             type: 'vec3', value: new THREE.Vector3(),
         },
+        remoteRForward: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
     },
 
     vertexShader: require('./shaders/vert.glsl'),
