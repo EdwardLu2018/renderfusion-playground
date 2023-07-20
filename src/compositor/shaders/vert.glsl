@@ -1,7 +1,5 @@
 varying vec2 vUv;
 
-uniform bool arMode, vrMode;
-
 varying vec3 vCameraLTopLeft, vCameraLTopRight, vCameraLBotLeft, vCameraLBotRight;
 varying vec3 vCameraRTopLeft, vCameraRTopRight, vCameraRBotLeft, vCameraRBotRight;
 varying vec3 vRemoteLTopLeft, vRemoteRTopLeft;
@@ -15,10 +13,7 @@ uniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;
 vec3 cameraToWorld(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {
     vec2 ndc = 2.0 * uv - 1.0;
     vec4 uv4 = matrixWorld * inverse(projectionMatrix) * vec4(ndc, 1.0, 1.0);
-    vec3 uv3 = uv4.xyz / uv4.w;
-    if (!(arMode || vrMode)) {
-        uv3 = normalize(uv3);
-    }
+    vec3 uv3 = vec3(uv4 / uv4.w);
     return uv3;
 }
 
