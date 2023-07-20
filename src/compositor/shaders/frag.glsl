@@ -62,33 +62,15 @@ vec2 worldToViewport(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
     float textureHeight = float(localSize.y);
 
     vec4 uv4 = inverse(matrixWorld) * vec4(pt, 1.0);
-    vec3 toCam3 = vec3(uv4 / uv4.w);
-    float camPosZ = toCam3.z;
+    vec3 toCam = vec3(uv4 / uv4.w);
+    float camPosZ = toCam.z;
     float height = 2.0 * camPosZ / projectionMatrix[1][1];
     float width = textureWidth / textureHeight * height;
 
     vec2 uv;
-    uv.x = (toCam3.x + width / 2.0) / width;
-    uv.y = (toCam3.y + height / 2.0) / height;
+    uv.x = (toCam.x + width / 2.0) / width;
+    uv.y = (toCam.y + height / 2.0) / height;
     return 1.0 - uv;
-}
-
-vec2 worldToScreenPos(vec3 pos, mat4 projectionMatrix, mat4 matrixWorld, vec3 cameraPosition) {
-    float textureWidth = !hasDualCameras ? float(localSize.x) : float(localSize.x) / 2.0;
-    float textureHeight = float(localSize.y);
-    vec3 samplePos = pos;
-
-    samplePos = normalize(samplePos - cameraPosition) * (cameraNear + (cameraFar - cameraNear)) + cameraPosition;
-    vec4 toCam = inverse(matrixWorld) * vec4(samplePos, 1.0);
-    vec3 toCam3 = vec3(toCam / toCam.w);
-    float camPosZ = toCam3.z;
-    float height = 2.0 * camPosZ / projectionMatrix[1][1];
-    float width = textureWidth / textureHeight * height;
-
-    vec2 uv;
-    uv.x = (toCam3.x + width / 2.0) / width;
-    uv.y = (toCam3.y + height / 2.0) / height;
-    return uv;
 }
 
 vec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {
@@ -188,13 +170,6 @@ void main() {
             currentPos += (cameraVector * stepSize);
 
             vec2 uv4 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
-            // if (leftEye) {
-            //     uv4.x = uv4.x / 2.0;
-            // }
-            // if (rightEye) {
-            //     uv4.x = uv4.x / 2.0 + 0.5;
-            // }
-
             vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
 
             float distanceToCurrentPos = distance(remotePos, currentPos);
