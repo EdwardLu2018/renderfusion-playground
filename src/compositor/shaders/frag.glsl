@@ -57,36 +57,14 @@ vec3 matrixWorldToPosition(mat4 matrixWorld) {
     return vec3(matrixWorld[3]);
 }
 
-float intersectPlane(vec3 p0, vec3 n, vec3 l0, vec3 l) {
-    n = normalize(n);
-    l = normalize(l);
-    float t = -1.0;
-    float denom = dot(n, l);
-    if (denom > 1e-6) {
-        vec3 p0l0 = p0 - l0;
-        t = dot(p0l0, n) / denom;
-        return t;
-    }
-    return t;
-}
-
-vec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
-    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);
-    vec3 uv3 = vec3(uv4 / uv4.w);
-    vec2 uv2 = vec2(uv3 / uv3.z);
-    return (uv2 + 1.0) / 2.0;
-}
-
-vec2 worldToScreenPos(vec3 pos, mat4 cameraProjection, mat4 worldToCamera, vec3 cameraPosition) {
+vec2 worldToViewport(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
     float textureWidth = !hasDualCameras ? float(localSize.x) : float(localSize.x) / 2.0;
     float textureHeight = float(localSize.y);
-    vec3 samplePos = pos;
 
-    samplePos = normalize(samplePos - cameraPosition) * (cameraNear + (cameraFar - cameraNear)) + cameraPosition;
-    vec4 toCam = worldToCamera * vec4(samplePos, 1.0);
-    vec3 toCam3 = vec3(toCam / toCam.w);
+    vec4 uv4 = inverse(matrixWorld) * vec4(pt, 1.0);
+    vec3 toCam3 = vec3(uv4 / uv4.w);
     float camPosZ = toCam3.z;
-    float height = 2.0 * camPosZ / cameraProjection[1][1];
+    float height = 2.0 * camPosZ / projectionMatrix[1][1];
     float width = textureWidth / textureHeight * height;
 
     vec2 uv;
@@ -95,10 +73,28 @@ vec2 worldToScreenPos(vec3 pos, mat4 cameraProjection, mat4 worldToCamera, vec3 
     return 1.0 - uv;
 }
 
+vec2 worldToScreenPos(vec3 pos, mat4 projectionMatrix, mat4 matrixWorld, vec3 cameraPosition) {
+    float textureWidth = !hasDualCameras ? float(localSize.x) : float(localSize.x) / 2.0;
+    float textureHeight = float(localSize.y);
+    vec3 samplePos = pos;
+
+    samplePos = normalize(samplePos - cameraPosition) * (cameraNear + (cameraFar - cameraNear)) + cameraPosition;
+    vec4 toCam = inverse(matrixWorld) * vec4(samplePos, 1.0);
+    vec3 toCam3 = vec3(toCam / toCam.w);
+    float camPosZ = toCam3.z;
+    float height = 2.0 * camPosZ / projectionMatrix[1][1];
+    float width = textureWidth / textureHeight * height;
+
+    vec2 uv;
+    uv.x = (toCam3.x + width / 2.0) / width;
+    uv.y = (toCam3.y + height / 2.0) / height;
+    return uv;
+}
+
 vec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {
     float d = dot(cameraForward, cameraVector);
-    float SceneDistance = linearEyeDepth(texture2D(tRemoteDepth, uv).r) / d;
-    vec3 worldPos = cameraPos + cameraVector * SceneDistance;
+    float sceneDistance = linearEyeDepth(texture2D(tRemoteDepth, uv).r) / d;
+    vec3 worldPos = cameraPos + cameraVector * sceneDistance;
     return worldPos;
 }
 
@@ -176,7 +172,7 @@ void main() {
                              mix(cameraBotLeft, cameraBotRight, x),
                              1.0 - vUv.y );
 
-    vec2 uv3 = worldToCamera(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
+    vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
 
     if (reprojectMovement) {
         cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
@@ -191,13 +187,13 @@ void main() {
             float stepSize = 30.0 / float(steps);
             currentPos += (cameraVector * stepSize);
 
-            vec2 uv4 = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
-            if (leftEye) {
-                uv4.x = uv4.x / 2.0;
-            }
-            if (rightEye) {
-                uv4.x = uv4.x / 2.0 + 0.5;
-            }
+            vec2 uv4 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
+            // if (leftEye) {
+            //     uv4.x = uv4.x / 2.0;
+            // }
+            // if (rightEye) {
+            //     uv4.x = uv4.x / 2.0 + 0.5;
+            // }
 
             vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
 
@@ -213,7 +209,7 @@ void main() {
             }
         }
 
-        uv3 = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
+        uv3 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
     }
 
     coordRemoteColor = uv3;
