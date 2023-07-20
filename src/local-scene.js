@@ -45,6 +45,9 @@ AFRAME.registerComponent('local-scene', {
             });
         }
 
+        const light = new THREE.AmbientLight( 0xffffff, 0.9 );
+        scene.add( light );
+
         // new RGBELoader()
         //     .setPath( 'assets/textures/' )
         //     .load( 'san_giuseppe_bridge_2k.hdr', function( texture ) {
@@ -215,6 +218,37 @@ AFRAME.registerComponent('local-scene', {
         } );
         sword2.userData.originalMedium = RenderingMedium.Local;
         _this.addToScene( 'sword2', sword2 );
+
+        // let j = 0;
+        // let sphere, light;
+        // for (var i = -Math.floor(data.numLights / 2); i < Math.ceil(data.numLights / 2); i++) {
+        //     let xPos = i;
+        //     if (data.numLights % 2 == 0) xPos += 0.5;
+
+        //     sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        //     sphere.position.set( 10 * xPos, 9, 2 );
+        //     this.addToScene( `light${j++}1`, sphere );
+        //     sphere.userData.originalMedium = RenderingMedium.Local;
+
+        //     light = new THREE.SpotLight( 0xDDDDFF, 1 );
+        //     light.castShadow = true;
+        //     light.shadow.bias = -0.0001;
+        //     light.shadow.mapSize.width = 1024 * 4;
+        //     light.shadow.mapSize.height = 1024 * 4;
+        //     light.shadow.camera.near = 10;
+        //     light.shadow.camera.far = 1000;
+        //     light.shadow.camera.fov = 30;
+        //     sphere.add( light );
+        // }
+
+        // const sponza = await modelLoader( 'assets/models/', 'sponza_256Tx_low_poly.glb' );
+        // model = sponza.scene;
+        // model.scale.set(3, 3, 3);
+        // model.position.set(0.7, -0.2, 17);
+        // model.rotation.set(0, Math.PI/2, 0);
+        // model.visible = true;
+        // model.userData.originalMedium = RenderingMedium.Local;
+        // _this.addToScene( 'sponza-modelLow', model );
     },
 
     addToScene: function(objectId, object) {

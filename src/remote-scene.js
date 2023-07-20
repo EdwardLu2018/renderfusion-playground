@@ -26,7 +26,7 @@ AFRAME.registerComponent('remote-scene', {
 
         this.stats = new Stats();
         this.stats.showPanel(0);
-        document.getElementById('remote-stats').appendChild(this.stats.dom);
+        // document.getElementById('remote-stats').appendChild(this.stats.dom);
 
         this.experimentManager = sceneEl.systems['experiment-manager'];
         this.remoteLocal = sceneEl.systems['remote-local'];
@@ -57,30 +57,8 @@ AFRAME.registerComponent('remote-scene', {
             });
         }
 
-        const sphereGeometry = new THREE.SphereGeometry( 0.1, 32, 16 );
-        const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xDDDDFF } );
-
-        let j = 0;
-        let sphere, light;
-        for (var i = -Math.floor(data.numLights / 2); i < Math.ceil(data.numLights / 2); i++) {
-            let xPos = i;
-            if (data.numLights % 2 == 0) xPos += 0.5;
-
-            sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set( 10 * xPos, 9, 2 );
-            this.addToScene( `light${j++}`, sphere );
-            sphere.userData.originalMedium = RenderingMedium.Remote;
-
-            light = new THREE.SpotLight( 0xDDDDFF, 1 );
-            light.castShadow = true;
-            light.shadow.bias = -0.0001;
-            light.shadow.mapSize.width = 1024 * 4;
-            light.shadow.mapSize.height = 1024 * 4;
-            light.shadow.camera.near = 10;
-            light.shadow.camera.far = 1000;
-            light.shadow.camera.fov = 30;
-            sphere.add( light );
-        }
+        const light = new THREE.AmbientLight( 0xffffff, 0.9 );
+        scene.add( light );
 
         const boxMaterial = new THREE.MeshStandardMaterial( { color: 0x7074FF } );
         const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);

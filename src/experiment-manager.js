@@ -139,27 +139,27 @@ AFRAME.registerSystem('experiment-manager', {
     swapResolution: function(objectId, resolutionType) {
         const object = this.objects[objectId];
 
-        if (objectId.includes('model')) {
-            const model = object;
-            if ((resolutionType === Resolution.High && objectId.includes('High')) ||
-                (resolutionType == Resolution.Low && objectId.includes('Low'))) {
-                model.visible = true;
-            }
-            else
-            if ((resolutionType === Resolution.High && objectId.includes('Low')) ||
-                (resolutionType === Resolution.Low && objectId.includes('High'))) {
-                model.visible = false;
-            }
-        } else {
-            // if (object.material === undefined) return;
-            // if (resolutionType === Resolution.High) {
-            //     object.material = new THREE.MeshStandardMaterial({ color: object.material.color });
-            // }
-            // else
-            // if (resolutionType === Resolution.Low) {
-            //     object.material = new THREE.MeshBasicMaterial({ color: object.material.color });
-            // }
-        }
+        // if (objectId.includes('model')) {
+        //     const model = object;
+        //     if ((resolutionType === Resolution.High && objectId.includes('High')) ||
+        //         (resolutionType == Resolution.Low && objectId.includes('Low'))) {
+        //         model.visible = true;
+        //     }
+        //     else
+        //     if ((resolutionType === Resolution.High && objectId.includes('Low')) ||
+        //         (resolutionType === Resolution.Low && objectId.includes('High'))) {
+        //         model.visible = false;
+        //     }
+        // } else {
+        //     // if (object.material === undefined) return;
+        //     // if (resolutionType === Resolution.High) {
+        //     //     object.material = new THREE.MeshStandardMaterial({ color: object.material.color });
+        //     // }
+        //     // else
+        //     // if (resolutionType === Resolution.Low) {
+        //     //     object.material = new THREE.MeshBasicMaterial({ color: object.material.color });
+        //     // }
+        // }
     },
 
     changeExperiment: function(experiment) {
@@ -236,16 +236,15 @@ AFRAME.registerSystem('experiment-manager', {
                 this.compositor.data.doAsyncTimeWarp = true;
                 // sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
-                    if (object.userData.originalMedium === RenderingMedium.Remote) {
+                    if (objectId.includes('sponza')) {
+                        this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                        this.swapResolution(objectId, Resolution.Low);
+                    } else if (object.userData.originalMedium === RenderingMedium.Remote) {
                         this.swapRenderingMedium(objectId, RenderingMedium.Remote);
                         this.swapResolution(objectId, Resolution.High);
                     } else if (object.userData.originalMedium === RenderingMedium.Local) {
-                        if (!objectId.includes('model')) {
-                            this.swapRenderingMedium(objectId, RenderingMedium.Local);
-                            this.swapResolution(objectId, Resolution.Low);
-                        } else {
-                            this.swapRenderingMedium(objectId, RenderingMedium.Remote);
-                        }
+                        this.swapRenderingMedium(objectId, RenderingMedium.Local);
+                        this.swapResolution(objectId, Resolution.Low);
                     }
                 }
                 sceneEl.setAttribute('local-scene', 'fps', data.lowPolyLocalFPS);
