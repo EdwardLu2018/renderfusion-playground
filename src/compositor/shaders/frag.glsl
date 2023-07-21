@@ -4,8 +4,6 @@ varying vec2 vUv;
 
 varying vec3 vCameraLTopLeft, vCameraLTopRight, vCameraLBotLeft, vCameraLBotRight;
 varying vec3 vCameraRTopLeft, vCameraRTopRight, vCameraRBotLeft, vCameraRBotRight;
-varying vec3 vRemoteLTopLeft, vRemoteRTopLeft;
-varying vec3 vRemoteLPlaneNormal, vRemoteRPlaneNormal;
 
 uniform sampler2D tLocalColor, tLocalDepth;
 uniform sampler2D tRemoteColor, tRemoteDepth;
@@ -71,21 +69,21 @@ vec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv)
 }
 
 void main() {
-    vec2 remoteSizeF = vec2(remoteSize);
-    vec2 localSizeF = vec2(localSize);
+    // vec2 remoteSizeF = vec2(remoteSize);
+    // vec2 localSizeF = vec2(localSize);
 
-    // calculate new dimensions, maintaining aspect ratio
-    float aspect = remoteSizeF.x / remoteSizeF.y;
-    int newHeight = localSize.y;
-    int newWidth = int(aspect * float(newHeight));
+    // // calculate new dimensions, maintaining aspect ratio
+    // float aspect = remoteSizeF.x / remoteSizeF.y;
+    // int newHeight = localSize.y;
+    // int newWidth = int(aspect * float(newHeight));
 
-    // calculate left and right padding offset
-    int totalPad = abs(localSize.x - newWidth);
-    float padding = float(totalPad / 2);
-    float paddingLeft = padding / localSizeF.x;
-    float paddingRight = 1.0 - paddingLeft;
+    // // calculate left and right padding offset
+    // int totalPad = abs(localSize.x - newWidth);
+    // float padding = float(totalPad / 2);
+    // float paddingLeft = padding / localSizeF.x;
+    // float paddingRight = 1.0 - paddingLeft;
 
-    bool targetWidthGreater = localSize.x > newWidth;
+    // bool targetWidthGreater = localSize.x > newWidth;
 
     vec2 coordLocalColor = vUv;
     vec2 coordLocalDepth = vUv;
@@ -115,8 +113,6 @@ void main() {
     vec3 cameraTopRight         = vCameraLTopRight;
     vec3 cameraBotLeft          = vCameraLBotLeft;
     vec3 cameraBotRight         = vCameraLBotRight;
-    vec3 remoteTopLeft          = vRemoteLTopLeft;
-    vec3 remotePlaneNormal      = vRemoteLPlaneNormal;
     mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
     mat4 remoteMatrixWorld      = remoteLMatrixWorld;
 
@@ -134,8 +130,6 @@ void main() {
         cameraTopRight         = vCameraRTopRight;
         cameraBotLeft          = vCameraRBotLeft;
         cameraBotRight         = vCameraRBotRight;
-        remoteTopLeft          = vRemoteRTopLeft;
-        remotePlaneNormal      = vRemoteRPlaneNormal;
         remoteProjectionMatrix = remoteRProjectionMatrix;
         remoteMatrixWorld      = remoteRMatrixWorld;
     }
@@ -143,25 +137,27 @@ void main() {
     vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
                              mix(cameraBotLeft, cameraBotRight, x),
                              1.0 - vUv.y );
+    // cameraVector = normalize(cameraVector);
 
     vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
 
     if (reprojectMovement) {
-        cameraVector = normalize(cameraVector);
         // cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
         //                     mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
         //                     1.0 - vUv.y );
+        cameraVector = normalize(cameraVector);
 
         vec3 currentPos = cameraPos;
 
         int steps = 100;
+        float stepSize = 30.0 / float(steps);
+
         float distanceFromWorldToPos;
         for (int i = 0; i < steps; i++) {
-            float stepSize = 30.0 / float(steps);
             currentPos += (cameraVector * stepSize);
 
-            vec2 uv4 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
-            vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv4);
+            uv3 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
+            vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv3);
 
             float distanceToCurrentPos = distance(remotePos, currentPos);
             float distanceToWorld = distance(remotePos, tracedPos);
@@ -174,8 +170,6 @@ void main() {
                 break;
             }
         }
-
-        uv3 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
     }
 
     coordRemoteColor = uv3;
