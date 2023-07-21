@@ -19,6 +19,7 @@ AFRAME.registerSystem('gui', {
         var frozen = false;
 
         const options = {
+            // doATW: true,
             stretchBorders: true,
             reprojectMovement: false,
             // fpsLocal: 90,
@@ -60,6 +61,12 @@ AFRAME.registerSystem('gui', {
             .onChange( function() {
                 _this.compositor.decreaseResolution(this.getValue());
             } );
+
+        // gui.add(options, 'doATW')
+        //     .name('ATW on/off')
+        //     .onChange( function() {
+        //         _this.compositor.data.doAsyncTimeWarp = this.getValue();
+        //     } );
 
         gui.add(options, 'freeze')
             .name('Freeze Remote Frame')

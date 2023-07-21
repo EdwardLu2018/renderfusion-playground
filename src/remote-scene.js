@@ -24,8 +24,8 @@ AFRAME.registerComponent('remote-scene', {
             return;
         }
 
-        this.stats = new Stats();
-        this.stats.showPanel(0);
+        // this.stats = new Stats();
+        // this.stats.showPanel(0);
         // document.getElementById('remote-stats').appendChild(this.stats.dom);
 
         this.experimentManager = sceneEl.systems['experiment-manager'];
@@ -191,7 +191,7 @@ AFRAME.registerComponent('remote-scene', {
         if (this.experimentManager.experiment === Experiments.LowPolyLocal ||
             this.elapsed > 1000 / data.fps) {
             this.elapsed = 0;
-            this.stats.update();
+            // this.stats.update();
 
             if (this.helmet) {
                 if (this.experimentManager.experiment !== Experiments.LowPolyLocal) {

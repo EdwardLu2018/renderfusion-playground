@@ -27,6 +27,8 @@ uniform mat4 remoteLProjectionMatrix, remoteLMatrixWorld;
 uniform mat4 cameraRProjectionMatrix, cameraRMatrixWorld;
 uniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;
 
+const float onePixel = (1.0 / 255.0);
+
 #define DO_ASYNC_TIMEWARP
 
 // adapted from: https://gist.github.com/hecomi/9580605
@@ -38,6 +40,7 @@ float linear01Depth(float depth) {
 	return 1.0 / (x * depth + y);
 }
 
+// adapted from: https://gist.github.com/hecomi/9580605
 float linearEyeDepth(float depth) {
     float x = 1.0 - cameraFar / cameraNear;
     float y = cameraFar / cameraNear;
@@ -46,7 +49,12 @@ float linearEyeDepth(float depth) {
 	return 1.0 / (z * depth + w);
 }
 
-float readDepth(sampler2D depthSampler, vec2 coord) {
+float readDepthRemote(sampler2D depthSampler, vec2 coord) {
+    float depth = texture2D( depthSampler, coord ).r;
+    return linear01Depth(depth);
+}
+
+float readDepthLocal(sampler2D depthSampler, vec2 coord) {
     float depth = texture2D( depthSampler, coord ).r;
     return linear01Depth(depth);
 }
@@ -89,7 +97,7 @@ void main() {
     vec2 coordLocalDepth = vUv;
 
     vec4 localColor  = texture2D( tLocalColor, coordLocalColor );
-    float localDepth = readDepth( tLocalDepth, coordLocalDepth );
+    float localDepth = readDepthLocal( tLocalDepth, coordLocalDepth );
 
     vec2 coordRemoteColor = vUv;
     vec2 coordRemoteDepth = vUv;
@@ -142,10 +150,14 @@ void main() {
     vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
 
     if (reprojectMovement) {
-        // cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
-        //                     mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
-        //                     1.0 - vUv.y );
-        cameraVector = normalize(cameraVector);
+        if (!(arMode || vrMode)) {
+            cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
+                                mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
+                                1.0 - vUv.y );
+        }
+        else {
+            cameraVector = normalize(cameraVector);
+        }
 
         vec3 currentPos = cameraPos;
 
@@ -184,11 +196,11 @@ void main() {
         coordRemoteDepth = coordRemoteColor;
     }
 
-    float xMin = ((oneCamera || leftEye) ? 0.0 : 0.5);
+    float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);
     float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
     if (!stretchBorders) {
         remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-        remoteDepth = readDepth( tRemoteDepth, coordRemoteDepth );
+        remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
         if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||
             coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {
             remoteColor = vec4(0.0);
@@ -199,7 +211,7 @@ void main() {
         coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);
         coordRemoteDepth = coordRemoteColor;
         remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-        remoteDepth = readDepth( tRemoteDepth, coordRemoteDepth );
+        remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
     }
 
     if (reprojectMovement && occluded) {
@@ -236,16 +248,24 @@ void main() {
     }
 #else
     remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-    remoteDepth = readDepth( tRemoteDepth, coordRemoteDepth );
+    remoteDepth = readDepthLocal( tRemoteDepth, coordRemoteDepth );
+#endif
+
+    // force srgb
+#ifdef IS_SRGB
+    localColor = LinearTosRGB(localColor);
 #endif
 
     vec4 color = localColor;
     // if (!targetWidthGreater ||
     //     (targetWidthGreater && paddingLeft <= vUv.x && vUv.x <= paddingRight)) {
-        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth))
+        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth)) {
             color = vec4(remoteColor.rgb, 1.0);
-        else
-            color = localColor;
+            // handle passthrough
+            if (arMode && remoteDepth >= (1.0-(5.0*onePixel))) {
+                color = localColor;
+            }
+        }
     // }
     // else {
     //     color = localColor;
