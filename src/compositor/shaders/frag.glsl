@@ -49,7 +49,7 @@ float linearEyeDepth(float depth) {
 }
 
 float readDepth(sampler2D depthSampler, vec2 coord) {
-    float depth = texture2D( depthSampler, coord ).x;
+    float depth = texture2D( depthSampler, coord ).r;
     return linear01Depth(depth);
 }
 
@@ -58,19 +58,9 @@ vec3 matrixWorldToPosition(mat4 matrixWorld) {
 }
 
 vec2 worldToViewport(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
-    float textureWidth = !hasDualCameras ? float(localSize.x) : float(localSize.x) / 2.0;
-    float textureHeight = float(localSize.y);
-
-    vec4 uv4 = inverse(matrixWorld) * vec4(pt, 1.0);
-    vec3 toCam = vec3(uv4 / uv4.w);
-    float camPosZ = toCam.z;
-    float height = 2.0 * camPosZ / projectionMatrix[1][1];
-    float width = textureWidth / textureHeight * height;
-
-    vec2 uv;
-    uv.x = (toCam.x + width / 2.0) / width;
-    uv.y = (toCam.y + height / 2.0) / height;
-    return 1.0 - uv;
+    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);
+    vec2 uv2 = vec2(uv4 / uv4.w);
+    return (uv2 + 1.0) / 2.0;
 }
 
 vec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {
@@ -157,9 +147,10 @@ void main() {
     vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
 
     if (reprojectMovement) {
-        cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
-                            mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
-                            1.0 - vUv.y );
+        cameraVector = normalize(cameraVector);
+        // cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
+        //                     mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
+        //                     1.0 - vUv.y );
 
         vec3 currentPos = cameraPos;
 
