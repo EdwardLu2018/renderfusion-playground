@@ -29,15 +29,13 @@ uniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;
 
 const float onePixel = (1.0 / 255.0);
 
-#define DO_ASYNC_TIMEWARP
-
 // adapted from: https://gist.github.com/hecomi/9580605
 float linear01Depth(float depth) {
     float x = 1.0 - cameraFar / cameraNear;
     float y = cameraFar / cameraNear;
     float z = x / cameraFar;
     float w = y / cameraFar;
-	return 1.0 / (x * depth + y);
+    return 1.0 / (x * depth + y);
 }
 
 // adapted from: https://gist.github.com/hecomi/9580605
@@ -46,7 +44,7 @@ float linearEyeDepth(float depth) {
     float y = cameraFar / cameraNear;
     float z = x / cameraFar;
     float w = y / cameraFar;
-	return 1.0 / (z * depth + w);
+    return 1.0 / (z * depth + w);
 }
 
 float readDepthRemote(sampler2D depthSampler, vec2 coord) {
@@ -109,147 +107,148 @@ void main() {
     bool leftEye   = (hasDualCameras && vUv.x < 0.5);
     bool rightEye  = (hasDualCameras && vUv.x >= 0.5);
 
-#ifdef DO_ASYNC_TIMEWARP
-    bool occluded = false;
+    if (doAsyncTimeWarp) {
+        bool occluded = false;
 
-    float x;
+        float x;
 
-    vec3 cameraPos              = matrixWorldToPosition(cameraLMatrixWorld);
-    vec3 remotePos              = matrixWorldToPosition(remoteLMatrixWorld);
-    vec3 remoteForward          = remoteLForward;
-    vec3 cameraTopLeft          = vCameraLTopLeft;
-    vec3 cameraTopRight         = vCameraLTopRight;
-    vec3 cameraBotLeft          = vCameraLBotLeft;
-    vec3 cameraBotRight         = vCameraLBotRight;
-    mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
-    mat4 remoteMatrixWorld      = remoteLMatrixWorld;
+        vec3 cameraPos              = matrixWorldToPosition(cameraLMatrixWorld);
+        vec3 remotePos              = matrixWorldToPosition(remoteLMatrixWorld);
+        vec3 remoteForward          = remoteLForward;
+        vec3 cameraTopLeft          = vCameraLTopLeft;
+        vec3 cameraTopRight         = vCameraLTopRight;
+        vec3 cameraBotLeft          = vCameraLBotLeft;
+        vec3 cameraBotRight         = vCameraLBotRight;
+        mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
+        mat4 remoteMatrixWorld      = remoteLMatrixWorld;
 
-    x = vUv.x;
+        x = vUv.x;
 
-    if (leftEye) {
-        x = 2.0 * vUv.x;
-    }
-    if (rightEye) {
-        x = 2.0 * (vUv.x - 0.5);
-        cameraPos              = matrixWorldToPosition(cameraRMatrixWorld);
-        remotePos              = matrixWorldToPosition(remoteRMatrixWorld);
-        remoteForward          = remoteRForward;
-        cameraTopLeft          = vCameraRTopLeft;
-        cameraTopRight         = vCameraRTopRight;
-        cameraBotLeft          = vCameraRBotLeft;
-        cameraBotRight         = vCameraRBotRight;
-        remoteProjectionMatrix = remoteRProjectionMatrix;
-        remoteMatrixWorld      = remoteRMatrixWorld;
-    }
+        if (leftEye) {
+            x = 2.0 * vUv.x;
+        }
+        if (rightEye) {
+            x = 2.0 * (vUv.x - 0.5);
+            cameraPos              = matrixWorldToPosition(cameraRMatrixWorld);
+            remotePos              = matrixWorldToPosition(remoteRMatrixWorld);
+            remoteForward          = remoteRForward;
+            cameraTopLeft          = vCameraRTopLeft;
+            cameraTopRight         = vCameraRTopRight;
+            cameraBotLeft          = vCameraRBotLeft;
+            cameraBotRight         = vCameraRBotRight;
+            remoteProjectionMatrix = remoteRProjectionMatrix;
+            remoteMatrixWorld      = remoteRMatrixWorld;
+        }
 
-    vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
-                             mix(cameraBotLeft, cameraBotRight, x),
-                             1.0 - vUv.y );
-    // cameraVector = normalize(cameraVector);
-
-    vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
-
-    if (reprojectMovement) {
-        if (!(arMode || vrMode)) {
-            cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
-                                mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
+        vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
+                                mix(cameraBotLeft, cameraBotRight, x),
                                 1.0 - vUv.y );
+        // cameraVector = normalize(cameraVector);
+
+        vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
+
+        if (reprojectMovement) {
+            if (!(arMode || vrMode)) {
+                cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), x),
+                                    mix(normalize(cameraBotLeft), normalize(cameraBotRight), x),
+                                    1.0 - vUv.y );
+            }
+            else {
+                cameraVector = normalize(cameraVector);
+            }
+
+            vec3 currentPos = cameraPos;
+
+            int steps = 100;
+            float stepSize = 30.0 / float(steps);
+
+            float distanceFromWorldToPos;
+            for (int i = 0; i < steps; i++) {
+                currentPos += (cameraVector * stepSize);
+
+                uv3 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
+                vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv3);
+
+                float distanceToCurrentPos = distance(remotePos, currentPos);
+                float distanceToWorld = distance(remotePos, tracedPos);
+
+                distanceFromWorldToPos = distanceToCurrentPos - distanceToWorld;
+                if (distanceFromWorldToPos > stepSize) {
+                    occluded = true;
+                }
+                if (distanceFromWorldToPos > 0.0) {
+                    break;
+                }
+            }
+        }
+
+        coordRemoteColor = uv3;
+        coordRemoteDepth = coordRemoteColor;
+
+        if (leftEye) {
+            coordRemoteColor.x = coordRemoteColor.x / 2.0;
+            coordRemoteDepth = coordRemoteColor;
+        }
+        if (rightEye) {
+            coordRemoteColor.x = coordRemoteColor.x / 2.0 + 0.5;
+            coordRemoteDepth = coordRemoteColor;
+        }
+
+        float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);
+        float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
+        if (!stretchBorders) {
+            remoteColor = texture2D( tRemoteColor, coordRemoteColor );
+            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
+            if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||
+                coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {
+                remoteColor = vec4(0.0);
+            }
         }
         else {
-            cameraVector = normalize(cameraVector);
+            coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax - 0.001);
+            coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);
+            coordRemoteDepth = coordRemoteColor;
+            remoteColor = texture2D( tRemoteColor, coordRemoteColor );
+            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
         }
 
-        vec3 currentPos = cameraPos;
+        if (reprojectMovement && occluded) {
+            vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
+            vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
+            vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
+            vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
 
-        int steps = 100;
-        float stepSize = 30.0 / float(steps);
+            vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );
+            vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);
+            vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );
+            vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );
 
-        float distanceFromWorldToPos;
-        for (int i = 0; i < steps; i++) {
-            currentPos += (cameraVector * stepSize);
+            float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
+            float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);
+            float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);
+            float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);
+            float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);
 
-            uv3 = worldToViewport(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
-            vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uv3);
-
-            float distanceToCurrentPos = distance(remotePos, currentPos);
-            float distanceToWorld = distance(remotePos, tracedPos);
-
-            distanceFromWorldToPos = distanceToCurrentPos - distanceToWorld;
-            if (distanceFromWorldToPos > stepSize) {
-                occluded = true;
+            // find the furthest away one of these five samples
+            float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
+            if (remoteDepth == remoteDepthLeft) {
+                remoteColor = preferLocal ? localColor : remoteColorLeft;
             }
-            if (distanceFromWorldToPos > 0.0) {
-                break;
+            if (remoteDepth == remoteDepthRight) {
+                remoteColor = preferLocal ? localColor : remoteColorRight;
             }
-        }
-    }
-
-    coordRemoteColor = uv3;
-    coordRemoteDepth = coordRemoteColor;
-
-    if (leftEye) {
-        coordRemoteColor.x = coordRemoteColor.x / 2.0;
-        coordRemoteDepth = coordRemoteColor;
-    }
-    if (rightEye) {
-        coordRemoteColor.x = coordRemoteColor.x / 2.0 + 0.5;
-        coordRemoteDepth = coordRemoteColor;
-    }
-
-    float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);
-    float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
-    if (!stretchBorders) {
-        remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-        remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
-        if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||
-            coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {
-            remoteColor = vec4(0.0);
+            if (remoteDepth == remoteDepthTop) {
+                remoteColor = preferLocal ? localColor : remoteColorTop;
+            }
+            if (remoteDepth == remoteDepthDown) {
+                remoteColor = preferLocal ? localColor : remoteColorDown;
+            }
         }
     }
     else {
-        coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax - 0.001);
-        coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);
-        coordRemoteDepth = coordRemoteColor;
         remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-        remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
+        remoteDepth = readDepthLocal( tRemoteDepth, coordRemoteDepth );
     }
-
-    if (reprojectMovement && occluded) {
-        vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
-        vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
-        vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
-        vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
-
-        vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );
-        vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);
-        vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );
-        vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );
-
-        float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
-        float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);
-        float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);
-        float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);
-        float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);
-
-        // find the furthest away one of these five samples
-        float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
-        if (remoteDepth == remoteDepthLeft) {
-            remoteColor = preferLocal ? localColor : remoteColorLeft;
-        }
-        if (remoteDepth == remoteDepthRight) {
-            remoteColor = preferLocal ? localColor : remoteColorRight;
-        }
-        if (remoteDepth == remoteDepthTop) {
-            remoteColor = preferLocal ? localColor : remoteColorTop;
-        }
-        if (remoteDepth == remoteDepthDown) {
-            remoteColor = preferLocal ? localColor : remoteColorDown;
-        }
-    }
-#else
-    remoteColor = texture2D( tRemoteColor, coordRemoteColor );
-    remoteDepth = readDepthLocal( tRemoteDepth, coordRemoteDepth );
-#endif
 
     // force srgb
 #ifdef IS_SRGB

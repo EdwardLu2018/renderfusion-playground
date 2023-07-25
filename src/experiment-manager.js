@@ -170,7 +170,6 @@ AFRAME.registerSystem('experiment-manager', {
 
         switch (this.experiment) {
             case Experiments.LowPolyLocal:
-                this.compositor.data.doAsyncTimeWarp = false;
                 this.compositor.data.preferLocal = true;
                 // sceneEl.renderer.physicallyCorrectLights = false;
                 for (const [objectId, object] of Object.entries(this.objects)) {
@@ -202,7 +201,6 @@ AFRAME.registerSystem('experiment-manager', {
             //     break;
 
             case Experiments.RemoteATW:
-                this.compositor.data.doAsyncTimeWarp = true;
                 this.compositor.data.preferLocal = false;
                 // sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {
@@ -233,7 +231,6 @@ AFRAME.registerSystem('experiment-manager', {
             //     break;
 
             case Experiments.MixedATW:
-                this.compositor.data.doAsyncTimeWarp = true;
                 this.compositor.data.preferLocal = true;
                 // sceneEl.renderer.physicallyCorrectLights = true;
                 for (const [objectId, object] of Object.entries(this.objects)) {

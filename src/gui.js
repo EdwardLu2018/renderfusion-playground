@@ -19,13 +19,13 @@ AFRAME.registerSystem('gui', {
         var frozen = false;
 
         const options = {
-            // doATW: true,
+            doATW: true,
             stretchBorders: true,
             reprojectMovement: false,
+            freezeRemote: false,
             // fpsLocal: 90,
             fpsRemote: 90,
             latency: DefaultLatency,
-            freeze: false,
             decreaseResolution: 1,
             experiment: ExperimentsList[0],
             task: TaskList[0],
@@ -62,20 +62,10 @@ AFRAME.registerSystem('gui', {
                 _this.compositor.decreaseResolution(this.getValue());
             } );
 
-        // gui.add(options, 'doATW')
-        //     .name('ATW on/off')
-        //     .onChange( function() {
-        //         _this.compositor.data.doAsyncTimeWarp = this.getValue();
-        //     } );
-
-        gui.add(options, 'freeze')
-            .name('Freeze Remote Frame')
+        gui.add(options, 'doATW')
+            .name('ATW on')
             .onChange( function() {
-                frozen = this.getValue();
-                if (frozen === true)
-                    sceneEl.setAttribute('remote-scene', 'latency', -1);
-                else
-                    sceneEl.setAttribute('remote-scene', 'latency', latency);
+                _this.compositor.data.doAsyncTimeWarp = this.getValue();
             } );
 
         gui.add(options, 'stretchBorders')
@@ -88,6 +78,16 @@ AFRAME.registerSystem('gui', {
             .name('Include Movement')
             .onChange( function() {
                 _this.compositor.data.reprojectMovement = this.getValue();
+            } );
+
+        gui.add(options, 'freezeRemote')
+            .name('Freeze Remote Frame')
+            .onChange( function() {
+                frozen = this.getValue();
+                if (frozen === true)
+                    sceneEl.setAttribute('remote-scene', 'latency', -1);
+                else
+                    sceneEl.setAttribute('remote-scene', 'latency', latency);
             } );
 
         gui.add(options, 'experiment', ExperimentsList)

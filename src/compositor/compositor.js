@@ -153,16 +153,14 @@ AFRAME.registerSystem('compositor', {
                 system.pass.setReprojectMovement(data.reprojectMovement);
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
                 system.pass.setPreferLocal(data.preferLocal);
-                if (data.doAsyncTimeWarp) {
-                    if (this.xr.enabled === true && this.xr.isPresenting === true) {
-                        const cameraL = cameraVR.cameras[0];
-                        const cameraR = cameraVR.cameras[1];
-                        system.pass.setCameraMats(cameraL, cameraR);
-                    } else {
-                        system.pass.setCameraMats(camera);
-                        system.remoteLocal.updateRemoteCamera();
-                        system.pass.setCameraMatsRemote(system.remoteCamera);
-                    }
+                if (this.xr.enabled === true && this.xr.isPresenting === true) {
+                    const cameraL = cameraVR.cameras[0];
+                    const cameraR = cameraVR.cameras[1];
+                    system.pass.setCameraMats(cameraL, cameraR);
+                } else {
+                    system.pass.setCameraMats(camera);
+                    system.remoteLocal.updateRemoteCamera();
+                    system.pass.setCameraMatsRemote(system.remoteCamera);
                 }
 
                 // update remote vr camera if in vr
