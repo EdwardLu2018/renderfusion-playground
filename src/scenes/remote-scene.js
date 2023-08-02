@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader';
 
-import { Experiments, RenderingMedium, DefaultLatency } from './constants';
+import { Experiments, RenderingMedium, DefaultLatency } from '../constants';
 
 AFRAME.registerComponent('remote-scene', {
     schema: {
@@ -45,8 +45,6 @@ AFRAME.registerComponent('remote-scene', {
 
         this.elapsed = 0;
         this.clock = new THREE.Clock();
-
-        scene.background = new THREE.Color(0x87CEEB);
 
         const gltfLoader = new GLTFLoader();
 

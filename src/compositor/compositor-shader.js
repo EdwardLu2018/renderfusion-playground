@@ -6,6 +6,9 @@ export const CompositorShader = {
         tRemoteColor: {
             type: 't', value: new THREE.Texture(),
         },
+        tBackgroundColor: {
+            type: 't', value: new THREE.Texture(),
+        },
         tLocalDepth: {
             type: 't', value: new THREE.Texture(),
         },
@@ -28,6 +31,9 @@ export const CompositorShader = {
             type: 'bool', value: false,
         },
         stretchBorders: {
+            type: 'bool', value: false,
+        },
+        lowPolyInFill: {
             type: 'bool', value: false,
         },
         arMode: {

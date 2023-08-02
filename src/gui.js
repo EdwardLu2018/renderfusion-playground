@@ -21,6 +21,7 @@ AFRAME.registerSystem('gui', {
         const options = {
             doATW: true,
             stretchBorders: true,
+            lowPolyInFill: false,
             reprojectMovement: false,
             freezeRemote: false,
             // fpsLocal: 90,
@@ -69,9 +70,15 @@ AFRAME.registerSystem('gui', {
             } );
 
         gui.add(options, 'stretchBorders')
-            .name('Stretch Borders (ATW)')
+            .name('Stretch Borders')
             .onChange( function() {
                 _this.compositor.data.stretchBorders = this.getValue();
+            } );
+
+        gui.add(options, 'lowPolyInFill')
+            .name('Low Poly Fill In')
+            .onChange( function() {
+                _this.compositor.data.lowPolyInFill = this.getValue();
             } );
 
         gui.add(options, 'reprojectMovement')

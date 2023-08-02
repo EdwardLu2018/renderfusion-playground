@@ -7,6 +7,7 @@ varying vec3 vCameraRTopLeft, vCameraRTopRight, vCameraRBotLeft, vCameraRBotRigh
 
 uniform sampler2D tLocalColor, tLocalDepth;
 uniform sampler2D tRemoteColor, tRemoteDepth;
+uniform sampler2D tBackgroundColor;
 
 uniform float cameraNear, cameraFar;
 
@@ -15,10 +16,11 @@ uniform bool arMode, vrMode;
 
 uniform bool doAsyncTimeWarp;
 uniform bool stretchBorders;
+uniform bool lowPolyInFill;
 uniform bool reprojectMovement;
 uniform bool preferLocal;
 
-uniform ivec2 localSize, remoteSize;
+uniform ivec2 localSize, remoteSize, backgroundSize;
 
 uniform vec3 remoteLForward, remoteRForward;
 
@@ -97,6 +99,8 @@ void main() {
     vec4 localColor  = texture2D( tLocalColor, coordLocalColor );
     float localDepth = readDepthLocal( tLocalDepth, coordLocalDepth );
 
+    vec4 backgroundColor  = lowPolyInFill ? texture2D( tBackgroundColor, coordLocalColor ) : vec4(0.0);
+
     vec2 coordRemoteColor = vUv;
     vec2 coordRemoteDepth = vUv;
 
@@ -141,8 +145,8 @@ void main() {
         }
 
         vec3 cameraVector = mix( mix(cameraTopLeft, cameraTopRight, x),
-                                mix(cameraBotLeft, cameraBotRight, x),
-                                1.0 - vUv.y );
+                                 mix(cameraBotLeft, cameraBotRight, x),
+                                 1.0 - vUv.y );
         // cameraVector = normalize(cameraVector);
 
         vec2 uv3 = worldToViewport(remotePos + cameraVector, remoteProjectionMatrix, remoteMatrixWorld);
@@ -196,12 +200,12 @@ void main() {
 
         float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);
         float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
-        if (!stretchBorders) {
+        if (lowPolyInFill || !stretchBorders) {
             remoteColor = texture2D( tRemoteColor, coordRemoteColor );
             remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
             if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||
                 coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {
-                remoteColor = vec4(0.0);
+                remoteColor = backgroundColor;
             }
         }
         else {
@@ -232,16 +236,16 @@ void main() {
             // find the furthest away one of these five samples
             float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
             if (remoteDepth == remoteDepthLeft) {
-                remoteColor = preferLocal ? localColor : remoteColorLeft;
+                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorLeft);
             }
             if (remoteDepth == remoteDepthRight) {
-                remoteColor = preferLocal ? localColor : remoteColorRight;
+                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorRight);
             }
             if (remoteDepth == remoteDepthTop) {
-                remoteColor = preferLocal ? localColor : remoteColorTop;
+                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorTop);
             }
             if (remoteDepth == remoteDepthDown) {
-                remoteColor = preferLocal ? localColor : remoteColorDown;
+                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorDown);
             }
         }
     }
@@ -276,6 +280,7 @@ void main() {
 
     // color = vec4(remoteColor.rgb, 1.0);
     // color = vec4(localColor.rgb, 1.0);
+    // color = vec4(backgroundColor.rgb, 1.0);
     gl_FragColor = color;
 
     // gl_FragColor.rgb = vec3(remoteDepth);

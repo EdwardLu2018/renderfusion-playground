@@ -2,12 +2,19 @@ import {FullScreenQuad, Pass} from './pass';
 import {CompositorShader} from './compositor-shader';
 
 export class CompositorPass extends Pass {
-    constructor(scene, camera, remoteScene, remoteCamera, remoteRenderTarget) {
+    constructor(scene, camera, remoteScene, remoteCamera, backgroundScene, remoteRenderTarget, backgroundRenderTarget) {
         super();
 
-        this.remoteRenderTarget = remoteRenderTarget;
+        this.scene = scene;
+        this.camera = camera;
+
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
+
+        this.backgroundScene = backgroundScene;
+
+        this.remoteRenderTarget = remoteRenderTarget;
+        this.backgroundRenderTarget = backgroundRenderTarget;
 
         this.uniforms = THREE.UniformsUtils.clone(CompositorShader.uniforms);
         this.material = new THREE.ShaderMaterial({
@@ -20,6 +27,10 @@ export class CompositorPass extends Pass {
         this.material.uniforms.tRemoteColor.value = this.remoteRenderTarget.texture;
         this.material.uniforms.tRemoteDepth.value = this.remoteRenderTarget.depthTexture;
         this.material.uniforms.remoteSize.value = [this.remoteRenderTarget.width, this.remoteRenderTarget.height];
+
+        this.material.uniforms.tBackgroundColor.value = this.backgroundRenderTarget.texture;
+
+        this.frozen = false;
 
         this.needsSwap = false;
 
@@ -41,6 +52,10 @@ export class CompositorPass extends Pass {
         this.material.uniforms.stretchBorders.value = stretchBorders;
     }
 
+    setLowPolyInFill(lowPolyInFill) {
+        this.material.uniforms.lowPolyInFill.value = lowPolyInFill;
+    }
+
     setDoAsyncTimeWarp(doAsyncTimeWarp) {
         this.material.uniforms.doAsyncTimeWarp.value = doAsyncTimeWarp;
     }
@@ -51,6 +66,10 @@ export class CompositorPass extends Pass {
 
     setReprojectMovement(reprojectMovement) {
         this.material.uniforms.reprojectMovement.value = reprojectMovement;
+    }
+
+    setFrozen(frozen) {
+        this.frozen = frozen;
     }
 
     setCameraMats(cameraL, cameraR) {
@@ -106,6 +125,11 @@ export class CompositorPass extends Pass {
 
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);
+
+        if (this.material.uniforms.lowPolyInFill.value === true) {
+            renderer.setRenderTarget(this.backgroundRenderTarget);
+            renderer.render(this.backgroundScene, this.camera);
+        }
 
         const currentXREnabled = renderer.xr.enabled;
         renderer.xr.enabled = false;

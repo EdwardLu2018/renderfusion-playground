@@ -7,7 +7,7 @@ import ThreeMeshUI from 'three-mesh-ui';
 import FontJSON from '/assets/fonts/Roboto-msdf.json';
 import FontImage from '/assets/fonts/Roboto-msdf.png';
 
-import { ExperimentsList, RenderingMedium, EVENTS, ButtonOptions } from './constants';
+import { ExperimentsList, RenderingMedium, EVENTS, ButtonOptions } from '../constants';
 
 AFRAME.registerComponent('local-scene', {
     schema: {

@@ -1,6 +1,7 @@
 import './local-scene';
 import './remote-scene';
-import './remote-controller';
+import './background-scene';
+import '../remote-controller';
 
 AFRAME.registerSystem('remote-local', {
     schema: {
@@ -29,12 +30,15 @@ AFRAME.registerSystem('remote-local', {
         this.remoteCamera = camera.clone();
         this.remoteCamera.cameras = [camera.clone(), camera.clone()];
 
+        this.backgroundScene = new THREE.Scene();
+
         this.latency = 0;
 
         this.poses = [];
 
-        sceneEl.setAttribute('remote-scene', '');
         sceneEl.setAttribute('local-scene', '');
+        sceneEl.setAttribute('remote-scene', '');
+        sceneEl.setAttribute('background-scene', '');
 
         this.onResize();
         window.addEventListener('resize', this.onResize.bind(this));

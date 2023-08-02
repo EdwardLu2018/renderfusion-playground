@@ -4,6 +4,7 @@ AFRAME.registerSystem('compositor', {
     schema: {
         doAsyncTimeWarp: {type: 'bool', default: true},
         stretchBorders: {type: 'bool', default: true},
+        lowPolyInFill: {type: 'bool', default: false},
         reprojectMovement: {type: 'bool', default: false},
         preferLocal: {type: 'bool', default: false},
         fps: {type: 'number', default: 90},
@@ -38,6 +39,11 @@ AFRAME.registerSystem('compositor', {
         this.remoteRenderTarget.depthTexture.format = THREE.DepthFormat;
         this.remoteRenderTarget.depthTexture.type = THREE.UnsignedShortType;
 
+        this.backgroundRenderTarget = new THREE.WebGLRenderTarget(1, 1);
+        this.backgroundRenderTarget.texture.name = 'BackgroundScene.rt';
+        this.backgroundRenderTarget.texture.minFilter = THREE.NearestFilter;
+        this.backgroundRenderTarget.texture.magFilter = THREE.NearestFilter;
+
         this.renderTarget = new THREE.WebGLRenderTarget(1, 1);
         this.renderTarget.texture.name = 'EffectComposer.rt1';
         this.renderTarget.texture.minFilter = THREE.NearestFilter;
@@ -50,10 +56,13 @@ AFRAME.registerSystem('compositor', {
         this.remoteLocal = sceneEl.systems['remote-local'];
         this.remoteScene = this.remoteLocal.remoteScene;
         this.remoteCamera = this.remoteLocal.remoteCamera;
+        this.backgroundScene = this.remoteLocal.backgroundScene;
         this.pass = new CompositorPass(
                         scene, camera,
                         this.remoteScene, this.remoteCamera,
+                        this.backgroundScene,
                         this.remoteRenderTarget,
+                        this.backgroundRenderTarget,
                     );
 
         this.onResize = this.onResize.bind(this);
@@ -75,6 +84,7 @@ AFRAME.registerSystem('compositor', {
         renderer.getSize(rendererSize);
         const pixelRatio = renderer.getPixelRatio();
         this.renderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
+        this.backgroundRenderTarget.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
         this.pass.setSize(pixelRatio * rendererSize.width, pixelRatio * rendererSize.height);
     },
 
@@ -107,8 +117,6 @@ AFRAME.registerSystem('compositor', {
 
         const isWebXRViewer = navigator.userAgent.includes('WebXRViewer');
 
-        // const cameraLPos = new THREE.Vector3();
-        // const cameraRPos = new THREE.Vector3();
         renderer.render = function() {
             if (isDigest) {
                 // render "normally"
@@ -125,6 +133,7 @@ AFRAME.registerSystem('compositor', {
                     system.renderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                     system.pass.setSize(currentRenderTarget.width, currentRenderTarget.height);
                     system.remoteRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
+                    system.backgroundRenderTarget.setSize(currentRenderTarget.width, currentRenderTarget.height);
                 }
 
                 // store "normal" rendering output to this.renderTarget
@@ -134,6 +143,7 @@ AFRAME.registerSystem('compositor', {
                     this.xr.updateCamera( cameraVR, system.sceneEl.camera );
                 }
                 render.apply(this, arguments);
+
                 this.setRenderTarget(currentRenderTarget);
 
                 let hasDualCameras;
@@ -150,6 +160,7 @@ AFRAME.registerSystem('compositor', {
 
                 system.pass.setHasDualCameras(hasDualCameras);
                 system.pass.setStretchBorders(data.stretchBorders);
+                system.pass.setLowPolyInFill(data.lowPolyInFill);
                 system.pass.setReprojectMovement(data.reprojectMovement);
                 system.pass.setDoAsyncTimeWarp(data.doAsyncTimeWarp);
                 system.pass.setPreferLocal(data.preferLocal);

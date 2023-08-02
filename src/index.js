@@ -1,4 +1,4 @@
-import './remote-local';
+import './scenes/remote-local';
 import './local-scene-fps-manager';
 import './compositor';
 import './task-manager';
