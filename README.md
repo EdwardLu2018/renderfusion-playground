@@ -21,14 +21,29 @@ interacted with using a point-and-click headset controller.
 ```
 git clone git@github.com:EdwardLu2018/hybrid-rendering-simulation.git
 npm install
-npm run start
 ```
 
-Then, open another terminal and run
+### Building
+
+To build, run:
 ```
 npm run watch   # for automatic rebuilds
 ```
 or
 ```
 npm run build   # for single build
+```
+
+
+### Serving
+
+In a new Terminal, generate certs:
+```
+openssl req -x509 -newkey rsa:2048 -keyout ssl/key.pem -out ssl/cert.pem -days 365
+openssl rsa -in ssl/key.pem -out ssl/newkey.pem && mv ssl/newkey.pem ssl/key.pem
+```
+
+Then, run:
+```
+npm run start
 ```
