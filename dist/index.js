@@ -1278,12 +1278,10 @@ const ButtonOptions = Object.freeze({
     borderRadius: 0.075
 });
 const Experiments = Object.freeze({
-    LowPolyLocal: "Low Poly Local",
+    LowPolyLocal: "Local",
     // HighPolyLocal:  'High Poly Local',
-    // Remote:         'Remote (no atw)',
-    RemoteATW: "Remote (with atw)",
-    // Mixed:          'Mixed (no atw)',
-    MixedATW: "Mixed (with atw)"
+    RemoteATW: "Remote",
+    MixedATW: "Mixed"
 });
 const ExperimentsList = Object.values(Experiments);
 const RenderingMedium = Object.freeze({

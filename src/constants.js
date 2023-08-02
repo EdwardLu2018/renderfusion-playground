@@ -10,12 +10,10 @@ export const ButtonOptions = Object.freeze({
 });
 
 export const Experiments = Object.freeze({
-    LowPolyLocal:   'Low Poly Local',
+    LowPolyLocal:   'Local',// 'Low Poly Local',
     // HighPolyLocal:  'High Poly Local',
-    // Remote:         'Remote (no atw)',
-    RemoteATW:      'Remote (with atw)',
-    // Mixed:          'Mixed (no atw)',
-    MixedATW:       'Mixed (with atw)',
+    RemoteATW:      'Remote',
+    MixedATW:       'Mixed',
 });
 
 export const ExperimentsList = Object.values(Experiments);
