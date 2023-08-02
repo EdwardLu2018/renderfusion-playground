@@ -44,7 +44,7 @@ AFRAME.registerSystem('gui', {
         //     } );
 
         gui.add(options, 'fpsRemote', 1, 90)
-            .name('FPS (Remote)')
+            .name('Remote FPS')
             .onChange( function() {
                 sceneEl.setAttribute('remote-scene', 'fps', this.getValue());
             } );
@@ -82,13 +82,13 @@ AFRAME.registerSystem('gui', {
             } );
 
         gui.add(options, 'reprojectMovement')
-            .name('Include Movement')
+            .name('Translation')
             .onChange( function() {
                 _this.compositor.data.reprojectMovement = this.getValue();
             } );
 
         gui.add(options, 'freezeRemote')
-            .name('Freeze Remote Frame')
+            .name('Freeze Remote')
             .onChange( function() {
                 frozen = this.getValue();
                 if (frozen === true)

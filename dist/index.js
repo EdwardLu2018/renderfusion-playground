@@ -39905,7 +39905,7 @@ AFRAME.registerSystem("gui", {
         //     .onChange( function() {
         //         sceneEl.setAttribute('local-scene', 'fps', this.getValue());
         //     } );
-        gui.add(options, "fpsRemote", 1, 90).name("FPS (Remote)").onChange(function() {
+        gui.add(options, "fpsRemote", 1, 90).name("Remote FPS").onChange(function() {
             sceneEl.setAttribute("remote-scene", "fps", this.getValue());
         });
         gui.add(options, "latency", 0, 1000).name("Remote Latency (ms)").onChange(function() {
@@ -39924,10 +39924,10 @@ AFRAME.registerSystem("gui", {
         gui.add(options, "lowPolyInFill").name("Low Poly Fill In").onChange(function() {
             _this.compositor.data.lowPolyInFill = this.getValue();
         });
-        gui.add(options, "reprojectMovement").name("Include Movement").onChange(function() {
+        gui.add(options, "reprojectMovement").name("Translation").onChange(function() {
             _this.compositor.data.reprojectMovement = this.getValue();
         });
-        gui.add(options, "freezeRemote").name("Freeze Remote Frame").onChange(function() {
+        gui.add(options, "freezeRemote").name("Freeze Remote").onChange(function() {
             frozen = this.getValue();
             if (frozen === true) sceneEl.setAttribute("remote-scene", "latency", -1);
             else sceneEl.setAttribute("remote-scene", "latency", latency);
