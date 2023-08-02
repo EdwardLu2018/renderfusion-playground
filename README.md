@@ -1,10 +1,15 @@
 # Hybrid Rendering Simulation
 
-Simulate Hybrid/Split/Mixed rendering on the web. Works in desktop, mobile, and WebXR-enabled devices like AR/VR headsets.
-The playground artificially delays a virtual scene (simulating "remote rendering" with network delays) and composites it
-with a "locally rendered" virtual scene.
+Simulate Hybrid/Split/Mixed rendering on the web!
 
-Visit https://edwardlu2018.github.io/hybrid-rendering-simulation to explore the playground.
+This website artificially delays a virtual scene (simulating "remote rendering" with network delays) and composites it
+with a "locally rendered" virtual scene. It provides a series of knobs to play around with post-render warping (using
+asynchronous time + space warping), and allows users to switch between rendering schemas.
+
+Works on desktop, mobile, and WebXR-enabled devices like AR/VR headsets — tested on Valve Index (using SteamVR), MagicLeap 2, Quest Pro,
+and Quest 2, but any modern headset should work.
+
+Visit https://edwardlu2018.github.io/hybrid-rendering-simulation to explore the simulation.
 
 ## GUI (2D)
 Note: the 2D GUI is __not__ accessible in WebXR immersive sessions (if you click AR/VR button).

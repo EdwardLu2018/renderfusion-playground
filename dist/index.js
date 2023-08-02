@@ -1220,10 +1220,11 @@ AFRAME.registerComponent("task-manager", {
                 this.experimentManager.updateInstructions(`Click Reset to play again!\n\nScore: ${this.successes}`);
                 break;
             case (0, _constants.Task).HighDexterity:
-                this.experimentManager.updateInstructions(`Move the sword in the helmet to match the transparent sword!\n\nScore: ${this.successes}`);
+                this.experimentManager.updateInstructions(`Move the sword to match the orientation of the transparent sword!\n\nScore: ${this.successes}`);
                 pos1.copy(this.experimentManager.objects["sword"].position);
                 pos2.copy(this.experimentManager.objects["sword2"].position);
-                var direction = new THREE.Vector3(0, 0, 1), direction2 = new THREE.Vector3(0, 0, 1);
+                var direction = new THREE.Vector3(0, 0, 1);
+                var direction2 = new THREE.Vector3(0, 0, 1);
                 direction.applyQuaternion(this.experimentManager.objects["sword"].quaternion).add(pos1);
                 direction2.applyQuaternion(this.experimentManager.objects["sword2"].quaternion).add(pos2);
                 if (pos1.distanceTo(pos2) <= 0.5) {
