@@ -1,15 +1,15 @@
-# Hybrid Rendering Simulation
+# RenderFusion Playground
 
-Simulate Hybrid/Split/Mixed rendering on the web!
+Simulate split rendering on the web!
 
-This website artificially delays a virtual scene (simulating "remote rendering" with network delays) and composites it
+Visit https://edwardlu2018.github.io/renderfusion-playground to explore the playground.
+
+This website artificially delays a virtual scene (simulating "remote rendering" with tunable network delays) and composites it
 with a "locally rendered" virtual scene. It provides a series of knobs to play around with post-render warping (using
 asynchronous time + space warping), and allows users to switch between rendering schemas.
 
-Works on desktop, mobile, and WebXR-enabled devices like AR/VR headsets — tested on Valve Index (using SteamVR), MagicLeap 2, Quest Pro,
-and Quest 2, but any modern headset should work.
-
-Visit https://edwardlu2018.github.io/hybrid-rendering-simulation to explore the simulation.
+Works on desktop, mobile, and WebXR-enabled devices like AR/VR headsets — tested on Valve Index (using SteamVR), Magic Leap 2,
+Quest Pro, and Quest 2, but any modern headset should work.
 
 ## GUI (2D)
 Note: the 2D GUI is __not__ accessible in WebXR immersive sessions (if you click AR/VR button).
@@ -24,7 +24,7 @@ interacted with using a point-and-click headset controller.
 
 ## Development
 ```
-git clone git@github.com:EdwardLu2018/hybrid-rendering-simulation.git
+git clone git@github.com:EdwardLu2018/renderfusion-playground.git
 npm install
 ```
 
@@ -38,7 +38,6 @@ or
 ```
 npm run build   # for single build
 ```
-
 
 ### Serving
 
