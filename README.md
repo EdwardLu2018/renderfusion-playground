@@ -11,6 +11,8 @@ asynchronous time + space warping), and allows users to switch between rendering
 Works on desktop, mobile, and WebXR-enabled devices like AR/VR headsets — tested on Valve Index (using SteamVR), Magic Leap 2,
 Quest Pro, and Quest 2, but any modern headset should work.
 
+Disclaimer: Some options (like enabling `Translation`) work best on a fairly good machine.
+
 ## GUI (2D)
 Note: the 2D GUI is __not__ accessible in WebXR immersive sessions (if you click AR/VR button).
 
