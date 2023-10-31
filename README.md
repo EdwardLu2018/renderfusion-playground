@@ -53,3 +53,7 @@ Then, run:
 ```
 npm run start
 ```
+
+## License
+See the [LICENSE](LICENSE) file.
+
