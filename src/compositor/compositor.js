@@ -167,11 +167,11 @@ AFRAME.registerSystem('compositor', {
                 if (this.xr.enabled === true && this.xr.isPresenting === true) {
                     const cameraL = cameraVR.cameras[0];
                     const cameraR = cameraVR.cameras[1];
-                    system.pass.setCameraMats(cameraL, cameraR);
+                    system.pass.setCameraVals(cameraL, cameraR);
                 } else {
-                    system.pass.setCameraMats(camera);
+                    system.pass.setCameraVals(camera);
                     system.remoteLocal.updateRemoteCamera();
-                    system.pass.setCameraMatsRemote(system.remoteCamera);
+                    system.pass.setCameraValsRemote(system.remoteCamera);
                 }
 
                 // update remote vr camera if in vr
@@ -180,7 +180,7 @@ AFRAME.registerSystem('compositor', {
 
                     const remoteL = system.remoteCamera.cameras[0];
                     const remoteR = system.remoteCamera.cameras[1];
-                    system.pass.setCameraMatsRemote(remoteL, remoteR);
+                    system.pass.setCameraValsRemote(remoteL, remoteR);
                 }
                 // render with custom shader (local-remote compositing):
                 // this will internally call renderer.render(), which will execute the code within

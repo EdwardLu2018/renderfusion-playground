@@ -26,6 +26,11 @@ uniform mat4 remoteLProjectionMatrix, remoteLMatrixWorld;
 uniform mat4 cameraRProjectionMatrix, cameraRMatrixWorld;
 uniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;
 
+uniform mat4 cameraLProjectionMatrixInverse, cameraLMatrixWorldInverse;
+uniform mat4 remoteLProjectionMatrixInverse, remoteLMatrixWorldInverse;
+uniform mat4 cameraRProjectionMatrixInverse, cameraRMatrixWorldInverse;
+uniform mat4 remoteRProjectionMatrixInverse, remoteRMatrixWorldInverse;
+
 const float onePixel = (1.0 / 255.0);
 
 // adapted from: https://gist.github.com/hecomi/9580605
@@ -60,15 +65,15 @@ vec3 matrixWorldToPosition(mat4 matrixWorld) {
     return vec3(matrixWorld[3]);
 }
 
-vec3 cameraToWorld(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {
+vec3 cameraToWorld(vec2 uv, mat4 projectionMatrixInverse, mat4 matrixWorld) {
     vec2 ndc = 2.0 * uv - 1.0;
-    vec4 uv4 = matrixWorld * inverse(projectionMatrix) * vec4(ndc, 1.0, 1.0);
+    vec4 uv4 = matrixWorld * projectionMatrixInverse * vec4(ndc, 1.0, 1.0);
     vec3 uv3 = vec3(uv4 / uv4.w);
     return uv3;
 }
 
-vec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {
-    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);
+vec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorldInverse) {
+    vec4 uv4 = projectionMatrix * matrixWorldInverse * vec4(pt, 1.0);
     vec2 uv2 = vec2(uv4 / uv4.w);
     return (uv2 + 1.0) / 2.0;
 }
@@ -120,46 +125,51 @@ void main() {
     if (doAsyncTimeWarp) {
         bool occluded = false;
 
-        vec3 cameraPos              = matrixWorldToPosition(cameraLMatrixWorld);
-        vec3 remotePos              = matrixWorldToPosition(remoteLMatrixWorld);
-        vec3 remoteForward          = remoteLForward;
-        mat4 cameraProjectionMatrix = cameraLProjectionMatrix;
-        mat4 cameraMatrixWorld      = cameraLMatrixWorld;
-        mat4 remoteProjectionMatrix = remoteLProjectionMatrix;
-        mat4 remoteMatrixWorld      = remoteLMatrixWorld;
+        vec3 cameraPos                     = matrixWorldToPosition(cameraLMatrixWorld);
+        vec3 remotePos                     = matrixWorldToPosition(remoteLMatrixWorld);
+        vec3 remoteForward                 = remoteLForward;
+        mat4 cameraProjectionMatrix        = cameraLProjectionMatrix;
+        mat4 cameraMatrixWorld             = cameraLMatrixWorld;
+        mat4 remoteProjectionMatrix        = remoteLProjectionMatrix;
+        mat4 remoteMatrixWorld             = remoteLMatrixWorld;
+        mat4 cameraProjectionMatrixInverse = cameraLProjectionMatrixInverse;
+        mat4 cameraMatrixWorldInverse      = cameraLMatrixWorldInverse;
+        mat4 remoteProjectionMatrixInverse = remoteLProjectionMatrixInverse;
+        mat4 remoteMatrixWorldInverse      = remoteLMatrixWorldInverse;
 
         if (leftEye) {
             uvLocal.x = 2.0 * uvLocal.x;
         }
         if (rightEye) {
             uvLocal.x = 2.0 * (uvLocal.x - 0.5);
-            cameraPos              = matrixWorldToPosition(cameraRMatrixWorld);
-            remotePos              = matrixWorldToPosition(remoteRMatrixWorld);
-            cameraProjectionMatrix = cameraRProjectionMatrix;
-            cameraMatrixWorld      = cameraRMatrixWorld;
-            remoteForward          = remoteRForward;
-            remoteProjectionMatrix = remoteRProjectionMatrix;
-            remoteMatrixWorld      = remoteRMatrixWorld;
+            cameraPos                     = matrixWorldToPosition(cameraRMatrixWorld);
+            remotePos                     = matrixWorldToPosition(remoteRMatrixWorld);
+            cameraProjectionMatrix        = cameraRProjectionMatrix;
+            cameraMatrixWorld             = cameraRMatrixWorld;
+            remoteForward                 = remoteRForward;
+            remoteProjectionMatrix        = remoteRProjectionMatrix;
+            remoteMatrixWorld             = remoteRMatrixWorld;
+            cameraProjectionMatrixInverse = cameraRProjectionMatrixInverse;
+            cameraMatrixWorldInverse      = cameraRMatrixWorldInverse;
+            remoteProjectionMatrixInverse = remoteRProjectionMatrixInverse;
+            remoteMatrixWorldInverse      = remoteRMatrixWorldInverse;
         }
 
-        vec3 pt = cameraToWorld(uvLocal, cameraProjectionMatrix, cameraMatrixWorld);
-        vec2 uvRemote = worldToCamera(pt, remoteProjectionMatrix, remoteMatrixWorld);
+        vec3 pt = cameraToWorld(uvLocal, cameraProjectionMatrixInverse, cameraMatrixWorld);
+        vec2 uvRemote = worldToCamera(pt, remoteProjectionMatrix, remoteMatrixWorldInverse);
 
         if (reprojectMovement) {
             vec3 cameraVector = normalize(pt - cameraPos);
 
-            vec3 cameraTopLeft  = cameraToWorld(vec2(0.0, 1.0), cameraProjectionMatrix, cameraMatrixWorld);
-            vec3 cameraTopRight = cameraToWorld(vec2(1.0, 1.0), cameraProjectionMatrix, cameraMatrixWorld);
-            vec3 cameraBotLeft  = cameraToWorld(vec2(0.0, 0.0), cameraProjectionMatrix, cameraMatrixWorld);
-            vec3 cameraBotRight = cameraToWorld(vec2(1.0, 0.0), cameraProjectionMatrix, cameraMatrixWorld);
-
             if (!(arMode || vrMode)) {
-                cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), uvLocal.x),
-                                    mix(normalize(cameraBotLeft), normalize(cameraBotRight), uvLocal.x),
+                vec3 cameraTopLeft  = normalize(cameraToWorld(vec2(0.0, 1.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
+                vec3 cameraTopRight = normalize(cameraToWorld(vec2(1.0, 1.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
+                vec3 cameraBotLeft  = normalize(cameraToWorld(vec2(0.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
+                vec3 cameraBotRight = normalize(cameraToWorld(vec2(1.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
+
+                cameraVector = mix( mix((cameraTopLeft), (cameraTopRight), uvLocal.x),
+                                    mix((cameraBotLeft), (cameraBotRight), uvLocal.x),
                                     1.0 - uvLocal.y );
-            }
-            else {
-                cameraVector = normalize(cameraVector);
             }
 
             vec3 currentPos = cameraPos;
@@ -171,7 +181,7 @@ void main() {
             for (int i = 0; i < steps; i++) {
                 currentPos += (cameraVector * stepSize);
 
-                uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorld);
+                uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorldInverse);
                 vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvRemote);
 
                 float distanceToCurrentPos = distance(remotePos, currentPos);

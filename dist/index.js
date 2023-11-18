@@ -142,7 +142,7 @@
       this[globalName] = mainExports;
     }
   }
-})({"jkW27":[function(require,module,exports) {
+})({"8vVeR":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = 1234;
@@ -227,9 +227,15 @@ if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== "undefined") {
     var hostname = getHostname();
     var port = getPort();
     var protocol = HMR_SECURE || location.protocol == "https:" && !/localhost|127.0.0.1|0.0.0.0/.test(hostname) ? "wss" : "ws";
-    var ws = new WebSocket(protocol + "://" + hostname + (port ? ":" + port : "") + "/");
+    var ws;
+    try {
+        ws = new WebSocket(protocol + "://" + hostname + (port ? ":" + port : "") + "/");
+    } catch (err) {
+        if (err.message) console.error(err.message);
+        ws = {};
+    }
     // Web extension context
-    var extCtx = typeof chrome === "undefined" ? typeof browser === "undefined" ? null : browser : chrome;
+    var extCtx = typeof browser === "undefined" ? typeof chrome === "undefined" ? null : chrome : browser;
     // Safari doesn't support sourceURL in error stacks.
     // eval may also be disabled via CSP, so do a quick check.
     var supportsSourceURL = false;
@@ -293,7 +299,7 @@ if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== "undefined") {
         }
     };
     ws.onerror = function(e) {
-        console.error(e.message);
+        if (e.message) console.error(e.message);
     };
     ws.onclose = function() {
         console.warn("[parcel] \uD83D\uDEA8 Connection to the HMR server was lost");
@@ -303,7 +309,7 @@ function removeErrorOverlay() {
     var overlay = document.getElementById(OVERLAY_ID);
     if (overlay) {
         overlay.remove();
-        console.log("[parcel] ✨ Error resolved");
+        console.log("[parcel] \u2728 Error resolved");
     }
 }
 function createErrorOverlay(diagnostics) {
@@ -319,13 +325,13 @@ ${frame.code}`;
         errorHTML += `
       <div>
         <div style="font-size: 18px; font-weight: bold; margin-top: 20px;">
-          🚨 ${diagnostic.message}
+          \u{1F6A8} ${diagnostic.message}
         </div>
         <pre>${stack}</pre>
         <div>
           ${diagnostic.hints.map((hint)=>"<div>\uD83D\uDCA1 " + hint + "</div>").join("")}
         </div>
-        ${diagnostic.documentation ? `<div>📝 <a style="color: violet" href="${diagnostic.documentation}" target="_blank">Learn more</a></div>` : ""}
+        ${diagnostic.documentation ? `<div>\u{1F4DD} <a style="color: violet" href="${diagnostic.documentation}" target="_blank">Learn more</a></div>` : ""}
       </div>
     `;
     }
@@ -421,15 +427,10 @@ async function hmrApplyUpdates(assets) {
             let promises = assets.map((asset)=>{
                 var _hmrDownload;
                 return (_hmrDownload = hmrDownload(asset)) === null || _hmrDownload === void 0 ? void 0 : _hmrDownload.catch((err)=>{
-                    // Web extension bugfix for Chromium
-                    // https://bugs.chromium.org/p/chromium/issues/detail?id=1255412#c12
-                    if (extCtx && extCtx.runtime && extCtx.runtime.getManifest().manifest_version == 3) {
-                        if (typeof ServiceWorkerGlobalScope != "undefined" && global instanceof ServiceWorkerGlobalScope) {
-                            extCtx.runtime.reload();
-                            return;
-                        }
-                        asset.url = extCtx.runtime.getURL("/__parcel_hmr_proxy__?url=" + encodeURIComponent(asset.url + "?t=" + Date.now()));
-                        return hmrDownload(asset);
+                    // Web extension fix
+                    if (extCtx && extCtx.runtime && extCtx.runtime.getManifest().manifest_version == 3 && typeof ServiceWorkerGlobalScope != "undefined" && global instanceof ServiceWorkerGlobalScope) {
+                        extCtx.runtime.reload();
+                        return;
                     }
                     throw err;
                 });
@@ -1209,6 +1210,7 @@ class GLTFLoader extends (0, _three.Loader) {
         parser.fileLoader.setRequestHeader(this.requestHeader);
         for(let i = 0; i < this.pluginCallbacks.length; i++){
             const plugin = this.pluginCallbacks[i](parser);
+            if (!plugin.name) console.error("THREE.GLTFLoader: Invalid plugin found: missing name");
             plugins[plugin.name] = plugin;
             // Workaround to avoid determining as unknown extension
             // in addUnknownExtensionsToUserData().
@@ -1319,7 +1321,7 @@ class GLTFLoader extends (0, _three.Loader) {
         const lightDef = lightDefs[lightIndex];
         let lightNode;
         const color = new (0, _three.Color)(0xffffff);
-        if (lightDef.color !== undefined) color.fromArray(lightDef.color);
+        if (lightDef.color !== undefined) color.setRGB(lightDef.color[0], lightDef.color[1], lightDef.color[2], (0, _three.LinearSRGBColorSpace));
         const range = lightDef.range !== undefined ? lightDef.range : 0;
         switch(lightDef.type){
             case "directional":
@@ -1393,7 +1395,7 @@ class GLTFLoader extends (0, _three.Loader) {
         if (metallicRoughness) {
             if (Array.isArray(metallicRoughness.baseColorFactor)) {
                 const array = metallicRoughness.baseColorFactor;
-                materialParams.color.fromArray(array);
+                materialParams.color.setRGB(array[0], array[1], array[2], (0, _three.LinearSRGBColorSpace));
                 materialParams.opacity = array[3];
             }
             if (metallicRoughness.baseColorTexture !== undefined) pending.push(parser.assignTexture(materialParams, "map", metallicRoughness.baseColorTexture, (0, _three.SRGBColorSpace)));
@@ -1512,7 +1514,10 @@ class GLTFLoader extends (0, _three.Loader) {
         materialParams.sheenRoughness = 0;
         materialParams.sheen = 1;
         const extension = materialDef.extensions[this.name];
-        if (extension.sheenColorFactor !== undefined) materialParams.sheenColor.fromArray(extension.sheenColorFactor);
+        if (extension.sheenColorFactor !== undefined) {
+            const colorFactor = extension.sheenColorFactor;
+            materialParams.sheenColor.setRGB(colorFactor[0], colorFactor[1], colorFactor[2], (0, _three.LinearSRGBColorSpace));
+        }
         if (extension.sheenRoughnessFactor !== undefined) materialParams.sheenRoughness = extension.sheenRoughnessFactor;
         if (extension.sheenColorTexture !== undefined) pending.push(parser.assignTexture(materialParams, "sheenColorMap", extension.sheenColorTexture, (0, _three.SRGBColorSpace)));
         if (extension.sheenRoughnessTexture !== undefined) pending.push(parser.assignTexture(materialParams, "sheenRoughnessMap", extension.sheenRoughnessTexture));
@@ -1575,7 +1580,7 @@ class GLTFLoader extends (0, _three.Loader) {
             1,
             1
         ];
-        materialParams.attenuationColor = new (0, _three.Color)(colorArray[0], colorArray[1], colorArray[2]);
+        materialParams.attenuationColor = new (0, _three.Color)().setRGB(colorArray[0], colorArray[1], colorArray[2], (0, _three.LinearSRGBColorSpace));
         return Promise.all(pending);
     }
 }
@@ -1631,7 +1636,7 @@ class GLTFLoader extends (0, _three.Loader) {
             1,
             1
         ];
-        materialParams.specularColor = new (0, _three.Color)(colorArray[0], colorArray[1], colorArray[2]);
+        materialParams.specularColor = new (0, _three.Color)().setRGB(colorArray[0], colorArray[1], colorArray[2], (0, _three.LinearSRGBColorSpace));
         if (extension.specularColorTexture !== undefined) pending.push(parser.assignTexture(materialParams, "specularColorMap", extension.specularColorTexture, (0, _three.SRGBColorSpace)));
         return Promise.all(pending);
     }
@@ -1863,7 +1868,12 @@ class GLTFLoader extends (0, _three.Loader) {
                     instancedMesh.setMatrixAt(i, m.compose(p, q, s));
                 }
                 // Add instance attributes to the geometry, excluding TRS.
-                for(const attributeName in attributes)if (attributeName !== "TRANSLATION" && attributeName !== "ROTATION" && attributeName !== "SCALE") mesh.geometry.setAttribute(attributeName, attributes[attributeName]);
+                for(const attributeName in attributes){
+                    if (attributeName === "_COLOR_0") {
+                        const attr = attributes[attributeName];
+                        instancedMesh.instanceColor = new (0, _three.InstancedBufferAttribute)(attr.array, attr.itemSize, attr.normalized);
+                    } else if (attributeName !== "TRANSLATION" && attributeName !== "ROTATION" && attributeName !== "SCALE") mesh.geometry.setAttribute(attributeName, attributes[attributeName]);
+                }
                 // Just in case
                 (0, _three.Object3D).prototype.copy.call(instancedMesh, mesh);
                 this.parser.assignFinalMaterial(instancedMesh);
@@ -2343,7 +2353,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
             };
             addUnknownExtensionsToUserData(extensions, result, json);
             assignExtrasToUserData(result, json);
-            Promise.all(parser._invokeAll(function(ext) {
+            return Promise.all(parser._invokeAll(function(ext) {
                 return ext.afterRoot && ext.afterRoot(result);
             })).then(function() {
                 onLoad(result);
@@ -2810,7 +2820,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
             materialParams.opacity = 1.0;
             if (Array.isArray(metallicRoughness.baseColorFactor)) {
                 const array = metallicRoughness.baseColorFactor;
-                materialParams.color.fromArray(array);
+                materialParams.color.setRGB(array[0], array[1], array[2], (0, _three.LinearSRGBColorSpace));
                 materialParams.opacity = array[3];
             }
             if (metallicRoughness.baseColorTexture !== undefined) pending.push(parser.assignTexture(materialParams, "map", metallicRoughness.baseColorTexture, (0, _three.SRGBColorSpace)));
@@ -2849,7 +2859,10 @@ const _identityMatrix = new (0, _three.Matrix4)();
             pending.push(parser.assignTexture(materialParams, "aoMap", materialDef.occlusionTexture));
             if (materialDef.occlusionTexture.strength !== undefined) materialParams.aoMapIntensity = materialDef.occlusionTexture.strength;
         }
-        if (materialDef.emissiveFactor !== undefined && materialType !== (0, _three.MeshBasicMaterial)) materialParams.emissive = new (0, _three.Color)().fromArray(materialDef.emissiveFactor);
+        if (materialDef.emissiveFactor !== undefined && materialType !== (0, _three.MeshBasicMaterial)) {
+            const emissiveFactor = materialDef.emissiveFactor;
+            materialParams.emissive = new (0, _three.Color)().setRGB(emissiveFactor[0], emissiveFactor[1], emissiveFactor[2], (0, _three.LinearSRGBColorSpace));
+        }
         if (materialDef.emissiveTexture !== undefined && materialType !== (0, _three.MeshBasicMaterial)) pending.push(parser.assignTexture(materialParams, "emissiveMap", materialDef.emissiveTexture, (0, _three.SRGBColorSpace)));
         return Promise.all(pending).then(function() {
             const material = new materialType(materialParams);
@@ -3067,10 +3080,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
                 const sampler = samplers[i];
                 const target = targets[i];
                 if (node === undefined) continue;
-                if (node.updateMatrix) {
-                    node.updateMatrix();
-                    node.matrixAutoUpdate = true;
-                }
+                if (node.updateMatrix) node.updateMatrix();
                 const createdTracks = parser._createAnimationTracks(node, inputAccessor, outputAccessor, sampler, target);
                 if (createdTracks) for(let k = 0; k < createdTracks.length; k++)tracks.push(createdTracks[k]);
             }
@@ -3229,6 +3239,8 @@ const _identityMatrix = new (0, _three.Matrix4)();
                 break;
             case PATH_PROPERTIES.position:
             case PATH_PROPERTIES.scale:
+                TypedKeyframeTrack = (0, _three.VectorKeyframeTrack);
+                break;
             default:
                 switch(outputAccessor.itemSize){
                     case 1:
@@ -3236,6 +3248,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
                         break;
                     case 2:
                     case 3:
+                    default:
                         TypedKeyframeTrack = (0, _three.VectorKeyframeTrack);
                         break;
                 }
@@ -3246,7 +3259,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
         for(let j = 0, jl = targetNames.length; j < jl; j++){
             const track = new TypedKeyframeTrack(targetNames[j] + "." + PATH_PROPERTIES[target.path], inputAccessor.array, outputArray, interpolation);
             // Override interpolation with custom factory method.
-            if (interpolation === "CUBICSPLINE") this._createCubicSplineTrackInterpolant(track);
+            if (sampler.interpolation === "CUBICSPLINE") this._createCubicSplineTrackInterpolant(track);
             tracks.push(track);
         }
         return tracks;
@@ -3359,6 +3372,7 @@ const _identityMatrix = new (0, _three.Matrix4)();
         });
         pending.push(accessor);
     }
+    if ((0, _three.ColorManagement).workingColorSpace !== (0, _three.LinearSRGBColorSpace) && "COLOR_0" in attributes) console.warn(`THREE.GLTFLoader: Converting vertex colors from "srgb-linear" to "${(0, _three.ColorManagement).workingColorSpace}" not supported.`);
     assignExtrasToUserData(geometry, primitiveDef);
     computeBounds(geometry, primitiveDef, parser);
     return Promise.all(pending).then(function() {
@@ -3383,7 +3397,6 @@ parcelHelpers.export(exports, "AlwaysCompare", ()=>AlwaysCompare);
 parcelHelpers.export(exports, "AlwaysDepth", ()=>AlwaysDepth);
 parcelHelpers.export(exports, "AlwaysStencilFunc", ()=>AlwaysStencilFunc);
 parcelHelpers.export(exports, "AmbientLight", ()=>AmbientLight);
-parcelHelpers.export(exports, "AmbientLightProbe", ()=>AmbientLightProbe);
 parcelHelpers.export(exports, "AnimationAction", ()=>AnimationAction);
 parcelHelpers.export(exports, "AnimationClip", ()=>AnimationClip);
 parcelHelpers.export(exports, "AnimationLoader", ()=>AnimationLoader);
@@ -3393,6 +3406,7 @@ parcelHelpers.export(exports, "AnimationUtils", ()=>AnimationUtils);
 parcelHelpers.export(exports, "ArcCurve", ()=>ArcCurve);
 parcelHelpers.export(exports, "ArrayCamera", ()=>ArrayCamera);
 parcelHelpers.export(exports, "ArrowHelper", ()=>ArrowHelper);
+parcelHelpers.export(exports, "AttachedBindMode", ()=>AttachedBindMode);
 parcelHelpers.export(exports, "Audio", ()=>Audio);
 parcelHelpers.export(exports, "AudioAnalyser", ()=>AudioAnalyser);
 parcelHelpers.export(exports, "AudioContext", ()=>AudioContext);
@@ -3427,9 +3441,12 @@ parcelHelpers.export(exports, "Color", ()=>Color);
 parcelHelpers.export(exports, "ColorKeyframeTrack", ()=>ColorKeyframeTrack);
 parcelHelpers.export(exports, "ColorManagement", ()=>ColorManagement);
 parcelHelpers.export(exports, "CompressedArrayTexture", ()=>CompressedArrayTexture);
+parcelHelpers.export(exports, "CompressedCubeTexture", ()=>CompressedCubeTexture);
 parcelHelpers.export(exports, "CompressedTexture", ()=>CompressedTexture);
 parcelHelpers.export(exports, "CompressedTextureLoader", ()=>CompressedTextureLoader);
 parcelHelpers.export(exports, "ConeGeometry", ()=>ConeGeometry);
+parcelHelpers.export(exports, "ConstantAlphaFactor", ()=>ConstantAlphaFactor);
+parcelHelpers.export(exports, "ConstantColorFactor", ()=>ConstantColorFactor);
 parcelHelpers.export(exports, "CubeCamera", ()=>CubeCamera);
 parcelHelpers.export(exports, "CubeReflectionMapping", ()=>CubeReflectionMapping);
 parcelHelpers.export(exports, "CubeRefractionMapping", ()=>CubeRefractionMapping);
@@ -3460,6 +3477,7 @@ parcelHelpers.export(exports, "DefaultLoadingManager", ()=>DefaultLoadingManager
 parcelHelpers.export(exports, "DepthFormat", ()=>DepthFormat);
 parcelHelpers.export(exports, "DepthStencilFormat", ()=>DepthStencilFormat);
 parcelHelpers.export(exports, "DepthTexture", ()=>DepthTexture);
+parcelHelpers.export(exports, "DetachedBindMode", ()=>DetachedBindMode);
 parcelHelpers.export(exports, "DirectionalLight", ()=>DirectionalLight);
 parcelHelpers.export(exports, "DirectionalLightHelper", ()=>DirectionalLightHelper);
 parcelHelpers.export(exports, "DiscreteInterpolant", ()=>DiscreteInterpolant);
@@ -3505,7 +3523,6 @@ parcelHelpers.export(exports, "Group", ()=>Group);
 parcelHelpers.export(exports, "HalfFloatType", ()=>HalfFloatType);
 parcelHelpers.export(exports, "HemisphereLight", ()=>HemisphereLight);
 parcelHelpers.export(exports, "HemisphereLightHelper", ()=>HemisphereLightHelper);
-parcelHelpers.export(exports, "HemisphereLightProbe", ()=>HemisphereLightProbe);
 parcelHelpers.export(exports, "IcosahedronGeometry", ()=>IcosahedronGeometry);
 parcelHelpers.export(exports, "ImageBitmapLoader", ()=>ImageBitmapLoader);
 parcelHelpers.export(exports, "ImageLoader", ()=>ImageLoader);
@@ -3548,6 +3565,7 @@ parcelHelpers.export(exports, "LineCurve3", ()=>LineCurve3);
 parcelHelpers.export(exports, "LineDashedMaterial", ()=>LineDashedMaterial);
 parcelHelpers.export(exports, "LineLoop", ()=>LineLoop);
 parcelHelpers.export(exports, "LineSegments", ()=>LineSegments);
+parcelHelpers.export(exports, "LinearDisplayP3ColorSpace", ()=>LinearDisplayP3ColorSpace);
 parcelHelpers.export(exports, "LinearEncoding", ()=>LinearEncoding);
 parcelHelpers.export(exports, "LinearFilter", ()=>LinearFilter);
 parcelHelpers.export(exports, "LinearInterpolant", ()=>LinearInterpolant);
@@ -3557,6 +3575,7 @@ parcelHelpers.export(exports, "LinearMipmapLinearFilter", ()=>LinearMipmapLinear
 parcelHelpers.export(exports, "LinearMipmapNearestFilter", ()=>LinearMipmapNearestFilter);
 parcelHelpers.export(exports, "LinearSRGBColorSpace", ()=>LinearSRGBColorSpace);
 parcelHelpers.export(exports, "LinearToneMapping", ()=>LinearToneMapping);
+parcelHelpers.export(exports, "LinearTransfer", ()=>LinearTransfer);
 parcelHelpers.export(exports, "Loader", ()=>Loader);
 parcelHelpers.export(exports, "LoaderUtils", ()=>LoaderUtils);
 parcelHelpers.export(exports, "LoadingManager", ()=>LoadingManager);
@@ -3610,11 +3629,14 @@ parcelHelpers.export(exports, "ObjectLoader", ()=>ObjectLoader);
 parcelHelpers.export(exports, "ObjectSpaceNormalMap", ()=>ObjectSpaceNormalMap);
 parcelHelpers.export(exports, "OctahedronGeometry", ()=>OctahedronGeometry);
 parcelHelpers.export(exports, "OneFactor", ()=>OneFactor);
+parcelHelpers.export(exports, "OneMinusConstantAlphaFactor", ()=>OneMinusConstantAlphaFactor);
+parcelHelpers.export(exports, "OneMinusConstantColorFactor", ()=>OneMinusConstantColorFactor);
 parcelHelpers.export(exports, "OneMinusDstAlphaFactor", ()=>OneMinusDstAlphaFactor);
 parcelHelpers.export(exports, "OneMinusDstColorFactor", ()=>OneMinusDstColorFactor);
 parcelHelpers.export(exports, "OneMinusSrcAlphaFactor", ()=>OneMinusSrcAlphaFactor);
 parcelHelpers.export(exports, "OneMinusSrcColorFactor", ()=>OneMinusSrcColorFactor);
 parcelHelpers.export(exports, "OrthographicCamera", ()=>OrthographicCamera);
+parcelHelpers.export(exports, "P3Primaries", ()=>P3Primaries);
 parcelHelpers.export(exports, "PCFShadowMap", ()=>PCFShadowMap);
 parcelHelpers.export(exports, "PCFSoftShadowMap", ()=>PCFSoftShadowMap);
 parcelHelpers.export(exports, "PMREMGenerator", ()=>PMREMGenerator);
@@ -3664,6 +3686,8 @@ parcelHelpers.export(exports, "RGBA_PVRTC_4BPPV1_Format", ()=>RGBA_PVRTC_4BPPV1_
 parcelHelpers.export(exports, "RGBA_S3TC_DXT1_Format", ()=>RGBA_S3TC_DXT1_Format);
 parcelHelpers.export(exports, "RGBA_S3TC_DXT3_Format", ()=>RGBA_S3TC_DXT3_Format);
 parcelHelpers.export(exports, "RGBA_S3TC_DXT5_Format", ()=>RGBA_S3TC_DXT5_Format);
+parcelHelpers.export(exports, "RGB_BPTC_SIGNED_Format", ()=>RGB_BPTC_SIGNED_Format);
+parcelHelpers.export(exports, "RGB_BPTC_UNSIGNED_Format", ()=>RGB_BPTC_UNSIGNED_Format);
 parcelHelpers.export(exports, "RGB_ETC1_Format", ()=>RGB_ETC1_Format);
 parcelHelpers.export(exports, "RGB_ETC2_Format", ()=>RGB_ETC2_Format);
 parcelHelpers.export(exports, "RGB_PVRTC_2BPPV1_Format", ()=>RGB_PVRTC_2BPPV1_Format);
@@ -3674,10 +3698,12 @@ parcelHelpers.export(exports, "RGIntegerFormat", ()=>RGIntegerFormat);
 parcelHelpers.export(exports, "RawShaderMaterial", ()=>RawShaderMaterial);
 parcelHelpers.export(exports, "Ray", ()=>Ray);
 parcelHelpers.export(exports, "Raycaster", ()=>Raycaster);
+parcelHelpers.export(exports, "Rec709Primaries", ()=>Rec709Primaries);
 parcelHelpers.export(exports, "RectAreaLight", ()=>RectAreaLight);
 parcelHelpers.export(exports, "RedFormat", ()=>RedFormat);
 parcelHelpers.export(exports, "RedIntegerFormat", ()=>RedIntegerFormat);
 parcelHelpers.export(exports, "ReinhardToneMapping", ()=>ReinhardToneMapping);
+parcelHelpers.export(exports, "RenderTarget", ()=>RenderTarget);
 parcelHelpers.export(exports, "RepeatWrapping", ()=>RepeatWrapping);
 parcelHelpers.export(exports, "ReplaceStencilOp", ()=>ReplaceStencilOp);
 parcelHelpers.export(exports, "ReverseSubtractEquation", ()=>ReverseSubtractEquation);
@@ -3685,6 +3711,7 @@ parcelHelpers.export(exports, "RingGeometry", ()=>RingGeometry);
 parcelHelpers.export(exports, "SIGNED_RED_GREEN_RGTC2_Format", ()=>SIGNED_RED_GREEN_RGTC2_Format);
 parcelHelpers.export(exports, "SIGNED_RED_RGTC1_Format", ()=>SIGNED_RED_RGTC1_Format);
 parcelHelpers.export(exports, "SRGBColorSpace", ()=>SRGBColorSpace);
+parcelHelpers.export(exports, "SRGBTransfer", ()=>SRGBTransfer);
 parcelHelpers.export(exports, "Scene", ()=>Scene);
 parcelHelpers.export(exports, "ShaderChunk", ()=>ShaderChunk);
 parcelHelpers.export(exports, "ShaderLib", ()=>ShaderLib);
@@ -3772,8 +3799,9 @@ parcelHelpers.export(exports, "ZeroFactor", ()=>ZeroFactor);
 parcelHelpers.export(exports, "ZeroSlopeEnding", ()=>ZeroSlopeEnding);
 parcelHelpers.export(exports, "ZeroStencilOp", ()=>ZeroStencilOp);
 parcelHelpers.export(exports, "_SRGBAFormat", ()=>_SRGBAFormat);
+parcelHelpers.export(exports, "createCanvasElement", ()=>createCanvasElement);
 parcelHelpers.export(exports, "sRGBEncoding", ()=>sRGBEncoding);
-const REVISION = "154";
+const REVISION = "158";
 const MOUSE = {
     LEFT: 0,
     MIDDLE: 1,
@@ -3822,6 +3850,10 @@ const OneMinusDstAlphaFactor = 207;
 const DstColorFactor = 208;
 const OneMinusDstColorFactor = 209;
 const SrcAlphaSaturateFactor = 210;
+const ConstantColorFactor = 211;
+const OneMinusConstantColorFactor = 212;
+const ConstantAlphaFactor = 213;
+const OneMinusConstantAlphaFactor = 214;
 const NeverDepth = 0;
 const AlwaysDepth = 1;
 const LessDepth = 2;
@@ -3839,6 +3871,8 @@ const ReinhardToneMapping = 2;
 const CineonToneMapping = 3;
 const ACESFilmicToneMapping = 4;
 const CustomToneMapping = 5;
+const AttachedBindMode = "attached";
+const DetachedBindMode = "detached";
 const UVMapping = 300;
 const CubeReflectionMapping = 301;
 const CubeRefractionMapping = 302;
@@ -3906,6 +3940,8 @@ const RGBA_ASTC_10x10_Format = 37819;
 const RGBA_ASTC_12x10_Format = 37820;
 const RGBA_ASTC_12x12_Format = 37821;
 const RGBA_BPTC_Format = 36492;
+const RGB_BPTC_SIGNED_Format = 36494;
+const RGB_BPTC_UNSIGNED_Format = 36495;
 const RED_RGTC1_Format = 36283;
 const SIGNED_RED_RGTC1_Format = 36284;
 const RED_GREEN_RGTC2_Format = 36285;
@@ -3935,6 +3971,11 @@ const NoColorSpace = "";
 const SRGBColorSpace = "srgb";
 const LinearSRGBColorSpace = "srgb-linear";
 const DisplayP3ColorSpace = "display-p3";
+const LinearDisplayP3ColorSpace = "display-p3-linear";
+const LinearTransfer = "linear";
+const SRGBTransfer = "srgb";
+const Rec709Primaries = "rec709";
+const P3Primaries = "p3";
 const ZeroStencilOp = 0;
 const KeepStencilOp = 7680;
 const ReplaceStencilOp = 7681;
@@ -4630,8 +4671,8 @@ class Vector2 {
         return this;
     }
     roundToZero() {
-        this.x = this.x < 0 ? Math.ceil(this.x) : Math.floor(this.x);
-        this.y = this.y < 0 ? Math.ceil(this.y) : Math.floor(this.y);
+        this.x = Math.trunc(this.x);
+        this.y = Math.trunc(this.y);
         return this;
     }
     negate() {
@@ -4967,17 +5008,16 @@ function getTypedArray(type, buffer) {
 function createElementNS(name) {
     return document.createElementNS("http://www.w3.org/1999/xhtml", name);
 }
+function createCanvasElement() {
+    const canvas = createElementNS("canvas");
+    canvas.style.display = "block";
+    return canvas;
+}
 const _cache = {};
 function warnOnce(message) {
     if (message in _cache) return;
     _cache[message] = true;
     console.warn(message);
-}
-function SRGBToLinear(c) {
-    return c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
-}
-function LinearToSRGB(c) {
-    return c < 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 0.41666) - 0.055;
 }
 /**
  * Matrices converting P3 <-> Rec. 709 primaries, without gamut mapping
@@ -4989,50 +5029,44 @@ function LinearToSRGB(c) {
  *
  * Reference:
  * - http://www.russellcottrell.com/photo/matrixCalculator.htm
- */ const LINEAR_SRGB_TO_LINEAR_DISPLAY_P3 = /*@__PURE__*/ new Matrix3().fromArray([
-    0.8224621,
-    0.0331941,
-    0.0170827,
-    0.1775380,
-    0.9668058,
-    0.0723974,
-    -0.0000001,
-    0.0000001,
-    0.9105199
-]);
-const LINEAR_DISPLAY_P3_TO_LINEAR_SRGB = /*@__PURE__*/ new Matrix3().fromArray([
-    1.2249401,
-    -0.0420569,
-    -0.0196376,
-    -0.2249404,
-    1.0420571,
-    -0.0786361,
-    0.0000001,
-    0.0000000,
-    1.0982735
-]);
-function DisplayP3ToLinearSRGB(color) {
-    // Display P3 uses the sRGB transfer functions
-    return color.convertSRGBToLinear().applyMatrix3(LINEAR_DISPLAY_P3_TO_LINEAR_SRGB);
-}
-function LinearSRGBToDisplayP3(color) {
-    // Display P3 uses the sRGB transfer functions
-    return color.applyMatrix3(LINEAR_SRGB_TO_LINEAR_DISPLAY_P3).convertLinearToSRGB();
-}
-// Conversions from <source> to Linear-sRGB reference space.
-const TO_LINEAR = {
-    [LinearSRGBColorSpace]: (color)=>color,
-    [SRGBColorSpace]: (color)=>color.convertSRGBToLinear(),
-    [DisplayP3ColorSpace]: DisplayP3ToLinearSRGB
+ */ const LINEAR_SRGB_TO_LINEAR_DISPLAY_P3 = /*@__PURE__*/ new Matrix3().set(0.8224621, 0.177538, 0.0, 0.0331941, 0.9668058, 0.0, 0.0170827, 0.0723974, 0.9105199);
+const LINEAR_DISPLAY_P3_TO_LINEAR_SRGB = /*@__PURE__*/ new Matrix3().set(1.2249401, -0.2249404, 0.0, -0.0420569, 1.0420571, 0.0, -0.0196376, -0.0786361, 1.0982735);
+/**
+ * Defines supported color spaces by transfer function and primaries,
+ * and provides conversions to/from the Linear-sRGB reference space.
+ */ const COLOR_SPACES = {
+    [LinearSRGBColorSpace]: {
+        transfer: LinearTransfer,
+        primaries: Rec709Primaries,
+        toReference: (color)=>color,
+        fromReference: (color)=>color
+    },
+    [SRGBColorSpace]: {
+        transfer: SRGBTransfer,
+        primaries: Rec709Primaries,
+        toReference: (color)=>color.convertSRGBToLinear(),
+        fromReference: (color)=>color.convertLinearToSRGB()
+    },
+    [LinearDisplayP3ColorSpace]: {
+        transfer: LinearTransfer,
+        primaries: P3Primaries,
+        toReference: (color)=>color.applyMatrix3(LINEAR_DISPLAY_P3_TO_LINEAR_SRGB),
+        fromReference: (color)=>color.applyMatrix3(LINEAR_SRGB_TO_LINEAR_DISPLAY_P3)
+    },
+    [DisplayP3ColorSpace]: {
+        transfer: SRGBTransfer,
+        primaries: P3Primaries,
+        toReference: (color)=>color.convertSRGBToLinear().applyMatrix3(LINEAR_DISPLAY_P3_TO_LINEAR_SRGB),
+        fromReference: (color)=>color.applyMatrix3(LINEAR_SRGB_TO_LINEAR_DISPLAY_P3).convertLinearToSRGB()
+    }
 };
-// Conversions to <target> from Linear-sRGB reference space.
-const FROM_LINEAR = {
-    [LinearSRGBColorSpace]: (color)=>color,
-    [SRGBColorSpace]: (color)=>color.convertLinearToSRGB(),
-    [DisplayP3ColorSpace]: LinearSRGBToDisplayP3
-};
+const SUPPORTED_WORKING_COLOR_SPACES = new Set([
+    LinearSRGBColorSpace,
+    LinearDisplayP3ColorSpace
+]);
 const ColorManagement = {
     enabled: true,
+    _workingColorSpace: LinearSRGBColorSpace,
     get legacyMode () {
         console.warn("THREE.ColorManagement: .legacyMode=false renamed to .enabled=true in r150.");
         return !this.enabled;
@@ -5042,25 +5076,38 @@ const ColorManagement = {
         this.enabled = !legacyMode;
     },
     get workingColorSpace () {
-        return LinearSRGBColorSpace;
+        return this._workingColorSpace;
     },
     set workingColorSpace (colorSpace){
-        console.warn("THREE.ColorManagement: .workingColorSpace is readonly.");
+        if (!SUPPORTED_WORKING_COLOR_SPACES.has(colorSpace)) throw new Error(`Unsupported working color space, "${colorSpace}".`);
+        this._workingColorSpace = colorSpace;
     },
     convert: function(color, sourceColorSpace, targetColorSpace) {
         if (this.enabled === false || sourceColorSpace === targetColorSpace || !sourceColorSpace || !targetColorSpace) return color;
-        const sourceToLinear = TO_LINEAR[sourceColorSpace];
-        const targetFromLinear = FROM_LINEAR[targetColorSpace];
-        if (sourceToLinear === undefined || targetFromLinear === undefined) throw new Error(`Unsupported color space conversion, "${sourceColorSpace}" to "${targetColorSpace}".`);
-        return targetFromLinear(sourceToLinear(color));
+        const sourceToReference = COLOR_SPACES[sourceColorSpace].toReference;
+        const targetFromReference = COLOR_SPACES[targetColorSpace].fromReference;
+        return targetFromReference(sourceToReference(color));
     },
     fromWorkingColorSpace: function(color, targetColorSpace) {
-        return this.convert(color, this.workingColorSpace, targetColorSpace);
+        return this.convert(color, this._workingColorSpace, targetColorSpace);
     },
     toWorkingColorSpace: function(color, sourceColorSpace) {
-        return this.convert(color, sourceColorSpace, this.workingColorSpace);
+        return this.convert(color, sourceColorSpace, this._workingColorSpace);
+    },
+    getPrimaries: function(colorSpace1) {
+        return COLOR_SPACES[colorSpace1].primaries;
+    },
+    getTransfer: function(colorSpace1) {
+        if (colorSpace1 === NoColorSpace) return LinearTransfer;
+        return COLOR_SPACES[colorSpace1].transfer;
     }
 };
+function SRGBToLinear(c) {
+    return c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4);
+}
+function LinearToSRGB(c) {
+    return c < 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 0.41666) - 0.055;
+}
 let _canvas;
 class ImageUtils {
     static getDataURL(image) {
@@ -5110,12 +5157,12 @@ class ImageUtils {
         }
     }
 }
-let sourceId = 0;
+let _sourceId = 0;
 class Source {
     constructor(data = null){
         this.isSource = true;
         Object.defineProperty(this, "id", {
-            value: sourceId++
+            value: _sourceId++
         });
         this.uuid = generateUUID();
         this.data = data;
@@ -5164,13 +5211,13 @@ function serializeImage(image) {
         }
     }
 }
-let textureId = 0;
+let _textureId = 0;
 class Texture extends EventDispatcher {
     constructor(image = Texture.DEFAULT_IMAGE, mapping = Texture.DEFAULT_MAPPING, wrapS = ClampToEdgeWrapping, wrapT = ClampToEdgeWrapping, magFilter = LinearFilter, minFilter = LinearMipmapLinearFilter, format = RGBAFormat, type = UnsignedByteType, anisotropy = Texture.DEFAULT_ANISOTROPY, colorSpace1 = NoColorSpace){
         super();
         this.isTexture = true;
         Object.defineProperty(this, "id", {
-            value: textureId++
+            value: _textureId++
         });
         this.uuid = generateUUID();
         this.name = "";
@@ -5655,10 +5702,10 @@ class Vector4 {
         return this;
     }
     roundToZero() {
-        this.x = this.x < 0 ? Math.ceil(this.x) : Math.floor(this.x);
-        this.y = this.y < 0 ? Math.ceil(this.y) : Math.floor(this.y);
-        this.z = this.z < 0 ? Math.ceil(this.z) : Math.floor(this.z);
-        this.w = this.w < 0 ? Math.ceil(this.w) : Math.floor(this.w);
+        this.x = Math.trunc(this.x);
+        this.y = Math.trunc(this.y);
+        this.z = Math.trunc(this.z);
+        this.w = Math.trunc(this.w);
         return this;
     }
     negate() {
@@ -5742,10 +5789,10 @@ class Vector4 {
  In options, we can specify:
  * Texture parameters for an auto-generated target texture
  * depthBuffer/stencilBuffer: Booleans to indicate if we should generate these buffers
-*/ class WebGLRenderTarget extends EventDispatcher {
+*/ class RenderTarget extends EventDispatcher {
     constructor(width = 1, height = 1, options = {}){
         super();
-        this.isWebGLRenderTarget = true;
+        this.isRenderTarget = true;
         this.width = width;
         this.height = height;
         this.depth = 1;
@@ -5762,16 +5809,24 @@ class Vector4 {
             warnOnce("THREE.WebGLRenderTarget: option.encoding has been replaced by option.colorSpace.");
             options.colorSpace = options.encoding === sRGBEncoding ? SRGBColorSpace : NoColorSpace;
         }
+        options = Object.assign({
+            generateMipmaps: false,
+            internalFormat: null,
+            minFilter: LinearFilter,
+            depthBuffer: true,
+            stencilBuffer: false,
+            depthTexture: null,
+            samples: 0
+        }, options);
         this.texture = new Texture(image, options.mapping, options.wrapS, options.wrapT, options.magFilter, options.minFilter, options.format, options.type, options.anisotropy, options.colorSpace);
         this.texture.isRenderTargetTexture = true;
         this.texture.flipY = false;
-        this.texture.generateMipmaps = options.generateMipmaps !== undefined ? options.generateMipmaps : false;
-        this.texture.internalFormat = options.internalFormat !== undefined ? options.internalFormat : null;
-        this.texture.minFilter = options.minFilter !== undefined ? options.minFilter : LinearFilter;
-        this.depthBuffer = options.depthBuffer !== undefined ? options.depthBuffer : true;
-        this.stencilBuffer = options.stencilBuffer !== undefined ? options.stencilBuffer : false;
-        this.depthTexture = options.depthTexture !== undefined ? options.depthTexture : null;
-        this.samples = options.samples !== undefined ? options.samples : 0;
+        this.texture.generateMipmaps = options.generateMipmaps;
+        this.texture.internalFormat = options.internalFormat;
+        this.depthBuffer = options.depthBuffer;
+        this.stencilBuffer = options.stencilBuffer;
+        this.depthTexture = options.depthTexture;
+        this.samples = options.samples;
     }
     setSize(width, height, depth = 1) {
         if (this.width !== width || this.height !== height || this.depth !== depth) {
@@ -5811,6 +5866,12 @@ class Vector4 {
         this.dispatchEvent({
             type: "dispose"
         });
+    }
+}
+class WebGLRenderTarget extends RenderTarget {
+    constructor(width = 1, height = 1, options = {}){
+        super(width, height, options);
+        this.isWebGLRenderTarget = true;
     }
 }
 class DataArrayTexture extends Texture {
@@ -5899,7 +5960,6 @@ class WebGLMultipleRenderTargets extends WebGLRenderTarget {
         }
         this.viewport.set(0, 0, width, height);
         this.scissor.set(0, 0, width, height);
-        return this;
     }
     copy(source) {
         this.dispose();
@@ -6479,17 +6539,17 @@ class Vector3 {
         return this;
     }
     applyQuaternion(q) {
-        const x = this.x, y = this.y, z = this.z;
+        // quaternion q is assumed to have unit length
+        const vx = this.x, vy = this.y, vz = this.z;
         const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
-        // calculate quat * vector
-        const ix = qw * x + qy * z - qz * y;
-        const iy = qw * y + qz * x - qx * z;
-        const iz = qw * z + qx * y - qy * x;
-        const iw = -qx * x - qy * y - qz * z;
-        // calculate result * inverse quat
-        this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-        this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-        this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+        // t = 2 * cross( q.xyz, v );
+        const tx = 2 * (qy * vz - qz * vy);
+        const ty = 2 * (qz * vx - qx * vz);
+        const tz = 2 * (qx * vy - qy * vx);
+        // v + q.w * t + cross( q.xyz, t );
+        this.x = vx + qw * tx + qy * tz - qz * ty;
+        this.y = vy + qw * ty + qz * tx - qx * tz;
+        this.z = vz + qw * tz + qx * ty - qy * tx;
         return this;
     }
     project(camera) {
@@ -6565,9 +6625,9 @@ class Vector3 {
         return this;
     }
     roundToZero() {
-        this.x = this.x < 0 ? Math.ceil(this.x) : Math.floor(this.x);
-        this.y = this.y < 0 ? Math.ceil(this.y) : Math.floor(this.y);
-        this.z = this.z < 0 ? Math.ceil(this.z) : Math.floor(this.z);
+        this.x = Math.trunc(this.x);
+        this.y = Math.trunc(this.y);
+        this.z = Math.trunc(this.z);
         return this;
     }
     negate() {
@@ -6826,26 +6886,29 @@ class Box3 {
         // Computes the world-axis-aligned bounding box of an object (including its children),
         // accounting for both the object's, and children's, world transforms
         object.updateWorldMatrix(false, false);
-        if (object.boundingBox !== undefined) {
-            if (object.boundingBox === null) object.computeBoundingBox();
-            _box$3.copy(object.boundingBox);
-            _box$3.applyMatrix4(object.matrixWorld);
-            this.union(_box$3);
-        } else {
-            const geometry = object.geometry;
-            if (geometry !== undefined) {
-                if (precise && geometry.attributes !== undefined && geometry.attributes.position !== undefined) {
-                    const position = geometry.attributes.position;
-                    for(let i = 0, l = position.count; i < l; i++){
-                        _vector$a.fromBufferAttribute(position, i).applyMatrix4(object.matrixWorld);
-                        this.expandByPoint(_vector$a);
-                    }
+        const geometry = object.geometry;
+        if (geometry !== undefined) {
+            const positionAttribute = geometry.getAttribute("position");
+            // precise AABB computation based on vertex data requires at least a position attribute.
+            // instancing isn't supported so far and uses the normal (conservative) code path.
+            if (precise === true && positionAttribute !== undefined && object.isInstancedMesh !== true) for(let i = 0, l = positionAttribute.count; i < l; i++){
+                if (object.isMesh === true) object.getVertexPosition(i, _vector$a);
+                else _vector$a.fromBufferAttribute(positionAttribute, i);
+                _vector$a.applyMatrix4(object.matrixWorld);
+                this.expandByPoint(_vector$a);
+            }
+            else {
+                if (object.boundingBox !== undefined) {
+                    // object-level bounding box
+                    if (object.boundingBox === null) object.computeBoundingBox();
+                    _box$3.copy(object.boundingBox);
                 } else {
+                    // geometry-level bounding box
                     if (geometry.boundingBox === null) geometry.computeBoundingBox();
                     _box$3.copy(geometry.boundingBox);
-                    _box$3.applyMatrix4(object.matrixWorld);
-                    this.union(_box$3);
                 }
+                _box$3.applyMatrix4(object.matrixWorld);
+                this.union(_box$3);
             }
         }
         const children = object.children;
@@ -8426,13 +8489,7 @@ class Object3D extends EventDispatcher {
         return this;
     }
     clear() {
-        for(let i = 0; i < this.children.length; i++){
-            const object = this.children[i];
-            object.parent = null;
-            object.dispatchEvent(_removedEvent);
-        }
-        this.children.length = 0;
-        return this;
+        return this.remove(...this.children);
     }
     attach(object) {
         // adds object as a child of this, while maintaining the object's world transform
@@ -8696,7 +8753,7 @@ class Object3D extends EventDispatcher {
         this.receiveShadow = source.receiveShadow;
         this.frustumCulled = source.frustumCulled;
         this.renderOrder = source.renderOrder;
-        this.animations = source.animations;
+        this.animations = source.animations.slice();
         this.userData = JSON.parse(JSON.stringify(source.userData));
         if (recursive === true) for(let i = 0; i < source.children.length; i++){
             const child = source.children[i];
@@ -8896,305 +8953,6 @@ class Triangle {
     }
     equals(triangle) {
         return triangle.a.equals(this.a) && triangle.b.equals(this.b) && triangle.c.equals(this.c);
-    }
-}
-let materialId = 0;
-class Material extends EventDispatcher {
-    constructor(){
-        super();
-        this.isMaterial = true;
-        Object.defineProperty(this, "id", {
-            value: materialId++
-        });
-        this.uuid = generateUUID();
-        this.name = "";
-        this.type = "Material";
-        this.blending = NormalBlending;
-        this.side = FrontSide;
-        this.vertexColors = false;
-        this.opacity = 1;
-        this.transparent = false;
-        this.alphaHash = false;
-        this.blendSrc = SrcAlphaFactor;
-        this.blendDst = OneMinusSrcAlphaFactor;
-        this.blendEquation = AddEquation;
-        this.blendSrcAlpha = null;
-        this.blendDstAlpha = null;
-        this.blendEquationAlpha = null;
-        this.depthFunc = LessEqualDepth;
-        this.depthTest = true;
-        this.depthWrite = true;
-        this.stencilWriteMask = 0xff;
-        this.stencilFunc = AlwaysStencilFunc;
-        this.stencilRef = 0;
-        this.stencilFuncMask = 0xff;
-        this.stencilFail = KeepStencilOp;
-        this.stencilZFail = KeepStencilOp;
-        this.stencilZPass = KeepStencilOp;
-        this.stencilWrite = false;
-        this.clippingPlanes = null;
-        this.clipIntersection = false;
-        this.clipShadows = false;
-        this.shadowSide = null;
-        this.colorWrite = true;
-        this.precision = null; // override the renderer's default precision for this material
-        this.polygonOffset = false;
-        this.polygonOffsetFactor = 0;
-        this.polygonOffsetUnits = 0;
-        this.dithering = false;
-        this.alphaToCoverage = false;
-        this.premultipliedAlpha = false;
-        this.forceSinglePass = false;
-        this.visible = true;
-        this.toneMapped = true;
-        this.userData = {};
-        this.version = 0;
-        this._alphaTest = 0;
-    }
-    get alphaTest() {
-        return this._alphaTest;
-    }
-    set alphaTest(value) {
-        if (this._alphaTest > 0 !== value > 0) this.version++;
-        this._alphaTest = value;
-    }
-    onBuild() {}
-    onBeforeRender() {}
-    onBeforeCompile() {}
-    customProgramCacheKey() {
-        return this.onBeforeCompile.toString();
-    }
-    setValues(values) {
-        if (values === undefined) return;
-        for(const key in values){
-            const newValue = values[key];
-            if (newValue === undefined) {
-                console.warn(`THREE.Material: parameter '${key}' has value of undefined.`);
-                continue;
-            }
-            const currentValue = this[key];
-            if (currentValue === undefined) {
-                console.warn(`THREE.Material: '${key}' is not a property of THREE.${this.type}.`);
-                continue;
-            }
-            if (currentValue && currentValue.isColor) currentValue.set(newValue);
-            else if (currentValue && currentValue.isVector3 && newValue && newValue.isVector3) currentValue.copy(newValue);
-            else this[key] = newValue;
-        }
-    }
-    toJSON(meta) {
-        const isRootObject = meta === undefined || typeof meta === "string";
-        if (isRootObject) meta = {
-            textures: {},
-            images: {}
-        };
-        const data = {
-            metadata: {
-                version: 4.6,
-                type: "Material",
-                generator: "Material.toJSON"
-            }
-        };
-        // standard Material serialization
-        data.uuid = this.uuid;
-        data.type = this.type;
-        if (this.name !== "") data.name = this.name;
-        if (this.color && this.color.isColor) data.color = this.color.getHex();
-        if (this.roughness !== undefined) data.roughness = this.roughness;
-        if (this.metalness !== undefined) data.metalness = this.metalness;
-        if (this.sheen !== undefined) data.sheen = this.sheen;
-        if (this.sheenColor && this.sheenColor.isColor) data.sheenColor = this.sheenColor.getHex();
-        if (this.sheenRoughness !== undefined) data.sheenRoughness = this.sheenRoughness;
-        if (this.emissive && this.emissive.isColor) data.emissive = this.emissive.getHex();
-        if (this.emissiveIntensity && this.emissiveIntensity !== 1) data.emissiveIntensity = this.emissiveIntensity;
-        if (this.specular && this.specular.isColor) data.specular = this.specular.getHex();
-        if (this.specularIntensity !== undefined) data.specularIntensity = this.specularIntensity;
-        if (this.specularColor && this.specularColor.isColor) data.specularColor = this.specularColor.getHex();
-        if (this.shininess !== undefined) data.shininess = this.shininess;
-        if (this.clearcoat !== undefined) data.clearcoat = this.clearcoat;
-        if (this.clearcoatRoughness !== undefined) data.clearcoatRoughness = this.clearcoatRoughness;
-        if (this.clearcoatMap && this.clearcoatMap.isTexture) data.clearcoatMap = this.clearcoatMap.toJSON(meta).uuid;
-        if (this.clearcoatRoughnessMap && this.clearcoatRoughnessMap.isTexture) data.clearcoatRoughnessMap = this.clearcoatRoughnessMap.toJSON(meta).uuid;
-        if (this.clearcoatNormalMap && this.clearcoatNormalMap.isTexture) {
-            data.clearcoatNormalMap = this.clearcoatNormalMap.toJSON(meta).uuid;
-            data.clearcoatNormalScale = this.clearcoatNormalScale.toArray();
-        }
-        if (this.iridescence !== undefined) data.iridescence = this.iridescence;
-        if (this.iridescenceIOR !== undefined) data.iridescenceIOR = this.iridescenceIOR;
-        if (this.iridescenceThicknessRange !== undefined) data.iridescenceThicknessRange = this.iridescenceThicknessRange;
-        if (this.iridescenceMap && this.iridescenceMap.isTexture) data.iridescenceMap = this.iridescenceMap.toJSON(meta).uuid;
-        if (this.iridescenceThicknessMap && this.iridescenceThicknessMap.isTexture) data.iridescenceThicknessMap = this.iridescenceThicknessMap.toJSON(meta).uuid;
-        if (this.anisotropy !== undefined) data.anisotropy = this.anisotropy;
-        if (this.anisotropyRotation !== undefined) data.anisotropyRotation = this.anisotropyRotation;
-        if (this.anisotropyMap && this.anisotropyMap.isTexture) data.anisotropyMap = this.anisotropyMap.toJSON(meta).uuid;
-        if (this.map && this.map.isTexture) data.map = this.map.toJSON(meta).uuid;
-        if (this.matcap && this.matcap.isTexture) data.matcap = this.matcap.toJSON(meta).uuid;
-        if (this.alphaMap && this.alphaMap.isTexture) data.alphaMap = this.alphaMap.toJSON(meta).uuid;
-        if (this.lightMap && this.lightMap.isTexture) {
-            data.lightMap = this.lightMap.toJSON(meta).uuid;
-            data.lightMapIntensity = this.lightMapIntensity;
-        }
-        if (this.aoMap && this.aoMap.isTexture) {
-            data.aoMap = this.aoMap.toJSON(meta).uuid;
-            data.aoMapIntensity = this.aoMapIntensity;
-        }
-        if (this.bumpMap && this.bumpMap.isTexture) {
-            data.bumpMap = this.bumpMap.toJSON(meta).uuid;
-            data.bumpScale = this.bumpScale;
-        }
-        if (this.normalMap && this.normalMap.isTexture) {
-            data.normalMap = this.normalMap.toJSON(meta).uuid;
-            data.normalMapType = this.normalMapType;
-            data.normalScale = this.normalScale.toArray();
-        }
-        if (this.displacementMap && this.displacementMap.isTexture) {
-            data.displacementMap = this.displacementMap.toJSON(meta).uuid;
-            data.displacementScale = this.displacementScale;
-            data.displacementBias = this.displacementBias;
-        }
-        if (this.roughnessMap && this.roughnessMap.isTexture) data.roughnessMap = this.roughnessMap.toJSON(meta).uuid;
-        if (this.metalnessMap && this.metalnessMap.isTexture) data.metalnessMap = this.metalnessMap.toJSON(meta).uuid;
-        if (this.emissiveMap && this.emissiveMap.isTexture) data.emissiveMap = this.emissiveMap.toJSON(meta).uuid;
-        if (this.specularMap && this.specularMap.isTexture) data.specularMap = this.specularMap.toJSON(meta).uuid;
-        if (this.specularIntensityMap && this.specularIntensityMap.isTexture) data.specularIntensityMap = this.specularIntensityMap.toJSON(meta).uuid;
-        if (this.specularColorMap && this.specularColorMap.isTexture) data.specularColorMap = this.specularColorMap.toJSON(meta).uuid;
-        if (this.envMap && this.envMap.isTexture) {
-            data.envMap = this.envMap.toJSON(meta).uuid;
-            if (this.combine !== undefined) data.combine = this.combine;
-        }
-        if (this.envMapIntensity !== undefined) data.envMapIntensity = this.envMapIntensity;
-        if (this.reflectivity !== undefined) data.reflectivity = this.reflectivity;
-        if (this.refractionRatio !== undefined) data.refractionRatio = this.refractionRatio;
-        if (this.gradientMap && this.gradientMap.isTexture) data.gradientMap = this.gradientMap.toJSON(meta).uuid;
-        if (this.transmission !== undefined) data.transmission = this.transmission;
-        if (this.transmissionMap && this.transmissionMap.isTexture) data.transmissionMap = this.transmissionMap.toJSON(meta).uuid;
-        if (this.thickness !== undefined) data.thickness = this.thickness;
-        if (this.thicknessMap && this.thicknessMap.isTexture) data.thicknessMap = this.thicknessMap.toJSON(meta).uuid;
-        if (this.attenuationDistance !== undefined && this.attenuationDistance !== Infinity) data.attenuationDistance = this.attenuationDistance;
-        if (this.attenuationColor !== undefined) data.attenuationColor = this.attenuationColor.getHex();
-        if (this.size !== undefined) data.size = this.size;
-        if (this.shadowSide !== null) data.shadowSide = this.shadowSide;
-        if (this.sizeAttenuation !== undefined) data.sizeAttenuation = this.sizeAttenuation;
-        if (this.blending !== NormalBlending) data.blending = this.blending;
-        if (this.side !== FrontSide) data.side = this.side;
-        if (this.vertexColors) data.vertexColors = true;
-        if (this.opacity < 1) data.opacity = this.opacity;
-        if (this.transparent === true) data.transparent = this.transparent;
-        data.depthFunc = this.depthFunc;
-        data.depthTest = this.depthTest;
-        data.depthWrite = this.depthWrite;
-        data.colorWrite = this.colorWrite;
-        data.stencilWrite = this.stencilWrite;
-        data.stencilWriteMask = this.stencilWriteMask;
-        data.stencilFunc = this.stencilFunc;
-        data.stencilRef = this.stencilRef;
-        data.stencilFuncMask = this.stencilFuncMask;
-        data.stencilFail = this.stencilFail;
-        data.stencilZFail = this.stencilZFail;
-        data.stencilZPass = this.stencilZPass;
-        // rotation (SpriteMaterial)
-        if (this.rotation !== undefined && this.rotation !== 0) data.rotation = this.rotation;
-        if (this.polygonOffset === true) data.polygonOffset = true;
-        if (this.polygonOffsetFactor !== 0) data.polygonOffsetFactor = this.polygonOffsetFactor;
-        if (this.polygonOffsetUnits !== 0) data.polygonOffsetUnits = this.polygonOffsetUnits;
-        if (this.linewidth !== undefined && this.linewidth !== 1) data.linewidth = this.linewidth;
-        if (this.dashSize !== undefined) data.dashSize = this.dashSize;
-        if (this.gapSize !== undefined) data.gapSize = this.gapSize;
-        if (this.scale !== undefined) data.scale = this.scale;
-        if (this.dithering === true) data.dithering = true;
-        if (this.alphaTest > 0) data.alphaTest = this.alphaTest;
-        if (this.alphaHash === true) data.alphaHash = this.alphaHash;
-        if (this.alphaToCoverage === true) data.alphaToCoverage = this.alphaToCoverage;
-        if (this.premultipliedAlpha === true) data.premultipliedAlpha = this.premultipliedAlpha;
-        if (this.forceSinglePass === true) data.forceSinglePass = this.forceSinglePass;
-        if (this.wireframe === true) data.wireframe = this.wireframe;
-        if (this.wireframeLinewidth > 1) data.wireframeLinewidth = this.wireframeLinewidth;
-        if (this.wireframeLinecap !== "round") data.wireframeLinecap = this.wireframeLinecap;
-        if (this.wireframeLinejoin !== "round") data.wireframeLinejoin = this.wireframeLinejoin;
-        if (this.flatShading === true) data.flatShading = this.flatShading;
-        if (this.visible === false) data.visible = false;
-        if (this.toneMapped === false) data.toneMapped = false;
-        if (this.fog === false) data.fog = false;
-        if (Object.keys(this.userData).length > 0) data.userData = this.userData;
-        // TODO: Copied from Object3D.toJSON
-        function extractFromCache(cache) {
-            const values = [];
-            for(const key in cache){
-                const data = cache[key];
-                delete data.metadata;
-                values.push(data);
-            }
-            return values;
-        }
-        if (isRootObject) {
-            const textures = extractFromCache(meta.textures);
-            const images = extractFromCache(meta.images);
-            if (textures.length > 0) data.textures = textures;
-            if (images.length > 0) data.images = images;
-        }
-        return data;
-    }
-    clone() {
-        return new this.constructor().copy(this);
-    }
-    copy(source) {
-        this.name = source.name;
-        this.blending = source.blending;
-        this.side = source.side;
-        this.vertexColors = source.vertexColors;
-        this.opacity = source.opacity;
-        this.transparent = source.transparent;
-        this.blendSrc = source.blendSrc;
-        this.blendDst = source.blendDst;
-        this.blendEquation = source.blendEquation;
-        this.blendSrcAlpha = source.blendSrcAlpha;
-        this.blendDstAlpha = source.blendDstAlpha;
-        this.blendEquationAlpha = source.blendEquationAlpha;
-        this.depthFunc = source.depthFunc;
-        this.depthTest = source.depthTest;
-        this.depthWrite = source.depthWrite;
-        this.stencilWriteMask = source.stencilWriteMask;
-        this.stencilFunc = source.stencilFunc;
-        this.stencilRef = source.stencilRef;
-        this.stencilFuncMask = source.stencilFuncMask;
-        this.stencilFail = source.stencilFail;
-        this.stencilZFail = source.stencilZFail;
-        this.stencilZPass = source.stencilZPass;
-        this.stencilWrite = source.stencilWrite;
-        const srcPlanes = source.clippingPlanes;
-        let dstPlanes = null;
-        if (srcPlanes !== null) {
-            const n = srcPlanes.length;
-            dstPlanes = new Array(n);
-            for(let i = 0; i !== n; ++i)dstPlanes[i] = srcPlanes[i].clone();
-        }
-        this.clippingPlanes = dstPlanes;
-        this.clipIntersection = source.clipIntersection;
-        this.clipShadows = source.clipShadows;
-        this.shadowSide = source.shadowSide;
-        this.colorWrite = source.colorWrite;
-        this.precision = source.precision;
-        this.polygonOffset = source.polygonOffset;
-        this.polygonOffsetFactor = source.polygonOffsetFactor;
-        this.polygonOffsetUnits = source.polygonOffsetUnits;
-        this.dithering = source.dithering;
-        this.alphaTest = source.alphaTest;
-        this.alphaHash = source.alphaHash;
-        this.alphaToCoverage = source.alphaToCoverage;
-        this.premultipliedAlpha = source.premultipliedAlpha;
-        this.forceSinglePass = source.forceSinglePass;
-        this.visible = source.visible;
-        this.toneMapped = source.toneMapped;
-        this.userData = JSON.parse(JSON.stringify(source.userData));
-        return this;
-    }
-    dispose() {
-        this.dispatchEvent({
-            type: "dispose"
-        });
-    }
-    set needsUpdate(value) {
-        if (value === true) this.version++;
     }
 }
 const _colorKeywords = {
@@ -9561,11 +9319,7 @@ class Color {
     }
     offsetHSL(h, s, l) {
         this.getHSL(_hslA);
-        _hslA.h += h;
-        _hslA.s += s;
-        _hslA.l += l;
-        this.setHSL(_hslA.h, _hslA.s, _hslA.l);
-        return this;
+        return this.setHSL(_hslA.h + h, _hslA.s + s, _hslA.l + l);
     }
     add(color) {
         this.r += color.r;
@@ -9670,6 +9424,317 @@ class Color {
 }
 const _color = /*@__PURE__*/ new Color();
 Color.NAMES = _colorKeywords;
+let _materialId = 0;
+class Material extends EventDispatcher {
+    constructor(){
+        super();
+        this.isMaterial = true;
+        Object.defineProperty(this, "id", {
+            value: _materialId++
+        });
+        this.uuid = generateUUID();
+        this.name = "";
+        this.type = "Material";
+        this.blending = NormalBlending;
+        this.side = FrontSide;
+        this.vertexColors = false;
+        this.opacity = 1;
+        this.transparent = false;
+        this.alphaHash = false;
+        this.blendSrc = SrcAlphaFactor;
+        this.blendDst = OneMinusSrcAlphaFactor;
+        this.blendEquation = AddEquation;
+        this.blendSrcAlpha = null;
+        this.blendDstAlpha = null;
+        this.blendEquationAlpha = null;
+        this.blendColor = new Color(0, 0, 0);
+        this.blendAlpha = 0;
+        this.depthFunc = LessEqualDepth;
+        this.depthTest = true;
+        this.depthWrite = true;
+        this.stencilWriteMask = 0xff;
+        this.stencilFunc = AlwaysStencilFunc;
+        this.stencilRef = 0;
+        this.stencilFuncMask = 0xff;
+        this.stencilFail = KeepStencilOp;
+        this.stencilZFail = KeepStencilOp;
+        this.stencilZPass = KeepStencilOp;
+        this.stencilWrite = false;
+        this.clippingPlanes = null;
+        this.clipIntersection = false;
+        this.clipShadows = false;
+        this.shadowSide = null;
+        this.colorWrite = true;
+        this.precision = null; // override the renderer's default precision for this material
+        this.polygonOffset = false;
+        this.polygonOffsetFactor = 0;
+        this.polygonOffsetUnits = 0;
+        this.dithering = false;
+        this.alphaToCoverage = false;
+        this.premultipliedAlpha = false;
+        this.forceSinglePass = false;
+        this.visible = true;
+        this.toneMapped = true;
+        this.userData = {};
+        this.version = 0;
+        this._alphaTest = 0;
+    }
+    get alphaTest() {
+        return this._alphaTest;
+    }
+    set alphaTest(value) {
+        if (this._alphaTest > 0 !== value > 0) this.version++;
+        this._alphaTest = value;
+    }
+    onBuild() {}
+    onBeforeRender() {}
+    onBeforeCompile() {}
+    customProgramCacheKey() {
+        return this.onBeforeCompile.toString();
+    }
+    setValues(values) {
+        if (values === undefined) return;
+        for(const key in values){
+            const newValue = values[key];
+            if (newValue === undefined) {
+                console.warn(`THREE.Material: parameter '${key}' has value of undefined.`);
+                continue;
+            }
+            const currentValue = this[key];
+            if (currentValue === undefined) {
+                console.warn(`THREE.Material: '${key}' is not a property of THREE.${this.type}.`);
+                continue;
+            }
+            if (currentValue && currentValue.isColor) currentValue.set(newValue);
+            else if (currentValue && currentValue.isVector3 && newValue && newValue.isVector3) currentValue.copy(newValue);
+            else this[key] = newValue;
+        }
+    }
+    toJSON(meta) {
+        const isRootObject = meta === undefined || typeof meta === "string";
+        if (isRootObject) meta = {
+            textures: {},
+            images: {}
+        };
+        const data = {
+            metadata: {
+                version: 4.6,
+                type: "Material",
+                generator: "Material.toJSON"
+            }
+        };
+        // standard Material serialization
+        data.uuid = this.uuid;
+        data.type = this.type;
+        if (this.name !== "") data.name = this.name;
+        if (this.color && this.color.isColor) data.color = this.color.getHex();
+        if (this.roughness !== undefined) data.roughness = this.roughness;
+        if (this.metalness !== undefined) data.metalness = this.metalness;
+        if (this.sheen !== undefined) data.sheen = this.sheen;
+        if (this.sheenColor && this.sheenColor.isColor) data.sheenColor = this.sheenColor.getHex();
+        if (this.sheenRoughness !== undefined) data.sheenRoughness = this.sheenRoughness;
+        if (this.emissive && this.emissive.isColor) data.emissive = this.emissive.getHex();
+        if (this.emissiveIntensity && this.emissiveIntensity !== 1) data.emissiveIntensity = this.emissiveIntensity;
+        if (this.specular && this.specular.isColor) data.specular = this.specular.getHex();
+        if (this.specularIntensity !== undefined) data.specularIntensity = this.specularIntensity;
+        if (this.specularColor && this.specularColor.isColor) data.specularColor = this.specularColor.getHex();
+        if (this.shininess !== undefined) data.shininess = this.shininess;
+        if (this.clearcoat !== undefined) data.clearcoat = this.clearcoat;
+        if (this.clearcoatRoughness !== undefined) data.clearcoatRoughness = this.clearcoatRoughness;
+        if (this.clearcoatMap && this.clearcoatMap.isTexture) data.clearcoatMap = this.clearcoatMap.toJSON(meta).uuid;
+        if (this.clearcoatRoughnessMap && this.clearcoatRoughnessMap.isTexture) data.clearcoatRoughnessMap = this.clearcoatRoughnessMap.toJSON(meta).uuid;
+        if (this.clearcoatNormalMap && this.clearcoatNormalMap.isTexture) {
+            data.clearcoatNormalMap = this.clearcoatNormalMap.toJSON(meta).uuid;
+            data.clearcoatNormalScale = this.clearcoatNormalScale.toArray();
+        }
+        if (this.iridescence !== undefined) data.iridescence = this.iridescence;
+        if (this.iridescenceIOR !== undefined) data.iridescenceIOR = this.iridescenceIOR;
+        if (this.iridescenceThicknessRange !== undefined) data.iridescenceThicknessRange = this.iridescenceThicknessRange;
+        if (this.iridescenceMap && this.iridescenceMap.isTexture) data.iridescenceMap = this.iridescenceMap.toJSON(meta).uuid;
+        if (this.iridescenceThicknessMap && this.iridescenceThicknessMap.isTexture) data.iridescenceThicknessMap = this.iridescenceThicknessMap.toJSON(meta).uuid;
+        if (this.anisotropy !== undefined) data.anisotropy = this.anisotropy;
+        if (this.anisotropyRotation !== undefined) data.anisotropyRotation = this.anisotropyRotation;
+        if (this.anisotropyMap && this.anisotropyMap.isTexture) data.anisotropyMap = this.anisotropyMap.toJSON(meta).uuid;
+        if (this.map && this.map.isTexture) data.map = this.map.toJSON(meta).uuid;
+        if (this.matcap && this.matcap.isTexture) data.matcap = this.matcap.toJSON(meta).uuid;
+        if (this.alphaMap && this.alphaMap.isTexture) data.alphaMap = this.alphaMap.toJSON(meta).uuid;
+        if (this.lightMap && this.lightMap.isTexture) {
+            data.lightMap = this.lightMap.toJSON(meta).uuid;
+            data.lightMapIntensity = this.lightMapIntensity;
+        }
+        if (this.aoMap && this.aoMap.isTexture) {
+            data.aoMap = this.aoMap.toJSON(meta).uuid;
+            data.aoMapIntensity = this.aoMapIntensity;
+        }
+        if (this.bumpMap && this.bumpMap.isTexture) {
+            data.bumpMap = this.bumpMap.toJSON(meta).uuid;
+            data.bumpScale = this.bumpScale;
+        }
+        if (this.normalMap && this.normalMap.isTexture) {
+            data.normalMap = this.normalMap.toJSON(meta).uuid;
+            data.normalMapType = this.normalMapType;
+            data.normalScale = this.normalScale.toArray();
+        }
+        if (this.displacementMap && this.displacementMap.isTexture) {
+            data.displacementMap = this.displacementMap.toJSON(meta).uuid;
+            data.displacementScale = this.displacementScale;
+            data.displacementBias = this.displacementBias;
+        }
+        if (this.roughnessMap && this.roughnessMap.isTexture) data.roughnessMap = this.roughnessMap.toJSON(meta).uuid;
+        if (this.metalnessMap && this.metalnessMap.isTexture) data.metalnessMap = this.metalnessMap.toJSON(meta).uuid;
+        if (this.emissiveMap && this.emissiveMap.isTexture) data.emissiveMap = this.emissiveMap.toJSON(meta).uuid;
+        if (this.specularMap && this.specularMap.isTexture) data.specularMap = this.specularMap.toJSON(meta).uuid;
+        if (this.specularIntensityMap && this.specularIntensityMap.isTexture) data.specularIntensityMap = this.specularIntensityMap.toJSON(meta).uuid;
+        if (this.specularColorMap && this.specularColorMap.isTexture) data.specularColorMap = this.specularColorMap.toJSON(meta).uuid;
+        if (this.envMap && this.envMap.isTexture) {
+            data.envMap = this.envMap.toJSON(meta).uuid;
+            if (this.combine !== undefined) data.combine = this.combine;
+        }
+        if (this.envMapIntensity !== undefined) data.envMapIntensity = this.envMapIntensity;
+        if (this.reflectivity !== undefined) data.reflectivity = this.reflectivity;
+        if (this.refractionRatio !== undefined) data.refractionRatio = this.refractionRatio;
+        if (this.gradientMap && this.gradientMap.isTexture) data.gradientMap = this.gradientMap.toJSON(meta).uuid;
+        if (this.transmission !== undefined) data.transmission = this.transmission;
+        if (this.transmissionMap && this.transmissionMap.isTexture) data.transmissionMap = this.transmissionMap.toJSON(meta).uuid;
+        if (this.thickness !== undefined) data.thickness = this.thickness;
+        if (this.thicknessMap && this.thicknessMap.isTexture) data.thicknessMap = this.thicknessMap.toJSON(meta).uuid;
+        if (this.attenuationDistance !== undefined && this.attenuationDistance !== Infinity) data.attenuationDistance = this.attenuationDistance;
+        if (this.attenuationColor !== undefined) data.attenuationColor = this.attenuationColor.getHex();
+        if (this.size !== undefined) data.size = this.size;
+        if (this.shadowSide !== null) data.shadowSide = this.shadowSide;
+        if (this.sizeAttenuation !== undefined) data.sizeAttenuation = this.sizeAttenuation;
+        if (this.blending !== NormalBlending) data.blending = this.blending;
+        if (this.side !== FrontSide) data.side = this.side;
+        if (this.vertexColors === true) data.vertexColors = true;
+        if (this.opacity < 1) data.opacity = this.opacity;
+        if (this.transparent === true) data.transparent = true;
+        if (this.blendSrc !== SrcAlphaFactor) data.blendSrc = this.blendSrc;
+        if (this.blendDst !== OneMinusSrcAlphaFactor) data.blendDst = this.blendDst;
+        if (this.blendEquation !== AddEquation) data.blendEquation = this.blendEquation;
+        if (this.blendSrcAlpha !== null) data.blendSrcAlpha = this.blendSrcAlpha;
+        if (this.blendDstAlpha !== null) data.blendDstAlpha = this.blendDstAlpha;
+        if (this.blendEquationAlpha !== null) data.blendEquationAlpha = this.blendEquationAlpha;
+        if (this.blendColor && this.blendColor.isColor) data.blendColor = this.blendColor.getHex();
+        if (this.blendAlpha !== 0) data.blendAlpha = this.blendAlpha;
+        if (this.depthFunc !== LessEqualDepth) data.depthFunc = this.depthFunc;
+        if (this.depthTest === false) data.depthTest = this.depthTest;
+        if (this.depthWrite === false) data.depthWrite = this.depthWrite;
+        if (this.colorWrite === false) data.colorWrite = this.colorWrite;
+        if (this.stencilWriteMask !== 0xff) data.stencilWriteMask = this.stencilWriteMask;
+        if (this.stencilFunc !== AlwaysStencilFunc) data.stencilFunc = this.stencilFunc;
+        if (this.stencilRef !== 0) data.stencilRef = this.stencilRef;
+        if (this.stencilFuncMask !== 0xff) data.stencilFuncMask = this.stencilFuncMask;
+        if (this.stencilFail !== KeepStencilOp) data.stencilFail = this.stencilFail;
+        if (this.stencilZFail !== KeepStencilOp) data.stencilZFail = this.stencilZFail;
+        if (this.stencilZPass !== KeepStencilOp) data.stencilZPass = this.stencilZPass;
+        if (this.stencilWrite === true) data.stencilWrite = this.stencilWrite;
+        // rotation (SpriteMaterial)
+        if (this.rotation !== undefined && this.rotation !== 0) data.rotation = this.rotation;
+        if (this.polygonOffset === true) data.polygonOffset = true;
+        if (this.polygonOffsetFactor !== 0) data.polygonOffsetFactor = this.polygonOffsetFactor;
+        if (this.polygonOffsetUnits !== 0) data.polygonOffsetUnits = this.polygonOffsetUnits;
+        if (this.linewidth !== undefined && this.linewidth !== 1) data.linewidth = this.linewidth;
+        if (this.dashSize !== undefined) data.dashSize = this.dashSize;
+        if (this.gapSize !== undefined) data.gapSize = this.gapSize;
+        if (this.scale !== undefined) data.scale = this.scale;
+        if (this.dithering === true) data.dithering = true;
+        if (this.alphaTest > 0) data.alphaTest = this.alphaTest;
+        if (this.alphaHash === true) data.alphaHash = true;
+        if (this.alphaToCoverage === true) data.alphaToCoverage = true;
+        if (this.premultipliedAlpha === true) data.premultipliedAlpha = true;
+        if (this.forceSinglePass === true) data.forceSinglePass = true;
+        if (this.wireframe === true) data.wireframe = true;
+        if (this.wireframeLinewidth > 1) data.wireframeLinewidth = this.wireframeLinewidth;
+        if (this.wireframeLinecap !== "round") data.wireframeLinecap = this.wireframeLinecap;
+        if (this.wireframeLinejoin !== "round") data.wireframeLinejoin = this.wireframeLinejoin;
+        if (this.flatShading === true) data.flatShading = true;
+        if (this.visible === false) data.visible = false;
+        if (this.toneMapped === false) data.toneMapped = false;
+        if (this.fog === false) data.fog = false;
+        if (Object.keys(this.userData).length > 0) data.userData = this.userData;
+        // TODO: Copied from Object3D.toJSON
+        function extractFromCache(cache) {
+            const values = [];
+            for(const key in cache){
+                const data = cache[key];
+                delete data.metadata;
+                values.push(data);
+            }
+            return values;
+        }
+        if (isRootObject) {
+            const textures = extractFromCache(meta.textures);
+            const images = extractFromCache(meta.images);
+            if (textures.length > 0) data.textures = textures;
+            if (images.length > 0) data.images = images;
+        }
+        return data;
+    }
+    clone() {
+        return new this.constructor().copy(this);
+    }
+    copy(source) {
+        this.name = source.name;
+        this.blending = source.blending;
+        this.side = source.side;
+        this.vertexColors = source.vertexColors;
+        this.opacity = source.opacity;
+        this.transparent = source.transparent;
+        this.blendSrc = source.blendSrc;
+        this.blendDst = source.blendDst;
+        this.blendEquation = source.blendEquation;
+        this.blendSrcAlpha = source.blendSrcAlpha;
+        this.blendDstAlpha = source.blendDstAlpha;
+        this.blendEquationAlpha = source.blendEquationAlpha;
+        this.blendColor.copy(source.blendColor);
+        this.blendAlpha = source.blendAlpha;
+        this.depthFunc = source.depthFunc;
+        this.depthTest = source.depthTest;
+        this.depthWrite = source.depthWrite;
+        this.stencilWriteMask = source.stencilWriteMask;
+        this.stencilFunc = source.stencilFunc;
+        this.stencilRef = source.stencilRef;
+        this.stencilFuncMask = source.stencilFuncMask;
+        this.stencilFail = source.stencilFail;
+        this.stencilZFail = source.stencilZFail;
+        this.stencilZPass = source.stencilZPass;
+        this.stencilWrite = source.stencilWrite;
+        const srcPlanes = source.clippingPlanes;
+        let dstPlanes = null;
+        if (srcPlanes !== null) {
+            const n = srcPlanes.length;
+            dstPlanes = new Array(n);
+            for(let i = 0; i !== n; ++i)dstPlanes[i] = srcPlanes[i].clone();
+        }
+        this.clippingPlanes = dstPlanes;
+        this.clipIntersection = source.clipIntersection;
+        this.clipShadows = source.clipShadows;
+        this.shadowSide = source.shadowSide;
+        this.colorWrite = source.colorWrite;
+        this.precision = source.precision;
+        this.polygonOffset = source.polygonOffset;
+        this.polygonOffsetFactor = source.polygonOffsetFactor;
+        this.polygonOffsetUnits = source.polygonOffsetUnits;
+        this.dithering = source.dithering;
+        this.alphaTest = source.alphaTest;
+        this.alphaHash = source.alphaHash;
+        this.alphaToCoverage = source.alphaToCoverage;
+        this.premultipliedAlpha = source.premultipliedAlpha;
+        this.forceSinglePass = source.forceSinglePass;
+        this.visible = source.visible;
+        this.toneMapped = source.toneMapped;
+        this.userData = JSON.parse(JSON.stringify(source.userData));
+        return this;
+    }
+    dispose() {
+        this.dispatchEvent({
+            type: "dispose"
+        });
+    }
+    set needsUpdate(value) {
+        if (value === true) this.version++;
+    }
+}
 class MeshBasicMaterial extends Material {
     constructor(parameters){
         super();
@@ -9900,6 +9965,16 @@ class BufferAttribute {
         this.array.set(value, offset);
         return this;
     }
+    getComponent(index, component) {
+        let value = this.array[index * this.itemSize + component];
+        if (this.normalized) value = denormalize(value, this.array);
+        return value;
+    }
+    setComponent(index, component, value) {
+        if (this.normalized) value = normalize(value, this.array);
+        this.array[index * this.itemSize + component] = value;
+        return this;
+    }
     getX(index) {
         let x = this.array[index * this.itemSize];
         if (this.normalized) x = denormalize(x, this.array);
@@ -10124,7 +10199,7 @@ class Float64BufferAttribute extends BufferAttribute {
         super(new Float64Array(array), itemSize, normalized);
     }
 }
-let _id$1 = 0;
+let _id$2 = 0;
 const _m1 = /*@__PURE__*/ new Matrix4();
 const _obj = /*@__PURE__*/ new Object3D();
 const _offset = /*@__PURE__*/ new Vector3();
@@ -10136,7 +10211,7 @@ class BufferGeometry extends EventDispatcher {
         super();
         this.isBufferGeometry = true;
         Object.defineProperty(this, "id", {
-            value: _id$1++
+            value: _id$2++
         });
         this.uuid = generateUUID();
         this.name = "";
@@ -10688,7 +10763,7 @@ class Mesh extends Object3D {
         super.copy(source, recursive);
         if (source.morphTargetInfluences !== undefined) this.morphTargetInfluences = source.morphTargetInfluences.slice();
         if (source.morphTargetDictionary !== undefined) this.morphTargetDictionary = Object.assign({}, source.morphTargetDictionary);
-        this.material = source.material;
+        this.material = Array.isArray(source.material) ? source.material.slice() : source.material;
         this.geometry = source.geometry;
         return this;
     }
@@ -11027,7 +11102,7 @@ function cloneUniformsGroups(src) {
 function getUnlitUniformColorSpace(renderer) {
     if (renderer.getRenderTarget() === null) // https://github.com/mrdoob/three.js/pull/23937#issuecomment-1111067398
     return renderer.outputColorSpace;
-    return LinearSRGBColorSpace;
+    return ColorManagement.workingColorSpace;
 }
 // Legacy
 const UniformsUtils = {
@@ -11166,9 +11241,7 @@ class Camera extends Object3D {
         return this;
     }
     getWorldDirection(target) {
-        this.updateWorldMatrix(true, false);
-        const e = this.matrixWorld.elements;
-        return target.set(-e[8], -e[9], -e[10]).normalize();
+        return super.getWorldDirection(target).negate();
     }
     updateMatrixWorld(force) {
         super.updateMatrixWorld(force);
@@ -11339,6 +11412,7 @@ class CubeCamera extends Object3D {
         this.type = "CubeCamera";
         this.renderTarget = renderTarget;
         this.coordinateSystem = null;
+        this.activeMipmapLevel = 0;
         const cameraPX = new PerspectiveCamera(fov, aspect, near, far);
         cameraPX.layers = this.layers;
         this.add(cameraPX);
@@ -11397,34 +11471,35 @@ class CubeCamera extends Object3D {
     }
     update(renderer, scene) {
         if (this.parent === null) this.updateMatrixWorld();
-        const renderTarget = this.renderTarget;
+        const { renderTarget, activeMipmapLevel } = this;
         if (this.coordinateSystem !== renderer.coordinateSystem) {
             this.coordinateSystem = renderer.coordinateSystem;
             this.updateCoordinateSystem();
         }
         const [cameraPX, cameraNX, cameraPY, cameraNY, cameraPZ, cameraNZ] = this.children;
         const currentRenderTarget = renderer.getRenderTarget();
-        const currentToneMapping = renderer.toneMapping;
+        const currentActiveCubeFace = renderer.getActiveCubeFace();
+        const currentActiveMipmapLevel = renderer.getActiveMipmapLevel();
         const currentXrEnabled = renderer.xr.enabled;
-        renderer.toneMapping = NoToneMapping;
         renderer.xr.enabled = false;
         const generateMipmaps = renderTarget.texture.generateMipmaps;
         renderTarget.texture.generateMipmaps = false;
-        renderer.setRenderTarget(renderTarget, 0);
+        renderer.setRenderTarget(renderTarget, 0, activeMipmapLevel);
         renderer.render(scene, cameraPX);
-        renderer.setRenderTarget(renderTarget, 1);
+        renderer.setRenderTarget(renderTarget, 1, activeMipmapLevel);
         renderer.render(scene, cameraNX);
-        renderer.setRenderTarget(renderTarget, 2);
+        renderer.setRenderTarget(renderTarget, 2, activeMipmapLevel);
         renderer.render(scene, cameraPY);
-        renderer.setRenderTarget(renderTarget, 3);
+        renderer.setRenderTarget(renderTarget, 3, activeMipmapLevel);
         renderer.render(scene, cameraNY);
-        renderer.setRenderTarget(renderTarget, 4);
+        renderer.setRenderTarget(renderTarget, 4, activeMipmapLevel);
         renderer.render(scene, cameraPZ);
+        // mipmaps are generated during the last call of render()
+        // at this point, all sides of the cube render target are defined
         renderTarget.texture.generateMipmaps = generateMipmaps;
-        renderer.setRenderTarget(renderTarget, 5);
+        renderer.setRenderTarget(renderTarget, 5, activeMipmapLevel);
         renderer.render(scene, cameraNZ);
-        renderer.setRenderTarget(currentRenderTarget);
-        renderer.toneMapping = currentToneMapping;
+        renderer.setRenderTarget(currentRenderTarget, currentActiveCubeFace, currentActiveMipmapLevel);
         renderer.xr.enabled = currentXrEnabled;
         renderTarget.texture.needsPMREMUpdate = true;
     }
@@ -11926,13 +12001,13 @@ var alphamap_fragment = "#ifdef USE_ALPHAMAP\n	diffuseColor.a *= texture2D( alph
 var alphamap_pars_fragment = "#ifdef USE_ALPHAMAP\n	uniform sampler2D alphaMap;\n#endif";
 var alphatest_fragment = "#ifdef USE_ALPHATEST\n	if ( diffuseColor.a < alphaTest ) discard;\n#endif";
 var alphatest_pars_fragment = "#ifdef USE_ALPHATEST\n	uniform float alphaTest;\n#endif";
-var aomap_fragment = "#ifdef USE_AOMAP\n	float ambientOcclusion = ( texture2D( aoMap, vAoMapUv ).r - 1.0 ) * aoMapIntensity + 1.0;\n	reflectedLight.indirectDiffuse *= ambientOcclusion;\n	#if defined( USE_ENVMAP ) && defined( STANDARD )\n		float dotNV = saturate( dot( geometry.normal, geometry.viewDir ) );\n		reflectedLight.indirectSpecular *= computeSpecularOcclusion( dotNV, ambientOcclusion, material.roughness );\n	#endif\n#endif";
+var aomap_fragment = "#ifdef USE_AOMAP\n	float ambientOcclusion = ( texture2D( aoMap, vAoMapUv ).r - 1.0 ) * aoMapIntensity + 1.0;\n	reflectedLight.indirectDiffuse *= ambientOcclusion;\n	#if defined( USE_CLEARCOAT ) \n		clearcoatSpecularIndirect *= ambientOcclusion;\n	#endif\n	#if defined( USE_SHEEN ) \n		sheenSpecularIndirect *= ambientOcclusion;\n	#endif\n	#if defined( USE_ENVMAP ) && defined( STANDARD )\n		float dotNV = saturate( dot( geometryNormal, geometryViewDir ) );\n		reflectedLight.indirectSpecular *= computeSpecularOcclusion( dotNV, ambientOcclusion, material.roughness );\n	#endif\n#endif";
 var aomap_pars_fragment = "#ifdef USE_AOMAP\n	uniform sampler2D aoMap;\n	uniform float aoMapIntensity;\n#endif";
 var begin_vertex = "vec3 transformed = vec3( position );\n#ifdef USE_ALPHAHASH\n	vPosition = vec3( position );\n#endif";
 var beginnormal_vertex = "vec3 objectNormal = vec3( normal );\n#ifdef USE_TANGENT\n	vec3 objectTangent = vec3( tangent.xyz );\n#endif";
 var bsdfs = "float G_BlinnPhong_Implicit( ) {\n	return 0.25;\n}\nfloat D_BlinnPhong( const in float shininess, const in float dotNH ) {\n	return RECIPROCAL_PI * ( shininess * 0.5 + 1.0 ) * pow( dotNH, shininess );\n}\nvec3 BRDF_BlinnPhong( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in vec3 specularColor, const in float shininess ) {\n	vec3 halfDir = normalize( lightDir + viewDir );\n	float dotNH = saturate( dot( normal, halfDir ) );\n	float dotVH = saturate( dot( viewDir, halfDir ) );\n	vec3 F = F_Schlick( specularColor, 1.0, dotVH );\n	float G = G_BlinnPhong_Implicit( );\n	float D = D_BlinnPhong( shininess, dotNH );\n	return F * ( G * D );\n} // validated";
-var iridescence_fragment = "#ifdef USE_IRIDESCENCE\n	const mat3 XYZ_TO_REC709 = mat3(\n		 3.2404542, -0.9692660,  0.0556434,\n		-1.5371385,  1.8760108, -0.2040259,\n		-0.4985314,  0.0415560,  1.0572252\n	);\n	vec3 Fresnel0ToIor( vec3 fresnel0 ) {\n		vec3 sqrtF0 = sqrt( fresnel0 );\n		return ( vec3( 1.0 ) + sqrtF0 ) / ( vec3( 1.0 ) - sqrtF0 );\n	}\n	vec3 IorToFresnel0( vec3 transmittedIor, float incidentIor ) {\n		return pow2( ( transmittedIor - vec3( incidentIor ) ) / ( transmittedIor + vec3( incidentIor ) ) );\n	}\n	float IorToFresnel0( float transmittedIor, float incidentIor ) {\n		return pow2( ( transmittedIor - incidentIor ) / ( transmittedIor + incidentIor ));\n	}\n	vec3 evalSensitivity( float OPD, vec3 shift ) {\n		float phase = 2.0 * PI * OPD * 1.0e-9;\n		vec3 val = vec3( 5.4856e-13, 4.4201e-13, 5.2481e-13 );\n		vec3 pos = vec3( 1.6810e+06, 1.7953e+06, 2.2084e+06 );\n		vec3 var = vec3( 4.3278e+09, 9.3046e+09, 6.6121e+09 );\n		vec3 xyz = val * sqrt( 2.0 * PI * var ) * cos( pos * phase + shift ) * exp( - pow2( phase ) * var );\n		xyz.x += 9.7470e-14 * sqrt( 2.0 * PI * 4.5282e+09 ) * cos( 2.2399e+06 * phase + shift[ 0 ] ) * exp( - 4.5282e+09 * pow2( phase ) );\n		xyz /= 1.0685e-7;\n		vec3 rgb = XYZ_TO_REC709 * xyz;\n		return rgb;\n	}\n	vec3 evalIridescence( float outsideIOR, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0 ) {\n		vec3 I;\n		float iridescenceIOR = mix( outsideIOR, eta2, smoothstep( 0.0, 0.03, thinFilmThickness ) );\n		float sinTheta2Sq = pow2( outsideIOR / iridescenceIOR ) * ( 1.0 - pow2( cosTheta1 ) );\n		float cosTheta2Sq = 1.0 - sinTheta2Sq;\n		if ( cosTheta2Sq < 0.0 ) {\n			 return vec3( 1.0 );\n		}\n		float cosTheta2 = sqrt( cosTheta2Sq );\n		float R0 = IorToFresnel0( iridescenceIOR, outsideIOR );\n		float R12 = F_Schlick( R0, 1.0, cosTheta1 );\n		float R21 = R12;\n		float T121 = 1.0 - R12;\n		float phi12 = 0.0;\n		if ( iridescenceIOR < outsideIOR ) phi12 = PI;\n		float phi21 = PI - phi12;\n		vec3 baseIOR = Fresnel0ToIor( clamp( baseF0, 0.0, 0.9999 ) );		vec3 R1 = IorToFresnel0( baseIOR, iridescenceIOR );\n		vec3 R23 = F_Schlick( R1, 1.0, cosTheta2 );\n		vec3 phi23 = vec3( 0.0 );\n		if ( baseIOR[ 0 ] < iridescenceIOR ) phi23[ 0 ] = PI;\n		if ( baseIOR[ 1 ] < iridescenceIOR ) phi23[ 1 ] = PI;\n		if ( baseIOR[ 2 ] < iridescenceIOR ) phi23[ 2 ] = PI;\n		float OPD = 2.0 * iridescenceIOR * thinFilmThickness * cosTheta2;\n		vec3 phi = vec3( phi21 ) + phi23;\n		vec3 R123 = clamp( R12 * R23, 1e-5, 0.9999 );\n		vec3 r123 = sqrt( R123 );\n		vec3 Rs = pow2( T121 ) * R23 / ( vec3( 1.0 ) - R123 );\n		vec3 C0 = R12 + Rs;\n		I = C0;\n		vec3 Cm = Rs - T121;\n		for ( int m = 1; m <= 2; ++ m ) {\n			Cm *= r123;\n			vec3 Sm = 2.0 * evalSensitivity( float( m ) * OPD, float( m ) * phi );\n			I += Cm * Sm;\n		}\n		return max( I, vec3( 0.0 ) );\n	}\n#endif";
-var bumpmap_pars_fragment = "#ifdef USE_BUMPMAP\n	uniform sampler2D bumpMap;\n	uniform float bumpScale;\n	vec2 dHdxy_fwd() {\n		vec2 dSTdx = dFdx( vBumpMapUv );\n		vec2 dSTdy = dFdy( vBumpMapUv );\n		float Hll = bumpScale * texture2D( bumpMap, vBumpMapUv ).x;\n		float dBx = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdx ).x - Hll;\n		float dBy = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdy ).x - Hll;\n		return vec2( dBx, dBy );\n	}\n	vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {\n		vec3 vSigmaX = dFdx( surf_pos.xyz );\n		vec3 vSigmaY = dFdy( surf_pos.xyz );\n		vec3 vN = surf_norm;\n		vec3 R1 = cross( vSigmaY, vN );\n		vec3 R2 = cross( vN, vSigmaX );\n		float fDet = dot( vSigmaX, R1 ) * faceDirection;\n		vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );\n		return normalize( abs( fDet ) * surf_norm - vGrad );\n	}\n#endif";
+var iridescence_fragment = "#ifdef USE_IRIDESCENCE\n	const mat3 XYZ_TO_REC709 = mat3(\n		 3.2404542, -0.9692660,  0.0556434,\n		-1.5371385,  1.8760108, -0.2040259,\n		-0.4985314,  0.0415560,  1.0572252\n	);\n	vec3 Fresnel0ToIor( vec3 fresnel0 ) {\n		vec3 sqrtF0 = sqrt( fresnel0 );\n		return ( vec3( 1.0 ) + sqrtF0 ) / ( vec3( 1.0 ) - sqrtF0 );\n	}\n	vec3 IorToFresnel0( vec3 transmittedIor, float incidentIor ) {\n		return pow2( ( transmittedIor - vec3( incidentIor ) ) / ( transmittedIor + vec3( incidentIor ) ) );\n	}\n	float IorToFresnel0( float transmittedIor, float incidentIor ) {\n		return pow2( ( transmittedIor - incidentIor ) / ( transmittedIor + incidentIor ));\n	}\n	vec3 evalSensitivity( float OPD, vec3 shift ) {\n		float phase = 2.0 * PI * OPD * 1.0e-9;\n		vec3 val = vec3( 5.4856e-13, 4.4201e-13, 5.2481e-13 );\n		vec3 pos = vec3( 1.6810e+06, 1.7953e+06, 2.2084e+06 );\n		vec3 var = vec3( 4.3278e+09, 9.3046e+09, 6.6121e+09 );\n		vec3 xyz = val * sqrt( 2.0 * PI * var ) * cos( pos * phase + shift ) * exp( - pow2( phase ) * var );\n		xyz.x += 9.7470e-14 * sqrt( 2.0 * PI * 4.5282e+09 ) * cos( 2.2399e+06 * phase + shift[ 0 ] ) * exp( - 4.5282e+09 * pow2( phase ) );\n		xyz /= 1.0685e-7;\n		vec3 rgb = XYZ_TO_REC709 * xyz;\n		return rgb;\n	}\n	vec3 evalIridescence( float outsideIOR, float eta2, float cosTheta1, float thinFilmThickness, vec3 baseF0 ) {\n		vec3 I;\n		float iridescenceIOR = mix( outsideIOR, eta2, smoothstep( 0.0, 0.03, thinFilmThickness ) );\n		float sinTheta2Sq = pow2( outsideIOR / iridescenceIOR ) * ( 1.0 - pow2( cosTheta1 ) );\n		float cosTheta2Sq = 1.0 - sinTheta2Sq;\n		if ( cosTheta2Sq < 0.0 ) {\n			return vec3( 1.0 );\n		}\n		float cosTheta2 = sqrt( cosTheta2Sq );\n		float R0 = IorToFresnel0( iridescenceIOR, outsideIOR );\n		float R12 = F_Schlick( R0, 1.0, cosTheta1 );\n		float T121 = 1.0 - R12;\n		float phi12 = 0.0;\n		if ( iridescenceIOR < outsideIOR ) phi12 = PI;\n		float phi21 = PI - phi12;\n		vec3 baseIOR = Fresnel0ToIor( clamp( baseF0, 0.0, 0.9999 ) );		vec3 R1 = IorToFresnel0( baseIOR, iridescenceIOR );\n		vec3 R23 = F_Schlick( R1, 1.0, cosTheta2 );\n		vec3 phi23 = vec3( 0.0 );\n		if ( baseIOR[ 0 ] < iridescenceIOR ) phi23[ 0 ] = PI;\n		if ( baseIOR[ 1 ] < iridescenceIOR ) phi23[ 1 ] = PI;\n		if ( baseIOR[ 2 ] < iridescenceIOR ) phi23[ 2 ] = PI;\n		float OPD = 2.0 * iridescenceIOR * thinFilmThickness * cosTheta2;\n		vec3 phi = vec3( phi21 ) + phi23;\n		vec3 R123 = clamp( R12 * R23, 1e-5, 0.9999 );\n		vec3 r123 = sqrt( R123 );\n		vec3 Rs = pow2( T121 ) * R23 / ( vec3( 1.0 ) - R123 );\n		vec3 C0 = R12 + Rs;\n		I = C0;\n		vec3 Cm = Rs - T121;\n		for ( int m = 1; m <= 2; ++ m ) {\n			Cm *= r123;\n			vec3 Sm = 2.0 * evalSensitivity( float( m ) * OPD, float( m ) * phi );\n			I += Cm * Sm;\n		}\n		return max( I, vec3( 0.0 ) );\n	}\n#endif";
+var bumpmap_pars_fragment = "#ifdef USE_BUMPMAP\n	uniform sampler2D bumpMap;\n	uniform float bumpScale;\n	vec2 dHdxy_fwd() {\n		vec2 dSTdx = dFdx( vBumpMapUv );\n		vec2 dSTdy = dFdy( vBumpMapUv );\n		float Hll = bumpScale * texture2D( bumpMap, vBumpMapUv ).x;\n		float dBx = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdx ).x - Hll;\n		float dBy = bumpScale * texture2D( bumpMap, vBumpMapUv + dSTdy ).x - Hll;\n		return vec2( dBx, dBy );\n	}\n	vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {\n		vec3 vSigmaX = normalize( dFdx( surf_pos.xyz ) );\n		vec3 vSigmaY = normalize( dFdy( surf_pos.xyz ) );\n		vec3 vN = surf_norm;\n		vec3 R1 = cross( vSigmaY, vN );\n		vec3 R2 = cross( vN, vSigmaX );\n		float fDet = dot( vSigmaX, R1 ) * faceDirection;\n		vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );\n		return normalize( abs( fDet ) * surf_norm - vGrad );\n	}\n#endif";
 var clipping_planes_fragment = "#if NUM_CLIPPING_PLANES > 0\n	vec4 plane;\n	#pragma unroll_loop_start\n	for ( int i = 0; i < UNION_CLIPPING_PLANES; i ++ ) {\n		plane = clippingPlanes[ i ];\n		if ( dot( vClipPosition, plane.xyz ) > plane.w ) discard;\n	}\n	#pragma unroll_loop_end\n	#if UNION_CLIPPING_PLANES < NUM_CLIPPING_PLANES\n		bool clipped = true;\n		#pragma unroll_loop_start\n		for ( int i = UNION_CLIPPING_PLANES; i < NUM_CLIPPING_PLANES; i ++ ) {\n			plane = clippingPlanes[ i ];\n			clipped = ( dot( vClipPosition, plane.xyz ) > plane.w ) && clipped;\n		}\n		#pragma unroll_loop_end\n		if ( clipped ) discard;\n	#endif\n#endif";
 var clipping_planes_pars_fragment = "#if NUM_CLIPPING_PLANES > 0\n	varying vec3 vClipPosition;\n	uniform vec4 clippingPlanes[ NUM_CLIPPING_PLANES ];\n#endif";
 var clipping_planes_pars_vertex = "#if NUM_CLIPPING_PLANES > 0\n	varying vec3 vClipPosition;\n#endif";
@@ -11941,7 +12016,7 @@ var color_fragment = "#if defined( USE_COLOR_ALPHA )\n	diffuseColor *= vColor;\n
 var color_pars_fragment = "#if defined( USE_COLOR_ALPHA )\n	varying vec4 vColor;\n#elif defined( USE_COLOR )\n	varying vec3 vColor;\n#endif";
 var color_pars_vertex = "#if defined( USE_COLOR_ALPHA )\n	varying vec4 vColor;\n#elif defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n	varying vec3 vColor;\n#endif";
 var color_vertex = "#if defined( USE_COLOR_ALPHA )\n	vColor = vec4( 1.0 );\n#elif defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n	vColor = vec3( 1.0 );\n#endif\n#ifdef USE_COLOR\n	vColor *= color;\n#endif\n#ifdef USE_INSTANCING_COLOR\n	vColor.xyz *= instanceColor.xyz;\n#endif";
-var common = "#define PI 3.141592653589793\n#define PI2 6.283185307179586\n#define PI_HALF 1.5707963267948966\n#define RECIPROCAL_PI 0.3183098861837907\n#define RECIPROCAL_PI2 0.15915494309189535\n#define EPSILON 1e-6\n#ifndef saturate\n#define saturate( a ) clamp( a, 0.0, 1.0 )\n#endif\n#define whiteComplement( a ) ( 1.0 - saturate( a ) )\nfloat pow2( const in float x ) { return x*x; }\nvec3 pow2( const in vec3 x ) { return x*x; }\nfloat pow3( const in float x ) { return x*x*x; }\nfloat pow4( const in float x ) { float x2 = x*x; return x2*x2; }\nfloat max3( const in vec3 v ) { return max( max( v.x, v.y ), v.z ); }\nfloat average( const in vec3 v ) { return dot( v, vec3( 0.3333333 ) ); }\nhighp float rand( const in vec2 uv ) {\n	const highp float a = 12.9898, b = 78.233, c = 43758.5453;\n	highp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );\n	return fract( sin( sn ) * c );\n}\n#ifdef HIGH_PRECISION\n	float precisionSafeLength( vec3 v ) { return length( v ); }\n#else\n	float precisionSafeLength( vec3 v ) {\n		float maxComponent = max3( abs( v ) );\n		return length( v / maxComponent ) * maxComponent;\n	}\n#endif\nstruct IncidentLight {\n	vec3 color;\n	vec3 direction;\n	bool visible;\n};\nstruct ReflectedLight {\n	vec3 directDiffuse;\n	vec3 directSpecular;\n	vec3 indirectDiffuse;\n	vec3 indirectSpecular;\n};\nstruct GeometricContext {\n	vec3 position;\n	vec3 normal;\n	vec3 viewDir;\n#ifdef USE_CLEARCOAT\n	vec3 clearcoatNormal;\n#endif\n};\n#ifdef USE_ALPHAHASH\n	varying vec3 vPosition;\n#endif\nvec3 transformDirection( in vec3 dir, in mat4 matrix ) {\n	return normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );\n}\nvec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {\n	return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );\n}\nmat3 transposeMat3( const in mat3 m ) {\n	mat3 tmp;\n	tmp[ 0 ] = vec3( m[ 0 ].x, m[ 1 ].x, m[ 2 ].x );\n	tmp[ 1 ] = vec3( m[ 0 ].y, m[ 1 ].y, m[ 2 ].y );\n	tmp[ 2 ] = vec3( m[ 0 ].z, m[ 1 ].z, m[ 2 ].z );\n	return tmp;\n}\nfloat luminance( const in vec3 rgb ) {\n	const vec3 weights = vec3( 0.2126729, 0.7151522, 0.0721750 );\n	return dot( weights, rgb );\n}\nbool isPerspectiveMatrix( mat4 m ) {\n	return m[ 2 ][ 3 ] == - 1.0;\n}\nvec2 equirectUv( in vec3 dir ) {\n	float u = atan( dir.z, dir.x ) * RECIPROCAL_PI2 + 0.5;\n	float v = asin( clamp( dir.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;\n	return vec2( u, v );\n}\nvec3 BRDF_Lambert( const in vec3 diffuseColor ) {\n	return RECIPROCAL_PI * diffuseColor;\n}\nvec3 F_Schlick( const in vec3 f0, const in float f90, const in float dotVH ) {\n	float fresnel = exp2( ( - 5.55473 * dotVH - 6.98316 ) * dotVH );\n	return f0 * ( 1.0 - fresnel ) + ( f90 * fresnel );\n}\nfloat F_Schlick( const in float f0, const in float f90, const in float dotVH ) {\n	float fresnel = exp2( ( - 5.55473 * dotVH - 6.98316 ) * dotVH );\n	return f0 * ( 1.0 - fresnel ) + ( f90 * fresnel );\n} // validated";
+var common = "#define PI 3.141592653589793\n#define PI2 6.283185307179586\n#define PI_HALF 1.5707963267948966\n#define RECIPROCAL_PI 0.3183098861837907\n#define RECIPROCAL_PI2 0.15915494309189535\n#define EPSILON 1e-6\n#ifndef saturate\n#define saturate( a ) clamp( a, 0.0, 1.0 )\n#endif\n#define whiteComplement( a ) ( 1.0 - saturate( a ) )\nfloat pow2( const in float x ) { return x*x; }\nvec3 pow2( const in vec3 x ) { return x*x; }\nfloat pow3( const in float x ) { return x*x*x; }\nfloat pow4( const in float x ) { float x2 = x*x; return x2*x2; }\nfloat max3( const in vec3 v ) { return max( max( v.x, v.y ), v.z ); }\nfloat average( const in vec3 v ) { return dot( v, vec3( 0.3333333 ) ); }\nhighp float rand( const in vec2 uv ) {\n	const highp float a = 12.9898, b = 78.233, c = 43758.5453;\n	highp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );\n	return fract( sin( sn ) * c );\n}\n#ifdef HIGH_PRECISION\n	float precisionSafeLength( vec3 v ) { return length( v ); }\n#else\n	float precisionSafeLength( vec3 v ) {\n		float maxComponent = max3( abs( v ) );\n		return length( v / maxComponent ) * maxComponent;\n	}\n#endif\nstruct IncidentLight {\n	vec3 color;\n	vec3 direction;\n	bool visible;\n};\nstruct ReflectedLight {\n	vec3 directDiffuse;\n	vec3 directSpecular;\n	vec3 indirectDiffuse;\n	vec3 indirectSpecular;\n};\n#ifdef USE_ALPHAHASH\n	varying vec3 vPosition;\n#endif\nvec3 transformDirection( in vec3 dir, in mat4 matrix ) {\n	return normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );\n}\nvec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {\n	return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );\n}\nmat3 transposeMat3( const in mat3 m ) {\n	mat3 tmp;\n	tmp[ 0 ] = vec3( m[ 0 ].x, m[ 1 ].x, m[ 2 ].x );\n	tmp[ 1 ] = vec3( m[ 0 ].y, m[ 1 ].y, m[ 2 ].y );\n	tmp[ 2 ] = vec3( m[ 0 ].z, m[ 1 ].z, m[ 2 ].z );\n	return tmp;\n}\nfloat luminance( const in vec3 rgb ) {\n	const vec3 weights = vec3( 0.2126729, 0.7151522, 0.0721750 );\n	return dot( weights, rgb );\n}\nbool isPerspectiveMatrix( mat4 m ) {\n	return m[ 2 ][ 3 ] == - 1.0;\n}\nvec2 equirectUv( in vec3 dir ) {\n	float u = atan( dir.z, dir.x ) * RECIPROCAL_PI2 + 0.5;\n	float v = asin( clamp( dir.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;\n	return vec2( u, v );\n}\nvec3 BRDF_Lambert( const in vec3 diffuseColor ) {\n	return RECIPROCAL_PI * diffuseColor;\n}\nvec3 F_Schlick( const in vec3 f0, const in float f90, const in float dotVH ) {\n	float fresnel = exp2( ( - 5.55473 * dotVH - 6.98316 ) * dotVH );\n	return f0 * ( 1.0 - fresnel ) + ( f90 * fresnel );\n}\nfloat F_Schlick( const in float f0, const in float f90, const in float dotVH ) {\n	float fresnel = exp2( ( - 5.55473 * dotVH - 6.98316 ) * dotVH );\n	return f0 * ( 1.0 - fresnel ) + ( f90 * fresnel );\n} // validated";
 var cube_uv_reflection_fragment = "#ifdef ENVMAP_TYPE_CUBE_UV\n	#define cubeUV_minMipLevel 4.0\n	#define cubeUV_minTileSize 16.0\n	float getFace( vec3 direction ) {\n		vec3 absDirection = abs( direction );\n		float face = - 1.0;\n		if ( absDirection.x > absDirection.z ) {\n			if ( absDirection.x > absDirection.y )\n				face = direction.x > 0.0 ? 0.0 : 3.0;\n			else\n				face = direction.y > 0.0 ? 1.0 : 4.0;\n		} else {\n			if ( absDirection.z > absDirection.y )\n				face = direction.z > 0.0 ? 2.0 : 5.0;\n			else\n				face = direction.y > 0.0 ? 1.0 : 4.0;\n		}\n		return face;\n	}\n	vec2 getUV( vec3 direction, float face ) {\n		vec2 uv;\n		if ( face == 0.0 ) {\n			uv = vec2( direction.z, direction.y ) / abs( direction.x );\n		} else if ( face == 1.0 ) {\n			uv = vec2( - direction.x, - direction.z ) / abs( direction.y );\n		} else if ( face == 2.0 ) {\n			uv = vec2( - direction.x, direction.y ) / abs( direction.z );\n		} else if ( face == 3.0 ) {\n			uv = vec2( - direction.z, direction.y ) / abs( direction.x );\n		} else if ( face == 4.0 ) {\n			uv = vec2( - direction.x, direction.z ) / abs( direction.y );\n		} else {\n			uv = vec2( direction.x, direction.y ) / abs( direction.z );\n		}\n		return 0.5 * ( uv + 1.0 );\n	}\n	vec3 bilinearCubeUV( sampler2D envMap, vec3 direction, float mipInt ) {\n		float face = getFace( direction );\n		float filterInt = max( cubeUV_minMipLevel - mipInt, 0.0 );\n		mipInt = max( mipInt, cubeUV_minMipLevel );\n		float faceSize = exp2( mipInt );\n		highp vec2 uv = getUV( direction, face ) * ( faceSize - 2.0 ) + 1.0;\n		if ( face > 2.0 ) {\n			uv.y += faceSize;\n			face -= 3.0;\n		}\n		uv.x += face * faceSize;\n		uv.x += filterInt * 3.0 * cubeUV_minTileSize;\n		uv.y += 4.0 * ( exp2( CUBEUV_MAX_MIP ) - faceSize );\n		uv.x *= CUBEUV_TEXEL_WIDTH;\n		uv.y *= CUBEUV_TEXEL_HEIGHT;\n		#ifdef texture2DGradEXT\n			return texture2DGradEXT( envMap, uv, vec2( 0.0 ), vec2( 0.0 ) ).rgb;\n		#else\n			return texture2D( envMap, uv ).rgb;\n		#endif\n	}\n	#define cubeUV_r0 1.0\n	#define cubeUV_v0 0.339\n	#define cubeUV_m0 - 2.0\n	#define cubeUV_r1 0.8\n	#define cubeUV_v1 0.276\n	#define cubeUV_m1 - 1.0\n	#define cubeUV_r4 0.4\n	#define cubeUV_v4 0.046\n	#define cubeUV_m4 2.0\n	#define cubeUV_r5 0.305\n	#define cubeUV_v5 0.016\n	#define cubeUV_m5 3.0\n	#define cubeUV_r6 0.21\n	#define cubeUV_v6 0.0038\n	#define cubeUV_m6 4.0\n	float roughnessToMip( float roughness ) {\n		float mip = 0.0;\n		if ( roughness >= cubeUV_r1 ) {\n			mip = ( cubeUV_r0 - roughness ) * ( cubeUV_m1 - cubeUV_m0 ) / ( cubeUV_r0 - cubeUV_r1 ) + cubeUV_m0;\n		} else if ( roughness >= cubeUV_r4 ) {\n			mip = ( cubeUV_r1 - roughness ) * ( cubeUV_m4 - cubeUV_m1 ) / ( cubeUV_r1 - cubeUV_r4 ) + cubeUV_m1;\n		} else if ( roughness >= cubeUV_r5 ) {\n			mip = ( cubeUV_r4 - roughness ) * ( cubeUV_m5 - cubeUV_m4 ) / ( cubeUV_r4 - cubeUV_r5 ) + cubeUV_m4;\n		} else if ( roughness >= cubeUV_r6 ) {\n			mip = ( cubeUV_r5 - roughness ) * ( cubeUV_m6 - cubeUV_m5 ) / ( cubeUV_r5 - cubeUV_r6 ) + cubeUV_m5;\n		} else {\n			mip = - 2.0 * log2( 1.16 * roughness );		}\n		return mip;\n	}\n	vec4 textureCubeUV( sampler2D envMap, vec3 sampleDir, float roughness ) {\n		float mip = clamp( roughnessToMip( roughness ), cubeUV_m0, CUBEUV_MAX_MIP );\n		float mipF = fract( mip );\n		float mipInt = floor( mip );\n		vec3 color0 = bilinearCubeUV( envMap, sampleDir, mipInt );\n		if ( mipF == 0.0 ) {\n			return vec4( color0, 1.0 );\n		} else {\n			vec3 color1 = bilinearCubeUV( envMap, sampleDir, mipInt + 1.0 );\n			return vec4( mix( color0, color1, mipF ), 1.0 );\n		}\n	}\n#endif";
 var defaultnormal_vertex = "vec3 transformedNormal = objectNormal;\n#ifdef USE_INSTANCING\n	mat3 m = mat3( instanceMatrix );\n	transformedNormal /= vec3( dot( m[ 0 ], m[ 0 ] ), dot( m[ 1 ], m[ 1 ] ), dot( m[ 2 ], m[ 2 ] ) );\n	transformedNormal = m * transformedNormal;\n#endif\ntransformedNormal = normalMatrix * transformedNormal;\n#ifdef FLIP_SIDED\n	transformedNormal = - transformedNormal;\n#endif\n#ifdef USE_TANGENT\n	vec3 transformedTangent = ( modelViewMatrix * vec4( objectTangent, 0.0 ) ).xyz;\n	#ifdef FLIP_SIDED\n		transformedTangent = - transformedTangent;\n	#endif\n#endif";
 var displacementmap_pars_vertex = "#ifdef USE_DISPLACEMENTMAP\n	uniform sampler2D displacementMap;\n	uniform float displacementScale;\n	uniform float displacementBias;\n#endif";
@@ -11949,7 +12024,7 @@ var displacementmap_vertex = "#ifdef USE_DISPLACEMENTMAP\n	transformed += normal
 var emissivemap_fragment = "#ifdef USE_EMISSIVEMAP\n	vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );\n	totalEmissiveRadiance *= emissiveColor.rgb;\n#endif";
 var emissivemap_pars_fragment = "#ifdef USE_EMISSIVEMAP\n	uniform sampler2D emissiveMap;\n#endif";
 var colorspace_fragment = "gl_FragColor = linearToOutputTexel( gl_FragColor );";
-var colorspace_pars_fragment = "vec4 LinearToLinear( in vec4 value ) {\n	return value;\n}\nvec4 LinearTosRGB( in vec4 value ) {\n	return vec4( mix( pow( value.rgb, vec3( 0.41666 ) ) * 1.055 - vec3( 0.055 ), value.rgb * 12.92, vec3( lessThanEqual( value.rgb, vec3( 0.0031308 ) ) ) ), value.a );\n}";
+var colorspace_pars_fragment = "\nconst mat3 LINEAR_SRGB_TO_LINEAR_DISPLAY_P3 = mat3(\n	vec3( 0.8224621, 0.177538, 0.0 ),\n	vec3( 0.0331941, 0.9668058, 0.0 ),\n	vec3( 0.0170827, 0.0723974, 0.9105199 )\n);\nconst mat3 LINEAR_DISPLAY_P3_TO_LINEAR_SRGB = mat3(\n	vec3( 1.2249401, - 0.2249404, 0.0 ),\n	vec3( - 0.0420569, 1.0420571, 0.0 ),\n	vec3( - 0.0196376, - 0.0786361, 1.0982735 )\n);\nvec4 LinearSRGBToLinearDisplayP3( in vec4 value ) {\n	return vec4( value.rgb * LINEAR_SRGB_TO_LINEAR_DISPLAY_P3, value.a );\n}\nvec4 LinearDisplayP3ToLinearSRGB( in vec4 value ) {\n	return vec4( value.rgb * LINEAR_DISPLAY_P3_TO_LINEAR_SRGB, value.a );\n}\nvec4 LinearTransferOETF( in vec4 value ) {\n	return value;\n}\nvec4 sRGBTransferOETF( in vec4 value ) {\n	return vec4( mix( pow( value.rgb, vec3( 0.41666 ) ) * 1.055 - vec3( 0.055 ), value.rgb * 12.92, vec3( lessThanEqual( value.rgb, vec3( 0.0031308 ) ) ) ), value.a );\n}\nvec4 LinearToLinear( in vec4 value ) {\n	return value;\n}\nvec4 LinearTosRGB( in vec4 value ) {\n	return sRGBTransferOETF( value );\n}";
 var envmap_fragment = "#ifdef USE_ENVMAP\n	#ifdef ENV_WORLDPOS\n		vec3 cameraToFrag;\n		if ( isOrthographic ) {\n			cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );\n		} else {\n			cameraToFrag = normalize( vWorldPosition - cameraPosition );\n		}\n		vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );\n		#ifdef ENVMAP_MODE_REFLECTION\n			vec3 reflectVec = reflect( cameraToFrag, worldNormal );\n		#else\n			vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );\n		#endif\n	#else\n		vec3 reflectVec = vReflect;\n	#endif\n	#ifdef ENVMAP_TYPE_CUBE\n		vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );\n	#else\n		vec4 envColor = vec4( 0.0 );\n	#endif\n	#ifdef ENVMAP_BLENDING_MULTIPLY\n		outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );\n	#elif defined( ENVMAP_BLENDING_MIX )\n		outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );\n	#elif defined( ENVMAP_BLENDING_ADD )\n		outgoingLight += envColor.xyz * specularStrength * reflectivity;\n	#endif\n#endif";
 var envmap_common_pars_fragment = "#ifdef USE_ENVMAP\n	uniform float envMapIntensity;\n	uniform float flipEnvMap;\n	#ifdef ENVMAP_TYPE_CUBE\n		uniform samplerCube envMap;\n	#else\n		uniform sampler2D envMap;\n	#endif\n	\n#endif";
 var envmap_pars_fragment = "#ifdef USE_ENVMAP\n	uniform float reflectivity;\n	#if defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( PHONG ) || defined( LAMBERT )\n		#define ENV_WORLDPOS\n	#endif\n	#ifdef ENV_WORLDPOS\n		varying vec3 vWorldPosition;\n		uniform float refractionRatio;\n	#else\n		varying vec3 vReflect;\n	#endif\n#endif";
@@ -11963,23 +12038,23 @@ var gradientmap_pars_fragment = "#ifdef USE_GRADIENTMAP\n	uniform sampler2D grad
 var lightmap_fragment = "#ifdef USE_LIGHTMAP\n	vec4 lightMapTexel = texture2D( lightMap, vLightMapUv );\n	vec3 lightMapIrradiance = lightMapTexel.rgb * lightMapIntensity;\n	reflectedLight.indirectDiffuse += lightMapIrradiance;\n#endif";
 var lightmap_pars_fragment = "#ifdef USE_LIGHTMAP\n	uniform sampler2D lightMap;\n	uniform float lightMapIntensity;\n#endif";
 var lights_lambert_fragment = "LambertMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb;\nmaterial.specularStrength = specularStrength;";
-var lights_lambert_pars_fragment = "varying vec3 vViewPosition;\nstruct LambertMaterial {\n	vec3 diffuseColor;\n	float specularStrength;\n};\nvoid RE_Direct_Lambert( const in IncidentLight directLight, const in GeometricContext geometry, const in LambertMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Lambert( const in vec3 irradiance, const in GeometricContext geometry, const in LambertMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_Lambert\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Lambert";
-var lights_pars_begin = "uniform bool receiveShadow;\nuniform vec3 ambientLightColor;\nuniform vec3 lightProbe[ 9 ];\nvec3 shGetIrradianceAt( in vec3 normal, in vec3 shCoefficients[ 9 ] ) {\n	float x = normal.x, y = normal.y, z = normal.z;\n	vec3 result = shCoefficients[ 0 ] * 0.886227;\n	result += shCoefficients[ 1 ] * 2.0 * 0.511664 * y;\n	result += shCoefficients[ 2 ] * 2.0 * 0.511664 * z;\n	result += shCoefficients[ 3 ] * 2.0 * 0.511664 * x;\n	result += shCoefficients[ 4 ] * 2.0 * 0.429043 * x * y;\n	result += shCoefficients[ 5 ] * 2.0 * 0.429043 * y * z;\n	result += shCoefficients[ 6 ] * ( 0.743125 * z * z - 0.247708 );\n	result += shCoefficients[ 7 ] * 2.0 * 0.429043 * x * z;\n	result += shCoefficients[ 8 ] * 0.429043 * ( x * x - y * y );\n	return result;\n}\nvec3 getLightProbeIrradiance( const in vec3 lightProbe[ 9 ], const in vec3 normal ) {\n	vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );\n	vec3 irradiance = shGetIrradianceAt( worldNormal, lightProbe );\n	return irradiance;\n}\nvec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {\n	vec3 irradiance = ambientLightColor;\n	return irradiance;\n}\nfloat getDistanceAttenuation( const in float lightDistance, const in float cutoffDistance, const in float decayExponent ) {\n	#if defined ( LEGACY_LIGHTS )\n		if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) {\n			return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n		}\n		return 1.0;\n	#else\n		float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );\n		if ( cutoffDistance > 0.0 ) {\n			distanceFalloff *= pow2( saturate( 1.0 - pow4( lightDistance / cutoffDistance ) ) );\n		}\n		return distanceFalloff;\n	#endif\n}\nfloat getSpotAttenuation( const in float coneCosine, const in float penumbraCosine, const in float angleCosine ) {\n	return smoothstep( coneCosine, penumbraCosine, angleCosine );\n}\n#if NUM_DIR_LIGHTS > 0\n	struct DirectionalLight {\n		vec3 direction;\n		vec3 color;\n	};\n	uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];\n	void getDirectionalLightInfo( const in DirectionalLight directionalLight, const in GeometricContext geometry, out IncidentLight light ) {\n		light.color = directionalLight.color;\n		light.direction = directionalLight.direction;\n		light.visible = true;\n	}\n#endif\n#if NUM_POINT_LIGHTS > 0\n	struct PointLight {\n		vec3 position;\n		vec3 color;\n		float distance;\n		float decay;\n	};\n	uniform PointLight pointLights[ NUM_POINT_LIGHTS ];\n	void getPointLightInfo( const in PointLight pointLight, const in GeometricContext geometry, out IncidentLight light ) {\n		vec3 lVector = pointLight.position - geometry.position;\n		light.direction = normalize( lVector );\n		float lightDistance = length( lVector );\n		light.color = pointLight.color;\n		light.color *= getDistanceAttenuation( lightDistance, pointLight.distance, pointLight.decay );\n		light.visible = ( light.color != vec3( 0.0 ) );\n	}\n#endif\n#if NUM_SPOT_LIGHTS > 0\n	struct SpotLight {\n		vec3 position;\n		vec3 direction;\n		vec3 color;\n		float distance;\n		float decay;\n		float coneCos;\n		float penumbraCos;\n	};\n	uniform SpotLight spotLights[ NUM_SPOT_LIGHTS ];\n	void getSpotLightInfo( const in SpotLight spotLight, const in GeometricContext geometry, out IncidentLight light ) {\n		vec3 lVector = spotLight.position - geometry.position;\n		light.direction = normalize( lVector );\n		float angleCos = dot( light.direction, spotLight.direction );\n		float spotAttenuation = getSpotAttenuation( spotLight.coneCos, spotLight.penumbraCos, angleCos );\n		if ( spotAttenuation > 0.0 ) {\n			float lightDistance = length( lVector );\n			light.color = spotLight.color * spotAttenuation;\n			light.color *= getDistanceAttenuation( lightDistance, spotLight.distance, spotLight.decay );\n			light.visible = ( light.color != vec3( 0.0 ) );\n		} else {\n			light.color = vec3( 0.0 );\n			light.visible = false;\n		}\n	}\n#endif\n#if NUM_RECT_AREA_LIGHTS > 0\n	struct RectAreaLight {\n		vec3 color;\n		vec3 position;\n		vec3 halfWidth;\n		vec3 halfHeight;\n	};\n	uniform sampler2D ltc_1;	uniform sampler2D ltc_2;\n	uniform RectAreaLight rectAreaLights[ NUM_RECT_AREA_LIGHTS ];\n#endif\n#if NUM_HEMI_LIGHTS > 0\n	struct HemisphereLight {\n		vec3 direction;\n		vec3 skyColor;\n		vec3 groundColor;\n	};\n	uniform HemisphereLight hemisphereLights[ NUM_HEMI_LIGHTS ];\n	vec3 getHemisphereLightIrradiance( const in HemisphereLight hemiLight, const in vec3 normal ) {\n		float dotNL = dot( normal, hemiLight.direction );\n		float hemiDiffuseWeight = 0.5 * dotNL + 0.5;\n		vec3 irradiance = mix( hemiLight.groundColor, hemiLight.skyColor, hemiDiffuseWeight );\n		return irradiance;\n	}\n#endif";
+var lights_lambert_pars_fragment = "varying vec3 vViewPosition;\nstruct LambertMaterial {\n	vec3 diffuseColor;\n	float specularStrength;\n};\nvoid RE_Direct_Lambert( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in LambertMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Lambert( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in LambertMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_Lambert\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Lambert";
+var lights_pars_begin = "uniform bool receiveShadow;\nuniform vec3 ambientLightColor;\n#if defined( USE_LIGHT_PROBES )\n	uniform vec3 lightProbe[ 9 ];\n#endif\nvec3 shGetIrradianceAt( in vec3 normal, in vec3 shCoefficients[ 9 ] ) {\n	float x = normal.x, y = normal.y, z = normal.z;\n	vec3 result = shCoefficients[ 0 ] * 0.886227;\n	result += shCoefficients[ 1 ] * 2.0 * 0.511664 * y;\n	result += shCoefficients[ 2 ] * 2.0 * 0.511664 * z;\n	result += shCoefficients[ 3 ] * 2.0 * 0.511664 * x;\n	result += shCoefficients[ 4 ] * 2.0 * 0.429043 * x * y;\n	result += shCoefficients[ 5 ] * 2.0 * 0.429043 * y * z;\n	result += shCoefficients[ 6 ] * ( 0.743125 * z * z - 0.247708 );\n	result += shCoefficients[ 7 ] * 2.0 * 0.429043 * x * z;\n	result += shCoefficients[ 8 ] * 0.429043 * ( x * x - y * y );\n	return result;\n}\nvec3 getLightProbeIrradiance( const in vec3 lightProbe[ 9 ], const in vec3 normal ) {\n	vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );\n	vec3 irradiance = shGetIrradianceAt( worldNormal, lightProbe );\n	return irradiance;\n}\nvec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {\n	vec3 irradiance = ambientLightColor;\n	return irradiance;\n}\nfloat getDistanceAttenuation( const in float lightDistance, const in float cutoffDistance, const in float decayExponent ) {\n	#if defined ( LEGACY_LIGHTS )\n		if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) {\n			return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n		}\n		return 1.0;\n	#else\n		float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );\n		if ( cutoffDistance > 0.0 ) {\n			distanceFalloff *= pow2( saturate( 1.0 - pow4( lightDistance / cutoffDistance ) ) );\n		}\n		return distanceFalloff;\n	#endif\n}\nfloat getSpotAttenuation( const in float coneCosine, const in float penumbraCosine, const in float angleCosine ) {\n	return smoothstep( coneCosine, penumbraCosine, angleCosine );\n}\n#if NUM_DIR_LIGHTS > 0\n	struct DirectionalLight {\n		vec3 direction;\n		vec3 color;\n	};\n	uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];\n	void getDirectionalLightInfo( const in DirectionalLight directionalLight, out IncidentLight light ) {\n		light.color = directionalLight.color;\n		light.direction = directionalLight.direction;\n		light.visible = true;\n	}\n#endif\n#if NUM_POINT_LIGHTS > 0\n	struct PointLight {\n		vec3 position;\n		vec3 color;\n		float distance;\n		float decay;\n	};\n	uniform PointLight pointLights[ NUM_POINT_LIGHTS ];\n	void getPointLightInfo( const in PointLight pointLight, const in vec3 geometryPosition, out IncidentLight light ) {\n		vec3 lVector = pointLight.position - geometryPosition;\n		light.direction = normalize( lVector );\n		float lightDistance = length( lVector );\n		light.color = pointLight.color;\n		light.color *= getDistanceAttenuation( lightDistance, pointLight.distance, pointLight.decay );\n		light.visible = ( light.color != vec3( 0.0 ) );\n	}\n#endif\n#if NUM_SPOT_LIGHTS > 0\n	struct SpotLight {\n		vec3 position;\n		vec3 direction;\n		vec3 color;\n		float distance;\n		float decay;\n		float coneCos;\n		float penumbraCos;\n	};\n	uniform SpotLight spotLights[ NUM_SPOT_LIGHTS ];\n	void getSpotLightInfo( const in SpotLight spotLight, const in vec3 geometryPosition, out IncidentLight light ) {\n		vec3 lVector = spotLight.position - geometryPosition;\n		light.direction = normalize( lVector );\n		float angleCos = dot( light.direction, spotLight.direction );\n		float spotAttenuation = getSpotAttenuation( spotLight.coneCos, spotLight.penumbraCos, angleCos );\n		if ( spotAttenuation > 0.0 ) {\n			float lightDistance = length( lVector );\n			light.color = spotLight.color * spotAttenuation;\n			light.color *= getDistanceAttenuation( lightDistance, spotLight.distance, spotLight.decay );\n			light.visible = ( light.color != vec3( 0.0 ) );\n		} else {\n			light.color = vec3( 0.0 );\n			light.visible = false;\n		}\n	}\n#endif\n#if NUM_RECT_AREA_LIGHTS > 0\n	struct RectAreaLight {\n		vec3 color;\n		vec3 position;\n		vec3 halfWidth;\n		vec3 halfHeight;\n	};\n	uniform sampler2D ltc_1;	uniform sampler2D ltc_2;\n	uniform RectAreaLight rectAreaLights[ NUM_RECT_AREA_LIGHTS ];\n#endif\n#if NUM_HEMI_LIGHTS > 0\n	struct HemisphereLight {\n		vec3 direction;\n		vec3 skyColor;\n		vec3 groundColor;\n	};\n	uniform HemisphereLight hemisphereLights[ NUM_HEMI_LIGHTS ];\n	vec3 getHemisphereLightIrradiance( const in HemisphereLight hemiLight, const in vec3 normal ) {\n		float dotNL = dot( normal, hemiLight.direction );\n		float hemiDiffuseWeight = 0.5 * dotNL + 0.5;\n		vec3 irradiance = mix( hemiLight.groundColor, hemiLight.skyColor, hemiDiffuseWeight );\n		return irradiance;\n	}\n#endif";
 var envmap_physical_pars_fragment = "#ifdef USE_ENVMAP\n	vec3 getIBLIrradiance( const in vec3 normal ) {\n		#ifdef ENVMAP_TYPE_CUBE_UV\n			vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );\n			vec4 envMapColor = textureCubeUV( envMap, worldNormal, 1.0 );\n			return PI * envMapColor.rgb * envMapIntensity;\n		#else\n			return vec3( 0.0 );\n		#endif\n	}\n	vec3 getIBLRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness ) {\n		#ifdef ENVMAP_TYPE_CUBE_UV\n			vec3 reflectVec = reflect( - viewDir, normal );\n			reflectVec = normalize( mix( reflectVec, normal, roughness * roughness) );\n			reflectVec = inverseTransformDirection( reflectVec, viewMatrix );\n			vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );\n			return envMapColor.rgb * envMapIntensity;\n		#else\n			return vec3( 0.0 );\n		#endif\n	}\n	#ifdef USE_ANISOTROPY\n		vec3 getIBLAnisotropyRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness, const in vec3 bitangent, const in float anisotropy ) {\n			#ifdef ENVMAP_TYPE_CUBE_UV\n				vec3 bentNormal = cross( bitangent, viewDir );\n				bentNormal = normalize( cross( bentNormal, bitangent ) );\n				bentNormal = normalize( mix( bentNormal, normal, pow2( pow2( 1.0 - anisotropy * ( 1.0 - roughness ) ) ) ) );\n				return getIBLRadiance( viewDir, bentNormal, roughness );\n			#else\n				return vec3( 0.0 );\n			#endif\n		}\n	#endif\n#endif";
 var lights_toon_fragment = "ToonMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb;";
-var lights_toon_pars_fragment = "varying vec3 vViewPosition;\nstruct ToonMaterial {\n	vec3 diffuseColor;\n};\nvoid RE_Direct_Toon( const in IncidentLight directLight, const in GeometricContext geometry, const in ToonMaterial material, inout ReflectedLight reflectedLight ) {\n	vec3 irradiance = getGradientIrradiance( geometry.normal, directLight.direction ) * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Toon( const in vec3 irradiance, const in GeometricContext geometry, const in ToonMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_Toon\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Toon";
+var lights_toon_pars_fragment = "varying vec3 vViewPosition;\nstruct ToonMaterial {\n	vec3 diffuseColor;\n};\nvoid RE_Direct_Toon( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in ToonMaterial material, inout ReflectedLight reflectedLight ) {\n	vec3 irradiance = getGradientIrradiance( geometryNormal, directLight.direction ) * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Toon( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in ToonMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_Toon\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Toon";
 var lights_phong_fragment = "BlinnPhongMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb;\nmaterial.specularColor = specular;\nmaterial.specularShininess = shininess;\nmaterial.specularStrength = specularStrength;";
-var lights_phong_pars_fragment = "varying vec3 vViewPosition;\nstruct BlinnPhongMaterial {\n	vec3 diffuseColor;\n	vec3 specularColor;\n	float specularShininess;\n	float specularStrength;\n};\nvoid RE_Direct_BlinnPhong( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n	reflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometry.viewDir, geometry.normal, material.specularColor, material.specularShininess ) * material.specularStrength;\n}\nvoid RE_IndirectDiffuse_BlinnPhong( const in vec3 irradiance, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_BlinnPhong\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_BlinnPhong";
-var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nvec3 dxy = max( abs( dFdx( geometryNormal ) ), abs( dFdy( geometryNormal ) ) );\nfloat geometryRoughness = max( max( dxy.x, dxy.y ), dxy.z );\nmaterial.roughness = max( roughnessFactor, 0.0525 );material.roughness += geometryRoughness;\nmaterial.roughness = min( material.roughness, 1.0 );\n#ifdef IOR\n	material.ior = ior;\n	#ifdef USE_SPECULAR\n		float specularIntensityFactor = specularIntensity;\n		vec3 specularColorFactor = specularColor;\n		#ifdef USE_SPECULAR_COLORMAP\n			specularColorFactor *= texture2D( specularColorMap, vSpecularColorMapUv ).rgb;\n		#endif\n		#ifdef USE_SPECULAR_INTENSITYMAP\n			specularIntensityFactor *= texture2D( specularIntensityMap, vSpecularIntensityMapUv ).a;\n		#endif\n		material.specularF90 = mix( specularIntensityFactor, 1.0, metalnessFactor );\n	#else\n		float specularIntensityFactor = 1.0;\n		vec3 specularColorFactor = vec3( 1.0 );\n		material.specularF90 = 1.0;\n	#endif\n	material.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n#else\n	material.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n	material.specularF90 = 1.0;\n#endif\n#ifdef USE_CLEARCOAT\n	material.clearcoat = clearcoat;\n	material.clearcoatRoughness = clearcoatRoughness;\n	material.clearcoatF0 = vec3( 0.04 );\n	material.clearcoatF90 = 1.0;\n	#ifdef USE_CLEARCOATMAP\n		material.clearcoat *= texture2D( clearcoatMap, vClearcoatMapUv ).x;\n	#endif\n	#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n		material.clearcoatRoughness *= texture2D( clearcoatRoughnessMap, vClearcoatRoughnessMapUv ).y;\n	#endif\n	material.clearcoat = saturate( material.clearcoat );	material.clearcoatRoughness = max( material.clearcoatRoughness, 0.0525 );\n	material.clearcoatRoughness += geometryRoughness;\n	material.clearcoatRoughness = min( material.clearcoatRoughness, 1.0 );\n#endif\n#ifdef USE_IRIDESCENCE\n	material.iridescence = iridescence;\n	material.iridescenceIOR = iridescenceIOR;\n	#ifdef USE_IRIDESCENCEMAP\n		material.iridescence *= texture2D( iridescenceMap, vIridescenceMapUv ).r;\n	#endif\n	#ifdef USE_IRIDESCENCE_THICKNESSMAP\n		material.iridescenceThickness = (iridescenceThicknessMaximum - iridescenceThicknessMinimum) * texture2D( iridescenceThicknessMap, vIridescenceThicknessMapUv ).g + iridescenceThicknessMinimum;\n	#else\n		material.iridescenceThickness = iridescenceThicknessMaximum;\n	#endif\n#endif\n#ifdef USE_SHEEN\n	material.sheenColor = sheenColor;\n	#ifdef USE_SHEEN_COLORMAP\n		material.sheenColor *= texture2D( sheenColorMap, vSheenColorMapUv ).rgb;\n	#endif\n	material.sheenRoughness = clamp( sheenRoughness, 0.07, 1.0 );\n	#ifdef USE_SHEEN_ROUGHNESSMAP\n		material.sheenRoughness *= texture2D( sheenRoughnessMap, vSheenRoughnessMapUv ).a;\n	#endif\n#endif\n#ifdef USE_ANISOTROPY\n	#ifdef USE_ANISOTROPYMAP\n		mat2 anisotropyMat = mat2( anisotropyVector.x, anisotropyVector.y, - anisotropyVector.y, anisotropyVector.x );\n		vec3 anisotropyPolar = texture2D( anisotropyMap, vAnisotropyMapUv ).rgb;\n		vec2 anisotropyV = anisotropyMat * normalize( 2.0 * anisotropyPolar.rg - vec2( 1.0 ) ) * anisotropyPolar.b;\n	#else\n		vec2 anisotropyV = anisotropyVector;\n	#endif\n	material.anisotropy = length( anisotropyV );\n	anisotropyV /= material.anisotropy;\n	material.anisotropy = saturate( material.anisotropy );\n	material.alphaT = mix( pow2( material.roughness ), 1.0, pow2( material.anisotropy ) );\n	material.anisotropyT = tbn[ 0 ] * anisotropyV.x - tbn[ 1 ] * anisotropyV.y;\n	material.anisotropyB = tbn[ 1 ] * anisotropyV.x + tbn[ 0 ] * anisotropyV.y;\n#endif";
-var lights_physical_pars_fragment = "struct PhysicalMaterial {\n	vec3 diffuseColor;\n	float roughness;\n	vec3 specularColor;\n	float specularF90;\n	#ifdef USE_CLEARCOAT\n		float clearcoat;\n		float clearcoatRoughness;\n		vec3 clearcoatF0;\n		float clearcoatF90;\n	#endif\n	#ifdef USE_IRIDESCENCE\n		float iridescence;\n		float iridescenceIOR;\n		float iridescenceThickness;\n		vec3 iridescenceFresnel;\n		vec3 iridescenceF0;\n	#endif\n	#ifdef USE_SHEEN\n		vec3 sheenColor;\n		float sheenRoughness;\n	#endif\n	#ifdef IOR\n		float ior;\n	#endif\n	#ifdef USE_TRANSMISSION\n		float transmission;\n		float transmissionAlpha;\n		float thickness;\n		float attenuationDistance;\n		vec3 attenuationColor;\n	#endif\n	#ifdef USE_ANISOTROPY\n		float anisotropy;\n		float alphaT;\n		vec3 anisotropyT;\n		vec3 anisotropyB;\n	#endif\n};\nvec3 clearcoatSpecular = vec3( 0.0 );\nvec3 sheenSpecular = vec3( 0.0 );\nvec3 Schlick_to_F0( const in vec3 f, const in float f90, const in float dotVH ) {\n    float x = clamp( 1.0 - dotVH, 0.0, 1.0 );\n    float x2 = x * x;\n    float x5 = clamp( x * x2 * x2, 0.0, 0.9999 );\n    return ( f - vec3( f90 ) * x5 ) / ( 1.0 - x5 );\n}\nfloat V_GGX_SmithCorrelated( const in float alpha, const in float dotNL, const in float dotNV ) {\n	float a2 = pow2( alpha );\n	float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );\n	float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );\n	return 0.5 / max( gv + gl, EPSILON );\n}\nfloat D_GGX( const in float alpha, const in float dotNH ) {\n	float a2 = pow2( alpha );\n	float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;\n	return RECIPROCAL_PI * a2 / pow2( denom );\n}\n#ifdef USE_ANISOTROPY\n	float V_GGX_SmithCorrelated_Anisotropic( const in float alphaT, const in float alphaB, const in float dotTV, const in float dotBV, const in float dotTL, const in float dotBL, const in float dotNV, const in float dotNL ) {\n		float gv = dotNL * length( vec3( alphaT * dotTV, alphaB * dotBV, dotNV ) );\n		float gl = dotNV * length( vec3( alphaT * dotTL, alphaB * dotBL, dotNL ) );\n		float v = 0.5 / ( gv + gl );\n		return saturate(v);\n	}\n	float D_GGX_Anisotropic( const in float alphaT, const in float alphaB, const in float dotNH, const in float dotTH, const in float dotBH ) {\n		float a2 = alphaT * alphaB;\n		highp vec3 v = vec3( alphaB * dotTH, alphaT * dotBH, a2 * dotNH );\n		highp float v2 = dot( v, v );\n		float w2 = a2 / v2;\n		return RECIPROCAL_PI * a2 * pow2 ( w2 );\n	}\n#endif\n#ifdef USE_CLEARCOAT\n	vec3 BRDF_GGX_Clearcoat( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material) {\n		vec3 f0 = material.clearcoatF0;\n		float f90 = material.clearcoatF90;\n		float roughness = material.clearcoatRoughness;\n		float alpha = pow2( roughness );\n		vec3 halfDir = normalize( lightDir + viewDir );\n		float dotNL = saturate( dot( normal, lightDir ) );\n		float dotNV = saturate( dot( normal, viewDir ) );\n		float dotNH = saturate( dot( normal, halfDir ) );\n		float dotVH = saturate( dot( viewDir, halfDir ) );\n		vec3 F = F_Schlick( f0, f90, dotVH );\n		float V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n		float D = D_GGX( alpha, dotNH );\n		return F * ( V * D );\n	}\n#endif\nvec3 BRDF_GGX( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material ) {\n	vec3 f0 = material.specularColor;\n	float f90 = material.specularF90;\n	float roughness = material.roughness;\n	float alpha = pow2( roughness );\n	vec3 halfDir = normalize( lightDir + viewDir );\n	float dotNL = saturate( dot( normal, lightDir ) );\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float dotNH = saturate( dot( normal, halfDir ) );\n	float dotVH = saturate( dot( viewDir, halfDir ) );\n	vec3 F = F_Schlick( f0, f90, dotVH );\n	#ifdef USE_IRIDESCENCE\n		F = mix( F, material.iridescenceFresnel, material.iridescence );\n	#endif\n	#ifdef USE_ANISOTROPY\n		float dotTL = dot( material.anisotropyT, lightDir );\n		float dotTV = dot( material.anisotropyT, viewDir );\n		float dotTH = dot( material.anisotropyT, halfDir );\n		float dotBL = dot( material.anisotropyB, lightDir );\n		float dotBV = dot( material.anisotropyB, viewDir );\n		float dotBH = dot( material.anisotropyB, halfDir );\n		float V = V_GGX_SmithCorrelated_Anisotropic( material.alphaT, alpha, dotTV, dotBV, dotTL, dotBL, dotNV, dotNL );\n		float D = D_GGX_Anisotropic( material.alphaT, alpha, dotNH, dotTH, dotBH );\n	#else\n		float V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n		float D = D_GGX( alpha, dotNH );\n	#endif\n	return F * ( V * D );\n}\nvec2 LTC_Uv( const in vec3 N, const in vec3 V, const in float roughness ) {\n	const float LUT_SIZE = 64.0;\n	const float LUT_SCALE = ( LUT_SIZE - 1.0 ) / LUT_SIZE;\n	const float LUT_BIAS = 0.5 / LUT_SIZE;\n	float dotNV = saturate( dot( N, V ) );\n	vec2 uv = vec2( roughness, sqrt( 1.0 - dotNV ) );\n	uv = uv * LUT_SCALE + LUT_BIAS;\n	return uv;\n}\nfloat LTC_ClippedSphereFormFactor( const in vec3 f ) {\n	float l = length( f );\n	return max( ( l * l + f.z ) / ( l + 1.0 ), 0.0 );\n}\nvec3 LTC_EdgeVectorFormFactor( const in vec3 v1, const in vec3 v2 ) {\n	float x = dot( v1, v2 );\n	float y = abs( x );\n	float a = 0.8543985 + ( 0.4965155 + 0.0145206 * y ) * y;\n	float b = 3.4175940 + ( 4.1616724 + y ) * y;\n	float v = a / b;\n	float theta_sintheta = ( x > 0.0 ) ? v : 0.5 * inversesqrt( max( 1.0 - x * x, 1e-7 ) ) - v;\n	return cross( v1, v2 ) * theta_sintheta;\n}\nvec3 LTC_Evaluate( const in vec3 N, const in vec3 V, const in vec3 P, const in mat3 mInv, const in vec3 rectCoords[ 4 ] ) {\n	vec3 v1 = rectCoords[ 1 ] - rectCoords[ 0 ];\n	vec3 v2 = rectCoords[ 3 ] - rectCoords[ 0 ];\n	vec3 lightNormal = cross( v1, v2 );\n	if( dot( lightNormal, P - rectCoords[ 0 ] ) < 0.0 ) return vec3( 0.0 );\n	vec3 T1, T2;\n	T1 = normalize( V - N * dot( V, N ) );\n	T2 = - cross( N, T1 );\n	mat3 mat = mInv * transposeMat3( mat3( T1, T2, N ) );\n	vec3 coords[ 4 ];\n	coords[ 0 ] = mat * ( rectCoords[ 0 ] - P );\n	coords[ 1 ] = mat * ( rectCoords[ 1 ] - P );\n	coords[ 2 ] = mat * ( rectCoords[ 2 ] - P );\n	coords[ 3 ] = mat * ( rectCoords[ 3 ] - P );\n	coords[ 0 ] = normalize( coords[ 0 ] );\n	coords[ 1 ] = normalize( coords[ 1 ] );\n	coords[ 2 ] = normalize( coords[ 2 ] );\n	coords[ 3 ] = normalize( coords[ 3 ] );\n	vec3 vectorFormFactor = vec3( 0.0 );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 0 ], coords[ 1 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 1 ], coords[ 2 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 2 ], coords[ 3 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 3 ], coords[ 0 ] );\n	float result = LTC_ClippedSphereFormFactor( vectorFormFactor );\n	return vec3( result );\n}\n#if defined( USE_SHEEN )\nfloat D_Charlie( float roughness, float dotNH ) {\n	float alpha = pow2( roughness );\n	float invAlpha = 1.0 / alpha;\n	float cos2h = dotNH * dotNH;\n	float sin2h = max( 1.0 - cos2h, 0.0078125 );\n	return ( 2.0 + invAlpha ) * pow( sin2h, invAlpha * 0.5 ) / ( 2.0 * PI );\n}\nfloat V_Neubelt( float dotNV, float dotNL ) {\n	return saturate( 1.0 / ( 4.0 * ( dotNL + dotNV - dotNL * dotNV ) ) );\n}\nvec3 BRDF_Sheen( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, vec3 sheenColor, const in float sheenRoughness ) {\n	vec3 halfDir = normalize( lightDir + viewDir );\n	float dotNL = saturate( dot( normal, lightDir ) );\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float dotNH = saturate( dot( normal, halfDir ) );\n	float D = D_Charlie( sheenRoughness, dotNH );\n	float V = V_Neubelt( dotNV, dotNL );\n	return sheenColor * ( D * V );\n}\n#endif\nfloat IBLSheenBRDF( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float r2 = roughness * roughness;\n	float a = roughness < 0.25 ? -339.2 * r2 + 161.4 * roughness - 25.9 : -8.48 * r2 + 14.3 * roughness - 9.95;\n	float b = roughness < 0.25 ? 44.0 * r2 - 23.7 * roughness + 3.26 : 1.97 * r2 - 3.27 * roughness + 0.72;\n	float DG = exp( a * dotNV + b ) + ( roughness < 0.25 ? 0.0 : 0.1 * ( roughness - 0.25 ) );\n	return saturate( DG * RECIPROCAL_PI );\n}\nvec2 DFGApprox( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n	float dotNV = saturate( dot( normal, viewDir ) );\n	const vec4 c0 = vec4( - 1, - 0.0275, - 0.572, 0.022 );\n	const vec4 c1 = vec4( 1, 0.0425, 1.04, - 0.04 );\n	vec4 r = roughness * c0 + c1;\n	float a004 = min( r.x * r.x, exp2( - 9.28 * dotNV ) ) * r.x + r.y;\n	vec2 fab = vec2( - 1.04, 1.04 ) * a004 + r.zw;\n	return fab;\n}\nvec3 EnvironmentBRDF( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness ) {\n	vec2 fab = DFGApprox( normal, viewDir, roughness );\n	return specularColor * fab.x + specularF90 * fab.y;\n}\n#ifdef USE_IRIDESCENCE\nvoid computeMultiscatteringIridescence( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float iridescence, const in vec3 iridescenceF0, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#else\nvoid computeMultiscattering( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#endif\n	vec2 fab = DFGApprox( normal, viewDir, roughness );\n	#ifdef USE_IRIDESCENCE\n		vec3 Fr = mix( specularColor, iridescenceF0, iridescence );\n	#else\n		vec3 Fr = specularColor;\n	#endif\n	vec3 FssEss = Fr * fab.x + specularF90 * fab.y;\n	float Ess = fab.x + fab.y;\n	float Ems = 1.0 - Ess;\n	vec3 Favg = Fr + ( 1.0 - Fr ) * 0.047619;	vec3 Fms = FssEss * Favg / ( 1.0 - Ems * Favg );\n	singleScatter += FssEss;\n	multiScatter += Fms * Ems;\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n	void RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n		vec3 normal = geometry.normal;\n		vec3 viewDir = geometry.viewDir;\n		vec3 position = geometry.position;\n		vec3 lightPos = rectAreaLight.position;\n		vec3 halfWidth = rectAreaLight.halfWidth;\n		vec3 halfHeight = rectAreaLight.halfHeight;\n		vec3 lightColor = rectAreaLight.color;\n		float roughness = material.roughness;\n		vec3 rectCoords[ 4 ];\n		rectCoords[ 0 ] = lightPos + halfWidth - halfHeight;		rectCoords[ 1 ] = lightPos - halfWidth - halfHeight;\n		rectCoords[ 2 ] = lightPos - halfWidth + halfHeight;\n		rectCoords[ 3 ] = lightPos + halfWidth + halfHeight;\n		vec2 uv = LTC_Uv( normal, viewDir, roughness );\n		vec4 t1 = texture2D( ltc_1, uv );\n		vec4 t2 = texture2D( ltc_2, uv );\n		mat3 mInv = mat3(\n			vec3( t1.x, 0, t1.y ),\n			vec3(    0, 1,    0 ),\n			vec3( t1.z, 0, t1.w )\n		);\n		vec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n		reflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n		reflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n	}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	#ifdef USE_CLEARCOAT\n		float dotNLcc = saturate( dot( geometry.clearcoatNormal, directLight.direction ) );\n		vec3 ccIrradiance = dotNLcc * directLight.color;\n		clearcoatSpecular += ccIrradiance * BRDF_GGX_Clearcoat( directLight.direction, geometry.viewDir, geometry.clearcoatNormal, material );\n	#endif\n	#ifdef USE_SHEEN\n		sheenSpecular += irradiance * BRDF_Sheen( directLight.direction, geometry.viewDir, geometry.normal, material.sheenColor, material.sheenRoughness );\n	#endif\n	reflectedLight.directSpecular += irradiance * BRDF_GGX( directLight.direction, geometry.viewDir, geometry.normal, material );\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 irradiance, const in vec3 clearcoatRadiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight) {\n	#ifdef USE_CLEARCOAT\n		clearcoatSpecular += clearcoatRadiance * EnvironmentBRDF( geometry.clearcoatNormal, geometry.viewDir, material.clearcoatF0, material.clearcoatF90, material.clearcoatRoughness );\n	#endif\n	#ifdef USE_SHEEN\n		sheenSpecular += irradiance * material.sheenColor * IBLSheenBRDF( geometry.normal, geometry.viewDir, material.sheenRoughness );\n	#endif\n	vec3 singleScattering = vec3( 0.0 );\n	vec3 multiScattering = vec3( 0.0 );\n	vec3 cosineWeightedIrradiance = irradiance * RECIPROCAL_PI;\n	#ifdef USE_IRIDESCENCE\n		computeMultiscatteringIridescence( geometry.normal, geometry.viewDir, material.specularColor, material.specularF90, material.iridescence, material.iridescenceFresnel, material.roughness, singleScattering, multiScattering );\n	#else\n		computeMultiscattering( geometry.normal, geometry.viewDir, material.specularColor, material.specularF90, material.roughness, singleScattering, multiScattering );\n	#endif\n	vec3 totalScattering = singleScattering + multiScattering;\n	vec3 diffuse = material.diffuseColor * ( 1.0 - max( max( totalScattering.r, totalScattering.g ), totalScattering.b ) );\n	reflectedLight.indirectSpecular += radiance * singleScattering;\n	reflectedLight.indirectSpecular += multiScattering * cosineWeightedIrradiance;\n	reflectedLight.indirectDiffuse += diffuse * cosineWeightedIrradiance;\n}\n#define RE_Direct				RE_Direct_Physical\n#define RE_Direct_RectArea		RE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular		RE_IndirectSpecular_Physical\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n	return saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
-var lights_fragment_begin = "\nGeometricContext geometry;\ngeometry.position = - vViewPosition;\ngeometry.normal = normal;\ngeometry.viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\n#ifdef USE_CLEARCOAT\n	geometry.clearcoatNormal = clearcoatNormal;\n#endif\n#ifdef USE_IRIDESCENCE\n	float dotNVi = saturate( dot( normal, geometry.viewDir ) );\n	if ( material.iridescenceThickness == 0.0 ) {\n		material.iridescence = 0.0;\n	} else {\n		material.iridescence = saturate( material.iridescence );\n	}\n	if ( material.iridescence > 0.0 ) {\n		material.iridescenceFresnel = evalIridescence( 1.0, material.iridescenceIOR, dotNVi, material.iridescenceThickness, material.specularColor );\n		material.iridescenceF0 = Schlick_to_F0( material.iridescenceFresnel, 1.0, dotNVi );\n	}\n#endif\nIncidentLight directLight;\n#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n	PointLight pointLight;\n	#if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0\n	PointLightShadow pointLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n		pointLight = pointLights[ i ];\n		getPointLightInfo( pointLight, geometry, directLight );\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )\n		pointLightShadow = pointLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometry, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n	SpotLight spotLight;\n	vec4 spotColor;\n	vec3 spotLightCoord;\n	bool inSpotLightMap;\n	#if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0\n	SpotLightShadow spotLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n		spotLight = spotLights[ i ];\n		getSpotLightInfo( spotLight, geometry, directLight );\n		#if ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS_WITH_MAPS )\n		#define SPOT_LIGHT_MAP_INDEX UNROLLED_LOOP_INDEX\n		#elif ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n		#define SPOT_LIGHT_MAP_INDEX NUM_SPOT_LIGHT_MAPS\n		#else\n		#define SPOT_LIGHT_MAP_INDEX ( UNROLLED_LOOP_INDEX - NUM_SPOT_LIGHT_SHADOWS + NUM_SPOT_LIGHT_SHADOWS_WITH_MAPS )\n		#endif\n		#if ( SPOT_LIGHT_MAP_INDEX < NUM_SPOT_LIGHT_MAPS )\n			spotLightCoord = vSpotLightCoord[ i ].xyz / vSpotLightCoord[ i ].w;\n			inSpotLightMap = all( lessThan( abs( spotLightCoord * 2. - 1. ), vec3( 1.0 ) ) );\n			spotColor = texture2D( spotLightMap[ SPOT_LIGHT_MAP_INDEX ], spotLightCoord.xy );\n			directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color;\n		#endif\n		#undef SPOT_LIGHT_MAP_INDEX\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n		spotLightShadow = spotLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotLightCoord[ i ] ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometry, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n	DirectionalLight directionalLight;\n	#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0\n	DirectionalLightShadow directionalLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n		directionalLight = directionalLights[ i ];\n		getDirectionalLightInfo( directionalLight, geometry, directLight );\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )\n		directionalLightShadow = directionalLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometry, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n	RectAreaLight rectAreaLight;\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n		rectAreaLight = rectAreaLights[ i ];\n		RE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if defined( RE_IndirectDiffuse )\n	vec3 iblIrradiance = vec3( 0.0 );\n	vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n	irradiance += getLightProbeIrradiance( lightProbe, geometry.normal );\n	#if ( NUM_HEMI_LIGHTS > 0 )\n		#pragma unroll_loop_start\n		for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n			irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry.normal );\n		}\n		#pragma unroll_loop_end\n	#endif\n#endif\n#if defined( RE_IndirectSpecular )\n	vec3 radiance = vec3( 0.0 );\n	vec3 clearcoatRadiance = vec3( 0.0 );\n#endif";
-var lights_fragment_maps = "#if defined( RE_IndirectDiffuse )\n	#ifdef USE_LIGHTMAP\n		vec4 lightMapTexel = texture2D( lightMap, vLightMapUv );\n		vec3 lightMapIrradiance = lightMapTexel.rgb * lightMapIntensity;\n		irradiance += lightMapIrradiance;\n	#endif\n	#if defined( USE_ENVMAP ) && defined( STANDARD ) && defined( ENVMAP_TYPE_CUBE_UV )\n		iblIrradiance += getIBLIrradiance( geometry.normal );\n	#endif\n#endif\n#if defined( USE_ENVMAP ) && defined( RE_IndirectSpecular )\n	#ifdef USE_ANISOTROPY\n		radiance += getIBLAnisotropyRadiance( geometry.viewDir, geometry.normal, material.roughness, material.anisotropyB, material.anisotropy );\n	#else\n		radiance += getIBLRadiance( geometry.viewDir, geometry.normal, material.roughness );\n	#endif\n	#ifdef USE_CLEARCOAT\n		clearcoatRadiance += getIBLRadiance( geometry.viewDir, geometry.clearcoatNormal, material.clearcoatRoughness );\n	#endif\n#endif";
-var lights_fragment_end = "#if defined( RE_IndirectDiffuse )\n	RE_IndirectDiffuse( irradiance, geometry, material, reflectedLight );\n#endif\n#if defined( RE_IndirectSpecular )\n	RE_IndirectSpecular( radiance, iblIrradiance, clearcoatRadiance, geometry, material, reflectedLight );\n#endif";
+var lights_phong_pars_fragment = "varying vec3 vViewPosition;\nstruct BlinnPhongMaterial {\n	vec3 diffuseColor;\n	vec3 specularColor;\n	float specularShininess;\n	float specularStrength;\n};\nvoid RE_Direct_BlinnPhong( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n	reflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometryViewDir, geometryNormal, material.specularColor, material.specularShininess ) * material.specularStrength;\n}\nvoid RE_IndirectDiffuse_BlinnPhong( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\n#define RE_Direct				RE_Direct_BlinnPhong\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_BlinnPhong";
+var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nvec3 dxy = max( abs( dFdx( nonPerturbedNormal ) ), abs( dFdy( nonPerturbedNormal ) ) );\nfloat geometryRoughness = max( max( dxy.x, dxy.y ), dxy.z );\nmaterial.roughness = max( roughnessFactor, 0.0525 );material.roughness += geometryRoughness;\nmaterial.roughness = min( material.roughness, 1.0 );\n#ifdef IOR\n	material.ior = ior;\n	#ifdef USE_SPECULAR\n		float specularIntensityFactor = specularIntensity;\n		vec3 specularColorFactor = specularColor;\n		#ifdef USE_SPECULAR_COLORMAP\n			specularColorFactor *= texture2D( specularColorMap, vSpecularColorMapUv ).rgb;\n		#endif\n		#ifdef USE_SPECULAR_INTENSITYMAP\n			specularIntensityFactor *= texture2D( specularIntensityMap, vSpecularIntensityMapUv ).a;\n		#endif\n		material.specularF90 = mix( specularIntensityFactor, 1.0, metalnessFactor );\n	#else\n		float specularIntensityFactor = 1.0;\n		vec3 specularColorFactor = vec3( 1.0 );\n		material.specularF90 = 1.0;\n	#endif\n	material.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n#else\n	material.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n	material.specularF90 = 1.0;\n#endif\n#ifdef USE_CLEARCOAT\n	material.clearcoat = clearcoat;\n	material.clearcoatRoughness = clearcoatRoughness;\n	material.clearcoatF0 = vec3( 0.04 );\n	material.clearcoatF90 = 1.0;\n	#ifdef USE_CLEARCOATMAP\n		material.clearcoat *= texture2D( clearcoatMap, vClearcoatMapUv ).x;\n	#endif\n	#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n		material.clearcoatRoughness *= texture2D( clearcoatRoughnessMap, vClearcoatRoughnessMapUv ).y;\n	#endif\n	material.clearcoat = saturate( material.clearcoat );	material.clearcoatRoughness = max( material.clearcoatRoughness, 0.0525 );\n	material.clearcoatRoughness += geometryRoughness;\n	material.clearcoatRoughness = min( material.clearcoatRoughness, 1.0 );\n#endif\n#ifdef USE_IRIDESCENCE\n	material.iridescence = iridescence;\n	material.iridescenceIOR = iridescenceIOR;\n	#ifdef USE_IRIDESCENCEMAP\n		material.iridescence *= texture2D( iridescenceMap, vIridescenceMapUv ).r;\n	#endif\n	#ifdef USE_IRIDESCENCE_THICKNESSMAP\n		material.iridescenceThickness = (iridescenceThicknessMaximum - iridescenceThicknessMinimum) * texture2D( iridescenceThicknessMap, vIridescenceThicknessMapUv ).g + iridescenceThicknessMinimum;\n	#else\n		material.iridescenceThickness = iridescenceThicknessMaximum;\n	#endif\n#endif\n#ifdef USE_SHEEN\n	material.sheenColor = sheenColor;\n	#ifdef USE_SHEEN_COLORMAP\n		material.sheenColor *= texture2D( sheenColorMap, vSheenColorMapUv ).rgb;\n	#endif\n	material.sheenRoughness = clamp( sheenRoughness, 0.07, 1.0 );\n	#ifdef USE_SHEEN_ROUGHNESSMAP\n		material.sheenRoughness *= texture2D( sheenRoughnessMap, vSheenRoughnessMapUv ).a;\n	#endif\n#endif\n#ifdef USE_ANISOTROPY\n	#ifdef USE_ANISOTROPYMAP\n		mat2 anisotropyMat = mat2( anisotropyVector.x, anisotropyVector.y, - anisotropyVector.y, anisotropyVector.x );\n		vec3 anisotropyPolar = texture2D( anisotropyMap, vAnisotropyMapUv ).rgb;\n		vec2 anisotropyV = anisotropyMat * normalize( 2.0 * anisotropyPolar.rg - vec2( 1.0 ) ) * anisotropyPolar.b;\n	#else\n		vec2 anisotropyV = anisotropyVector;\n	#endif\n	material.anisotropy = length( anisotropyV );\n	anisotropyV /= material.anisotropy;\n	material.anisotropy = saturate( material.anisotropy );\n	material.alphaT = mix( pow2( material.roughness ), 1.0, pow2( material.anisotropy ) );\n	material.anisotropyT = tbn[ 0 ] * anisotropyV.x - tbn[ 1 ] * anisotropyV.y;\n	material.anisotropyB = tbn[ 1 ] * anisotropyV.x + tbn[ 0 ] * anisotropyV.y;\n#endif";
+var lights_physical_pars_fragment = "struct PhysicalMaterial {\n	vec3 diffuseColor;\n	float roughness;\n	vec3 specularColor;\n	float specularF90;\n	#ifdef USE_CLEARCOAT\n		float clearcoat;\n		float clearcoatRoughness;\n		vec3 clearcoatF0;\n		float clearcoatF90;\n	#endif\n	#ifdef USE_IRIDESCENCE\n		float iridescence;\n		float iridescenceIOR;\n		float iridescenceThickness;\n		vec3 iridescenceFresnel;\n		vec3 iridescenceF0;\n	#endif\n	#ifdef USE_SHEEN\n		vec3 sheenColor;\n		float sheenRoughness;\n	#endif\n	#ifdef IOR\n		float ior;\n	#endif\n	#ifdef USE_TRANSMISSION\n		float transmission;\n		float transmissionAlpha;\n		float thickness;\n		float attenuationDistance;\n		vec3 attenuationColor;\n	#endif\n	#ifdef USE_ANISOTROPY\n		float anisotropy;\n		float alphaT;\n		vec3 anisotropyT;\n		vec3 anisotropyB;\n	#endif\n};\nvec3 clearcoatSpecularDirect = vec3( 0.0 );\nvec3 clearcoatSpecularIndirect = vec3( 0.0 );\nvec3 sheenSpecularDirect = vec3( 0.0 );\nvec3 sheenSpecularIndirect = vec3(0.0 );\nvec3 Schlick_to_F0( const in vec3 f, const in float f90, const in float dotVH ) {\n    float x = clamp( 1.0 - dotVH, 0.0, 1.0 );\n    float x2 = x * x;\n    float x5 = clamp( x * x2 * x2, 0.0, 0.9999 );\n    return ( f - vec3( f90 ) * x5 ) / ( 1.0 - x5 );\n}\nfloat V_GGX_SmithCorrelated( const in float alpha, const in float dotNL, const in float dotNV ) {\n	float a2 = pow2( alpha );\n	float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );\n	float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );\n	return 0.5 / max( gv + gl, EPSILON );\n}\nfloat D_GGX( const in float alpha, const in float dotNH ) {\n	float a2 = pow2( alpha );\n	float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;\n	return RECIPROCAL_PI * a2 / pow2( denom );\n}\n#ifdef USE_ANISOTROPY\n	float V_GGX_SmithCorrelated_Anisotropic( const in float alphaT, const in float alphaB, const in float dotTV, const in float dotBV, const in float dotTL, const in float dotBL, const in float dotNV, const in float dotNL ) {\n		float gv = dotNL * length( vec3( alphaT * dotTV, alphaB * dotBV, dotNV ) );\n		float gl = dotNV * length( vec3( alphaT * dotTL, alphaB * dotBL, dotNL ) );\n		float v = 0.5 / ( gv + gl );\n		return saturate(v);\n	}\n	float D_GGX_Anisotropic( const in float alphaT, const in float alphaB, const in float dotNH, const in float dotTH, const in float dotBH ) {\n		float a2 = alphaT * alphaB;\n		highp vec3 v = vec3( alphaB * dotTH, alphaT * dotBH, a2 * dotNH );\n		highp float v2 = dot( v, v );\n		float w2 = a2 / v2;\n		return RECIPROCAL_PI * a2 * pow2 ( w2 );\n	}\n#endif\n#ifdef USE_CLEARCOAT\n	vec3 BRDF_GGX_Clearcoat( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material) {\n		vec3 f0 = material.clearcoatF0;\n		float f90 = material.clearcoatF90;\n		float roughness = material.clearcoatRoughness;\n		float alpha = pow2( roughness );\n		vec3 halfDir = normalize( lightDir + viewDir );\n		float dotNL = saturate( dot( normal, lightDir ) );\n		float dotNV = saturate( dot( normal, viewDir ) );\n		float dotNH = saturate( dot( normal, halfDir ) );\n		float dotVH = saturate( dot( viewDir, halfDir ) );\n		vec3 F = F_Schlick( f0, f90, dotVH );\n		float V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n		float D = D_GGX( alpha, dotNH );\n		return F * ( V * D );\n	}\n#endif\nvec3 BRDF_GGX( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in PhysicalMaterial material ) {\n	vec3 f0 = material.specularColor;\n	float f90 = material.specularF90;\n	float roughness = material.roughness;\n	float alpha = pow2( roughness );\n	vec3 halfDir = normalize( lightDir + viewDir );\n	float dotNL = saturate( dot( normal, lightDir ) );\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float dotNH = saturate( dot( normal, halfDir ) );\n	float dotVH = saturate( dot( viewDir, halfDir ) );\n	vec3 F = F_Schlick( f0, f90, dotVH );\n	#ifdef USE_IRIDESCENCE\n		F = mix( F, material.iridescenceFresnel, material.iridescence );\n	#endif\n	#ifdef USE_ANISOTROPY\n		float dotTL = dot( material.anisotropyT, lightDir );\n		float dotTV = dot( material.anisotropyT, viewDir );\n		float dotTH = dot( material.anisotropyT, halfDir );\n		float dotBL = dot( material.anisotropyB, lightDir );\n		float dotBV = dot( material.anisotropyB, viewDir );\n		float dotBH = dot( material.anisotropyB, halfDir );\n		float V = V_GGX_SmithCorrelated_Anisotropic( material.alphaT, alpha, dotTV, dotBV, dotTL, dotBL, dotNV, dotNL );\n		float D = D_GGX_Anisotropic( material.alphaT, alpha, dotNH, dotTH, dotBH );\n	#else\n		float V = V_GGX_SmithCorrelated( alpha, dotNL, dotNV );\n		float D = D_GGX( alpha, dotNH );\n	#endif\n	return F * ( V * D );\n}\nvec2 LTC_Uv( const in vec3 N, const in vec3 V, const in float roughness ) {\n	const float LUT_SIZE = 64.0;\n	const float LUT_SCALE = ( LUT_SIZE - 1.0 ) / LUT_SIZE;\n	const float LUT_BIAS = 0.5 / LUT_SIZE;\n	float dotNV = saturate( dot( N, V ) );\n	vec2 uv = vec2( roughness, sqrt( 1.0 - dotNV ) );\n	uv = uv * LUT_SCALE + LUT_BIAS;\n	return uv;\n}\nfloat LTC_ClippedSphereFormFactor( const in vec3 f ) {\n	float l = length( f );\n	return max( ( l * l + f.z ) / ( l + 1.0 ), 0.0 );\n}\nvec3 LTC_EdgeVectorFormFactor( const in vec3 v1, const in vec3 v2 ) {\n	float x = dot( v1, v2 );\n	float y = abs( x );\n	float a = 0.8543985 + ( 0.4965155 + 0.0145206 * y ) * y;\n	float b = 3.4175940 + ( 4.1616724 + y ) * y;\n	float v = a / b;\n	float theta_sintheta = ( x > 0.0 ) ? v : 0.5 * inversesqrt( max( 1.0 - x * x, 1e-7 ) ) - v;\n	return cross( v1, v2 ) * theta_sintheta;\n}\nvec3 LTC_Evaluate( const in vec3 N, const in vec3 V, const in vec3 P, const in mat3 mInv, const in vec3 rectCoords[ 4 ] ) {\n	vec3 v1 = rectCoords[ 1 ] - rectCoords[ 0 ];\n	vec3 v2 = rectCoords[ 3 ] - rectCoords[ 0 ];\n	vec3 lightNormal = cross( v1, v2 );\n	if( dot( lightNormal, P - rectCoords[ 0 ] ) < 0.0 ) return vec3( 0.0 );\n	vec3 T1, T2;\n	T1 = normalize( V - N * dot( V, N ) );\n	T2 = - cross( N, T1 );\n	mat3 mat = mInv * transposeMat3( mat3( T1, T2, N ) );\n	vec3 coords[ 4 ];\n	coords[ 0 ] = mat * ( rectCoords[ 0 ] - P );\n	coords[ 1 ] = mat * ( rectCoords[ 1 ] - P );\n	coords[ 2 ] = mat * ( rectCoords[ 2 ] - P );\n	coords[ 3 ] = mat * ( rectCoords[ 3 ] - P );\n	coords[ 0 ] = normalize( coords[ 0 ] );\n	coords[ 1 ] = normalize( coords[ 1 ] );\n	coords[ 2 ] = normalize( coords[ 2 ] );\n	coords[ 3 ] = normalize( coords[ 3 ] );\n	vec3 vectorFormFactor = vec3( 0.0 );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 0 ], coords[ 1 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 1 ], coords[ 2 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 2 ], coords[ 3 ] );\n	vectorFormFactor += LTC_EdgeVectorFormFactor( coords[ 3 ], coords[ 0 ] );\n	float result = LTC_ClippedSphereFormFactor( vectorFormFactor );\n	return vec3( result );\n}\n#if defined( USE_SHEEN )\nfloat D_Charlie( float roughness, float dotNH ) {\n	float alpha = pow2( roughness );\n	float invAlpha = 1.0 / alpha;\n	float cos2h = dotNH * dotNH;\n	float sin2h = max( 1.0 - cos2h, 0.0078125 );\n	return ( 2.0 + invAlpha ) * pow( sin2h, invAlpha * 0.5 ) / ( 2.0 * PI );\n}\nfloat V_Neubelt( float dotNV, float dotNL ) {\n	return saturate( 1.0 / ( 4.0 * ( dotNL + dotNV - dotNL * dotNV ) ) );\n}\nvec3 BRDF_Sheen( const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, vec3 sheenColor, const in float sheenRoughness ) {\n	vec3 halfDir = normalize( lightDir + viewDir );\n	float dotNL = saturate( dot( normal, lightDir ) );\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float dotNH = saturate( dot( normal, halfDir ) );\n	float D = D_Charlie( sheenRoughness, dotNH );\n	float V = V_Neubelt( dotNV, dotNL );\n	return sheenColor * ( D * V );\n}\n#endif\nfloat IBLSheenBRDF( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n	float dotNV = saturate( dot( normal, viewDir ) );\n	float r2 = roughness * roughness;\n	float a = roughness < 0.25 ? -339.2 * r2 + 161.4 * roughness - 25.9 : -8.48 * r2 + 14.3 * roughness - 9.95;\n	float b = roughness < 0.25 ? 44.0 * r2 - 23.7 * roughness + 3.26 : 1.97 * r2 - 3.27 * roughness + 0.72;\n	float DG = exp( a * dotNV + b ) + ( roughness < 0.25 ? 0.0 : 0.1 * ( roughness - 0.25 ) );\n	return saturate( DG * RECIPROCAL_PI );\n}\nvec2 DFGApprox( const in vec3 normal, const in vec3 viewDir, const in float roughness ) {\n	float dotNV = saturate( dot( normal, viewDir ) );\n	const vec4 c0 = vec4( - 1, - 0.0275, - 0.572, 0.022 );\n	const vec4 c1 = vec4( 1, 0.0425, 1.04, - 0.04 );\n	vec4 r = roughness * c0 + c1;\n	float a004 = min( r.x * r.x, exp2( - 9.28 * dotNV ) ) * r.x + r.y;\n	vec2 fab = vec2( - 1.04, 1.04 ) * a004 + r.zw;\n	return fab;\n}\nvec3 EnvironmentBRDF( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness ) {\n	vec2 fab = DFGApprox( normal, viewDir, roughness );\n	return specularColor * fab.x + specularF90 * fab.y;\n}\n#ifdef USE_IRIDESCENCE\nvoid computeMultiscatteringIridescence( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float iridescence, const in vec3 iridescenceF0, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#else\nvoid computeMultiscattering( const in vec3 normal, const in vec3 viewDir, const in vec3 specularColor, const in float specularF90, const in float roughness, inout vec3 singleScatter, inout vec3 multiScatter ) {\n#endif\n	vec2 fab = DFGApprox( normal, viewDir, roughness );\n	#ifdef USE_IRIDESCENCE\n		vec3 Fr = mix( specularColor, iridescenceF0, iridescence );\n	#else\n		vec3 Fr = specularColor;\n	#endif\n	vec3 FssEss = Fr * fab.x + specularF90 * fab.y;\n	float Ess = fab.x + fab.y;\n	float Ems = 1.0 - Ess;\n	vec3 Favg = Fr + ( 1.0 - Fr ) * 0.047619;	vec3 Fms = FssEss * Favg / ( 1.0 - Ems * Favg );\n	singleScatter += FssEss;\n	multiScatter += Fms * Ems;\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n	void RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n		vec3 normal = geometryNormal;\n		vec3 viewDir = geometryViewDir;\n		vec3 position = geometryPosition;\n		vec3 lightPos = rectAreaLight.position;\n		vec3 halfWidth = rectAreaLight.halfWidth;\n		vec3 halfHeight = rectAreaLight.halfHeight;\n		vec3 lightColor = rectAreaLight.color;\n		float roughness = material.roughness;\n		vec3 rectCoords[ 4 ];\n		rectCoords[ 0 ] = lightPos + halfWidth - halfHeight;		rectCoords[ 1 ] = lightPos - halfWidth - halfHeight;\n		rectCoords[ 2 ] = lightPos - halfWidth + halfHeight;\n		rectCoords[ 3 ] = lightPos + halfWidth + halfHeight;\n		vec2 uv = LTC_Uv( normal, viewDir, roughness );\n		vec4 t1 = texture2D( ltc_1, uv );\n		vec4 t2 = texture2D( ltc_2, uv );\n		mat3 mInv = mat3(\n			vec3( t1.x, 0, t1.y ),\n			vec3(    0, 1,    0 ),\n			vec3( t1.z, 0, t1.w )\n		);\n		vec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n		reflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n		reflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n	}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n	float dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n	vec3 irradiance = dotNL * directLight.color;\n	#ifdef USE_CLEARCOAT\n		float dotNLcc = saturate( dot( geometryClearcoatNormal, directLight.direction ) );\n		vec3 ccIrradiance = dotNLcc * directLight.color;\n		clearcoatSpecularDirect += ccIrradiance * BRDF_GGX_Clearcoat( directLight.direction, geometryViewDir, geometryClearcoatNormal, material );\n	#endif\n	#ifdef USE_SHEEN\n		sheenSpecularDirect += irradiance * BRDF_Sheen( directLight.direction, geometryViewDir, geometryNormal, material.sheenColor, material.sheenRoughness );\n	#endif\n	reflectedLight.directSpecular += irradiance * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );\n	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n	reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 irradiance, const in vec3 clearcoatRadiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight) {\n	#ifdef USE_CLEARCOAT\n		clearcoatSpecularIndirect += clearcoatRadiance * EnvironmentBRDF( geometryClearcoatNormal, geometryViewDir, material.clearcoatF0, material.clearcoatF90, material.clearcoatRoughness );\n	#endif\n	#ifdef USE_SHEEN\n		sheenSpecularIndirect += irradiance * material.sheenColor * IBLSheenBRDF( geometryNormal, geometryViewDir, material.sheenRoughness );\n	#endif\n	vec3 singleScattering = vec3( 0.0 );\n	vec3 multiScattering = vec3( 0.0 );\n	vec3 cosineWeightedIrradiance = irradiance * RECIPROCAL_PI;\n	#ifdef USE_IRIDESCENCE\n		computeMultiscatteringIridescence( geometryNormal, geometryViewDir, material.specularColor, material.specularF90, material.iridescence, material.iridescenceFresnel, material.roughness, singleScattering, multiScattering );\n	#else\n		computeMultiscattering( geometryNormal, geometryViewDir, material.specularColor, material.specularF90, material.roughness, singleScattering, multiScattering );\n	#endif\n	vec3 totalScattering = singleScattering + multiScattering;\n	vec3 diffuse = material.diffuseColor * ( 1.0 - max( max( totalScattering.r, totalScattering.g ), totalScattering.b ) );\n	reflectedLight.indirectSpecular += radiance * singleScattering;\n	reflectedLight.indirectSpecular += multiScattering * cosineWeightedIrradiance;\n	reflectedLight.indirectDiffuse += diffuse * cosineWeightedIrradiance;\n}\n#define RE_Direct				RE_Direct_Physical\n#define RE_Direct_RectArea		RE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse		RE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular		RE_IndirectSpecular_Physical\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n	return saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
+var lights_fragment_begin = "\nvec3 geometryPosition = - vViewPosition;\nvec3 geometryNormal = normal;\nvec3 geometryViewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );\nvec3 geometryClearcoatNormal = vec3( 0.0 );\n#ifdef USE_CLEARCOAT\n	geometryClearcoatNormal = clearcoatNormal;\n#endif\n#ifdef USE_IRIDESCENCE\n	float dotNVi = saturate( dot( normal, geometryViewDir ) );\n	if ( material.iridescenceThickness == 0.0 ) {\n		material.iridescence = 0.0;\n	} else {\n		material.iridescence = saturate( material.iridescence );\n	}\n	if ( material.iridescence > 0.0 ) {\n		material.iridescenceFresnel = evalIridescence( 1.0, material.iridescenceIOR, dotNVi, material.iridescenceThickness, material.specularColor );\n		material.iridescenceF0 = Schlick_to_F0( material.iridescenceFresnel, 1.0, dotNVi );\n	}\n#endif\nIncidentLight directLight;\n#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n	PointLight pointLight;\n	#if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0\n	PointLightShadow pointLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n		pointLight = pointLights[ i ];\n		getPointLightInfo( pointLight, geometryPosition, directLight );\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )\n		pointLightShadow = pointLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n	SpotLight spotLight;\n	vec4 spotColor;\n	vec3 spotLightCoord;\n	bool inSpotLightMap;\n	#if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0\n	SpotLightShadow spotLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n		spotLight = spotLights[ i ];\n		getSpotLightInfo( spotLight, geometryPosition, directLight );\n		#if ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS_WITH_MAPS )\n		#define SPOT_LIGHT_MAP_INDEX UNROLLED_LOOP_INDEX\n		#elif ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n		#define SPOT_LIGHT_MAP_INDEX NUM_SPOT_LIGHT_MAPS\n		#else\n		#define SPOT_LIGHT_MAP_INDEX ( UNROLLED_LOOP_INDEX - NUM_SPOT_LIGHT_SHADOWS + NUM_SPOT_LIGHT_SHADOWS_WITH_MAPS )\n		#endif\n		#if ( SPOT_LIGHT_MAP_INDEX < NUM_SPOT_LIGHT_MAPS )\n			spotLightCoord = vSpotLightCoord[ i ].xyz / vSpotLightCoord[ i ].w;\n			inSpotLightMap = all( lessThan( abs( spotLightCoord * 2. - 1. ), vec3( 1.0 ) ) );\n			spotColor = texture2D( spotLightMap[ SPOT_LIGHT_MAP_INDEX ], spotLightCoord.xy );\n			directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color;\n		#endif\n		#undef SPOT_LIGHT_MAP_INDEX\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )\n		spotLightShadow = spotLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotLightCoord[ i ] ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n	DirectionalLight directionalLight;\n	#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0\n	DirectionalLightShadow directionalLightShadow;\n	#endif\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n		directionalLight = directionalLights[ i ];\n		getDirectionalLightInfo( directionalLight, directLight );\n		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )\n		directionalLightShadow = directionalLightShadows[ i ];\n		directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n		#endif\n		RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n	RectAreaLight rectAreaLight;\n	#pragma unroll_loop_start\n	for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n		rectAreaLight = rectAreaLights[ i ];\n		RE_Direct_RectArea( rectAreaLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n	}\n	#pragma unroll_loop_end\n#endif\n#if defined( RE_IndirectDiffuse )\n	vec3 iblIrradiance = vec3( 0.0 );\n	vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n	#if defined( USE_LIGHT_PROBES )\n		irradiance += getLightProbeIrradiance( lightProbe, geometryNormal );\n	#endif\n	#if ( NUM_HEMI_LIGHTS > 0 )\n		#pragma unroll_loop_start\n		for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n			irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );\n		}\n		#pragma unroll_loop_end\n	#endif\n#endif\n#if defined( RE_IndirectSpecular )\n	vec3 radiance = vec3( 0.0 );\n	vec3 clearcoatRadiance = vec3( 0.0 );\n#endif";
+var lights_fragment_maps = "#if defined( RE_IndirectDiffuse )\n	#ifdef USE_LIGHTMAP\n		vec4 lightMapTexel = texture2D( lightMap, vLightMapUv );\n		vec3 lightMapIrradiance = lightMapTexel.rgb * lightMapIntensity;\n		irradiance += lightMapIrradiance;\n	#endif\n	#if defined( USE_ENVMAP ) && defined( STANDARD ) && defined( ENVMAP_TYPE_CUBE_UV )\n		iblIrradiance += getIBLIrradiance( geometryNormal );\n	#endif\n#endif\n#if defined( USE_ENVMAP ) && defined( RE_IndirectSpecular )\n	#ifdef USE_ANISOTROPY\n		radiance += getIBLAnisotropyRadiance( geometryViewDir, geometryNormal, material.roughness, material.anisotropyB, material.anisotropy );\n	#else\n		radiance += getIBLRadiance( geometryViewDir, geometryNormal, material.roughness );\n	#endif\n	#ifdef USE_CLEARCOAT\n		clearcoatRadiance += getIBLRadiance( geometryViewDir, geometryClearcoatNormal, material.clearcoatRoughness );\n	#endif\n#endif";
+var lights_fragment_end = "#if defined( RE_IndirectDiffuse )\n	RE_IndirectDiffuse( irradiance, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n#endif\n#if defined( RE_IndirectSpecular )\n	RE_IndirectSpecular( radiance, iblIrradiance, clearcoatRadiance, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );\n#endif";
 var logdepthbuf_fragment = "#if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )\n	gl_FragDepthEXT = vIsPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth ) * logDepthBufFC * 0.5;\n#endif";
 var logdepthbuf_pars_fragment = "#if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )\n	uniform float logDepthBufFC;\n	varying float vFragDepth;\n	varying float vIsPerspective;\n#endif";
 var logdepthbuf_pars_vertex = "#ifdef USE_LOGDEPTHBUF\n	#ifdef USE_LOGDEPTHBUF_EXT\n		varying float vFragDepth;\n		varying float vIsPerspective;\n	#else\n		uniform float logDepthBufFC;\n	#endif\n#endif";
 var logdepthbuf_vertex = "#ifdef USE_LOGDEPTHBUF\n	#ifdef USE_LOGDEPTHBUF_EXT\n		vFragDepth = 1.0 + gl_Position.w;\n		vIsPerspective = float( isPerspectiveMatrix( projectionMatrix ) );\n	#else\n		if ( isPerspectiveMatrix( projectionMatrix ) ) {\n			gl_Position.z = log2( max( EPSILON, gl_Position.w + 1.0 ) ) * logDepthBufFC - 1.0;\n			gl_Position.z *= gl_Position.w;\n		}\n	#endif\n#endif";
-var map_fragment = "#ifdef USE_MAP\n	diffuseColor *= texture2D( map, vMapUv );\n#endif";
+var map_fragment = "#ifdef USE_MAP\n	vec4 sampledDiffuseColor = texture2D( map, vMapUv );\n	#ifdef DECODE_VIDEO_TEXTURE\n		sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );\n	\n	#endif\n	diffuseColor *= sampledDiffuseColor;\n#endif";
 var map_pars_fragment = "#ifdef USE_MAP\n	uniform sampler2D map;\n#endif";
 var map_particle_fragment = "#if defined( USE_MAP ) || defined( USE_ALPHAMAP )\n	#if defined( USE_POINTS_UV )\n		vec2 uv = vUv;\n	#else\n		vec2 uv = ( uvTransform * vec3( gl_PointCoord.x, 1.0 - gl_PointCoord.y, 1 ) ).xy;\n	#endif\n#endif\n#ifdef USE_MAP\n	diffuseColor *= texture2D( map, uv );\n#endif\n#ifdef USE_ALPHAMAP\n	diffuseColor.a *= texture2D( alphaMap, uv ).g;\n#endif";
 var map_particle_pars_fragment = "#if defined( USE_POINTS_UV )\n	varying vec2 vUv;\n#else\n	#if defined( USE_MAP ) || defined( USE_ALPHAMAP )\n		uniform mat3 uvTransform;\n	#endif\n#endif\n#ifdef USE_MAP\n	uniform sampler2D map;\n#endif\n#ifdef USE_ALPHAMAP\n	uniform sampler2D alphaMap;\n#endif";
@@ -11989,13 +12064,13 @@ var morphcolor_vertex = "#if defined( USE_MORPHCOLORS ) && defined( MORPHTARGETS
 var morphnormal_vertex = "#ifdef USE_MORPHNORMALS\n	objectNormal *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n			if ( morphTargetInfluences[ i ] != 0.0 ) objectNormal += getMorph( gl_VertexID, i, 1 ).xyz * morphTargetInfluences[ i ];\n		}\n	#else\n		objectNormal += morphNormal0 * morphTargetInfluences[ 0 ];\n		objectNormal += morphNormal1 * morphTargetInfluences[ 1 ];\n		objectNormal += morphNormal2 * morphTargetInfluences[ 2 ];\n		objectNormal += morphNormal3 * morphTargetInfluences[ 3 ];\n	#endif\n#endif";
 var morphtarget_pars_vertex = "#ifdef USE_MORPHTARGETS\n	uniform float morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		uniform float morphTargetInfluences[ MORPHTARGETS_COUNT ];\n		uniform sampler2DArray morphTargetsTexture;\n		uniform ivec2 morphTargetsTextureSize;\n		vec4 getMorph( const in int vertexIndex, const in int morphTargetIndex, const in int offset ) {\n			int texelIndex = vertexIndex * MORPHTARGETS_TEXTURE_STRIDE + offset;\n			int y = texelIndex / morphTargetsTextureSize.x;\n			int x = texelIndex - y * morphTargetsTextureSize.x;\n			ivec3 morphUV = ivec3( x, y, morphTargetIndex );\n			return texelFetch( morphTargetsTexture, morphUV, 0 );\n		}\n	#else\n		#ifndef USE_MORPHNORMALS\n			uniform float morphTargetInfluences[ 8 ];\n		#else\n			uniform float morphTargetInfluences[ 4 ];\n		#endif\n	#endif\n#endif";
 var morphtarget_vertex = "#ifdef USE_MORPHTARGETS\n	transformed *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n			if ( morphTargetInfluences[ i ] != 0.0 ) transformed += getMorph( gl_VertexID, i, 0 ).xyz * morphTargetInfluences[ i ];\n		}\n	#else\n		transformed += morphTarget0 * morphTargetInfluences[ 0 ];\n		transformed += morphTarget1 * morphTargetInfluences[ 1 ];\n		transformed += morphTarget2 * morphTargetInfluences[ 2 ];\n		transformed += morphTarget3 * morphTargetInfluences[ 3 ];\n		#ifndef USE_MORPHNORMALS\n			transformed += morphTarget4 * morphTargetInfluences[ 4 ];\n			transformed += morphTarget5 * morphTargetInfluences[ 5 ];\n			transformed += morphTarget6 * morphTargetInfluences[ 6 ];\n			transformed += morphTarget7 * morphTargetInfluences[ 7 ];\n		#endif\n	#endif\n#endif";
-var normal_fragment_begin = "float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;\n#ifdef FLAT_SHADED\n	vec3 fdx = dFdx( vViewPosition );\n	vec3 fdy = dFdy( vViewPosition );\n	vec3 normal = normalize( cross( fdx, fdy ) );\n#else\n	vec3 normal = normalize( vNormal );\n	#ifdef DOUBLE_SIDED\n		normal *= faceDirection;\n	#endif\n#endif\n#if defined( USE_NORMALMAP_TANGENTSPACE ) || defined( USE_CLEARCOAT_NORMALMAP ) || defined( USE_ANISOTROPY )\n	#ifdef USE_TANGENT\n		mat3 tbn = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n	#else\n		mat3 tbn = getTangentFrame( - vViewPosition, normal,\n		#if defined( USE_NORMALMAP )\n			vNormalMapUv\n		#elif defined( USE_CLEARCOAT_NORMALMAP )\n			vClearcoatNormalMapUv\n		#else\n			vUv\n		#endif\n		);\n	#endif\n	#if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n		tbn[0] *= faceDirection;\n		tbn[1] *= faceDirection;\n	#endif\n#endif\n#ifdef USE_CLEARCOAT_NORMALMAP\n	#ifdef USE_TANGENT\n		mat3 tbn2 = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n	#else\n		mat3 tbn2 = getTangentFrame( - vViewPosition, normal, vClearcoatNormalMapUv );\n	#endif\n	#if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n		tbn2[0] *= faceDirection;\n		tbn2[1] *= faceDirection;\n	#endif\n#endif\nvec3 geometryNormal = normal;";
+var normal_fragment_begin = "float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;\n#ifdef FLAT_SHADED\n	vec3 fdx = dFdx( vViewPosition );\n	vec3 fdy = dFdy( vViewPosition );\n	vec3 normal = normalize( cross( fdx, fdy ) );\n#else\n	vec3 normal = normalize( vNormal );\n	#ifdef DOUBLE_SIDED\n		normal *= faceDirection;\n	#endif\n#endif\n#if defined( USE_NORMALMAP_TANGENTSPACE ) || defined( USE_CLEARCOAT_NORMALMAP ) || defined( USE_ANISOTROPY )\n	#ifdef USE_TANGENT\n		mat3 tbn = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n	#else\n		mat3 tbn = getTangentFrame( - vViewPosition, normal,\n		#if defined( USE_NORMALMAP )\n			vNormalMapUv\n		#elif defined( USE_CLEARCOAT_NORMALMAP )\n			vClearcoatNormalMapUv\n		#else\n			vUv\n		#endif\n		);\n	#endif\n	#if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n		tbn[0] *= faceDirection;\n		tbn[1] *= faceDirection;\n	#endif\n#endif\n#ifdef USE_CLEARCOAT_NORMALMAP\n	#ifdef USE_TANGENT\n		mat3 tbn2 = mat3( normalize( vTangent ), normalize( vBitangent ), normal );\n	#else\n		mat3 tbn2 = getTangentFrame( - vViewPosition, normal, vClearcoatNormalMapUv );\n	#endif\n	#if defined( DOUBLE_SIDED ) && ! defined( FLAT_SHADED )\n		tbn2[0] *= faceDirection;\n		tbn2[1] *= faceDirection;\n	#endif\n#endif\nvec3 nonPerturbedNormal = normal;";
 var normal_fragment_maps = "#ifdef USE_NORMALMAP_OBJECTSPACE\n	normal = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;\n	#ifdef FLIP_SIDED\n		normal = - normal;\n	#endif\n	#ifdef DOUBLE_SIDED\n		normal = normal * faceDirection;\n	#endif\n	normal = normalize( normalMatrix * normal );\n#elif defined( USE_NORMALMAP_TANGENTSPACE )\n	vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;\n	mapN.xy *= normalScale;\n	normal = normalize( tbn * mapN );\n#elif defined( USE_BUMPMAP )\n	normal = perturbNormalArb( - vViewPosition, normal, dHdxy_fwd(), faceDirection );\n#endif";
 var normal_pars_fragment = "#ifndef FLAT_SHADED\n	varying vec3 vNormal;\n	#ifdef USE_TANGENT\n		varying vec3 vTangent;\n		varying vec3 vBitangent;\n	#endif\n#endif";
 var normal_pars_vertex = "#ifndef FLAT_SHADED\n	varying vec3 vNormal;\n	#ifdef USE_TANGENT\n		varying vec3 vTangent;\n		varying vec3 vBitangent;\n	#endif\n#endif";
 var normal_vertex = "#ifndef FLAT_SHADED\n	vNormal = normalize( transformedNormal );\n	#ifdef USE_TANGENT\n		vTangent = normalize( transformedTangent );\n		vBitangent = normalize( cross( vNormal, vTangent ) * tangent.w );\n	#endif\n#endif";
 var normalmap_pars_fragment = "#ifdef USE_NORMALMAP\n	uniform sampler2D normalMap;\n	uniform vec2 normalScale;\n#endif\n#ifdef USE_NORMALMAP_OBJECTSPACE\n	uniform mat3 normalMatrix;\n#endif\n#if ! defined ( USE_TANGENT ) && ( defined ( USE_NORMALMAP_TANGENTSPACE ) || defined ( USE_CLEARCOAT_NORMALMAP ) || defined( USE_ANISOTROPY ) )\n	mat3 getTangentFrame( vec3 eye_pos, vec3 surf_norm, vec2 uv ) {\n		vec3 q0 = dFdx( eye_pos.xyz );\n		vec3 q1 = dFdy( eye_pos.xyz );\n		vec2 st0 = dFdx( uv.st );\n		vec2 st1 = dFdy( uv.st );\n		vec3 N = surf_norm;\n		vec3 q1perp = cross( q1, N );\n		vec3 q0perp = cross( N, q0 );\n		vec3 T = q1perp * st0.x + q0perp * st1.x;\n		vec3 B = q1perp * st0.y + q0perp * st1.y;\n		float det = max( dot( T, T ), dot( B, B ) );\n		float scale = ( det == 0.0 ) ? 0.0 : inversesqrt( det );\n		return mat3( T * scale, B * scale, N );\n	}\n#endif";
-var clearcoat_normal_fragment_begin = "#ifdef USE_CLEARCOAT\n	vec3 clearcoatNormal = geometryNormal;\n#endif";
+var clearcoat_normal_fragment_begin = "#ifdef USE_CLEARCOAT\n	vec3 clearcoatNormal = nonPerturbedNormal;\n#endif";
 var clearcoat_normal_fragment_maps = "#ifdef USE_CLEARCOAT_NORMALMAP\n	vec3 clearcoatMapN = texture2D( clearcoatNormalMap, vClearcoatNormalMapUv ).xyz * 2.0 - 1.0;\n	clearcoatMapN.xy *= clearcoatNormalScale;\n	clearcoatNormal = normalize( tbn2 * clearcoatMapN );\n#endif";
 var clearcoat_pars_fragment = "#ifdef USE_CLEARCOATMAP\n	uniform sampler2D clearcoatMap;\n#endif\n#ifdef USE_CLEARCOAT_NORMALMAP\n	uniform sampler2D clearcoatNormalMap;\n	uniform vec2 clearcoatNormalScale;\n#endif\n#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n	uniform sampler2D clearcoatRoughnessMap;\n#endif";
 var iridescence_pars_fragment = "#ifdef USE_IRIDESCENCEMAP\n	uniform sampler2D iridescenceMap;\n#endif\n#ifdef USE_IRIDESCENCE_THICKNESSMAP\n	uniform sampler2D iridescenceThicknessMap;\n#endif";
@@ -12026,7 +12101,7 @@ var uv_pars_vertex = "#if defined( USE_UV ) || defined( USE_ANISOTROPY )\n	varyi
 var uv_vertex = "#if defined( USE_UV ) || defined( USE_ANISOTROPY )\n	vUv = vec3( uv, 1 ).xy;\n#endif\n#ifdef USE_MAP\n	vMapUv = ( mapTransform * vec3( MAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_ALPHAMAP\n	vAlphaMapUv = ( alphaMapTransform * vec3( ALPHAMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_LIGHTMAP\n	vLightMapUv = ( lightMapTransform * vec3( LIGHTMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_AOMAP\n	vAoMapUv = ( aoMapTransform * vec3( AOMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_BUMPMAP\n	vBumpMapUv = ( bumpMapTransform * vec3( BUMPMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_NORMALMAP\n	vNormalMapUv = ( normalMapTransform * vec3( NORMALMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_DISPLACEMENTMAP\n	vDisplacementMapUv = ( displacementMapTransform * vec3( DISPLACEMENTMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_EMISSIVEMAP\n	vEmissiveMapUv = ( emissiveMapTransform * vec3( EMISSIVEMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_METALNESSMAP\n	vMetalnessMapUv = ( metalnessMapTransform * vec3( METALNESSMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_ROUGHNESSMAP\n	vRoughnessMapUv = ( roughnessMapTransform * vec3( ROUGHNESSMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_ANISOTROPYMAP\n	vAnisotropyMapUv = ( anisotropyMapTransform * vec3( ANISOTROPYMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_CLEARCOATMAP\n	vClearcoatMapUv = ( clearcoatMapTransform * vec3( CLEARCOATMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_CLEARCOAT_NORMALMAP\n	vClearcoatNormalMapUv = ( clearcoatNormalMapTransform * vec3( CLEARCOAT_NORMALMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_CLEARCOAT_ROUGHNESSMAP\n	vClearcoatRoughnessMapUv = ( clearcoatRoughnessMapTransform * vec3( CLEARCOAT_ROUGHNESSMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_IRIDESCENCEMAP\n	vIridescenceMapUv = ( iridescenceMapTransform * vec3( IRIDESCENCEMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_IRIDESCENCE_THICKNESSMAP\n	vIridescenceThicknessMapUv = ( iridescenceThicknessMapTransform * vec3( IRIDESCENCE_THICKNESSMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_SHEEN_COLORMAP\n	vSheenColorMapUv = ( sheenColorMapTransform * vec3( SHEEN_COLORMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_SHEEN_ROUGHNESSMAP\n	vSheenRoughnessMapUv = ( sheenRoughnessMapTransform * vec3( SHEEN_ROUGHNESSMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_SPECULARMAP\n	vSpecularMapUv = ( specularMapTransform * vec3( SPECULARMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_SPECULAR_COLORMAP\n	vSpecularColorMapUv = ( specularColorMapTransform * vec3( SPECULAR_COLORMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_SPECULAR_INTENSITYMAP\n	vSpecularIntensityMapUv = ( specularIntensityMapTransform * vec3( SPECULAR_INTENSITYMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_TRANSMISSIONMAP\n	vTransmissionMapUv = ( transmissionMapTransform * vec3( TRANSMISSIONMAP_UV, 1 ) ).xy;\n#endif\n#ifdef USE_THICKNESSMAP\n	vThicknessMapUv = ( thicknessMapTransform * vec3( THICKNESSMAP_UV, 1 ) ).xy;\n#endif";
 var worldpos_vertex = "#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0\n	vec4 worldPosition = vec4( transformed, 1.0 );\n	#ifdef USE_INSTANCING\n		worldPosition = instanceMatrix * worldPosition;\n	#endif\n	worldPosition = modelMatrix * worldPosition;\n#endif";
 const vertex$h = "varying vec2 vUv;\nuniform mat3 uvTransform;\nvoid main() {\n	vUv = ( uvTransform * vec3( uv, 1 ) ).xy;\n	gl_Position = vec4( position.xy, 1.0, 1.0 );\n}";
-const fragment$h = "uniform sampler2D t2D;\nuniform float backgroundIntensity;\nvarying vec2 vUv;\nvoid main() {\n	vec4 texColor = texture2D( t2D, vUv );\n	texColor.rgb *= backgroundIntensity;\n	gl_FragColor = texColor;\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n}";
+const fragment$h = "uniform sampler2D t2D;\nuniform float backgroundIntensity;\nvarying vec2 vUv;\nvoid main() {\n	vec4 texColor = texture2D( t2D, vUv );\n	#ifdef DECODE_VIDEO_TEXTURE\n		texColor = vec4( mix( pow( texColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), texColor.rgb * 0.0773993808, vec3( lessThanEqual( texColor.rgb, vec3( 0.04045 ) ) ) ), texColor.w );\n	#endif\n	texColor.rgb *= backgroundIntensity;\n	gl_FragColor = texColor;\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n}";
 const vertex$g = "varying vec3 vWorldDirection;\n#include <common>\nvoid main() {\n	vWorldDirection = transformDirection( position, modelMatrix );\n	#include <begin_vertex>\n	#include <project_vertex>\n	gl_Position.z = gl_Position.w;\n}";
 const fragment$g = "#ifdef ENVMAP_TYPE_CUBE\n	uniform samplerCube envMap;\n#elif defined( ENVMAP_TYPE_CUBE_UV )\n	uniform sampler2D envMap;\n#endif\nuniform float flipEnvMap;\nuniform float backgroundBlurriness;\nuniform float backgroundIntensity;\nvarying vec3 vWorldDirection;\n#include <cube_uv_reflection_fragment>\nvoid main() {\n	#ifdef ENVMAP_TYPE_CUBE\n		vec4 texColor = textureCube( envMap, vec3( flipEnvMap * vWorldDirection.x, vWorldDirection.yz ) );\n	#elif defined( ENVMAP_TYPE_CUBE_UV )\n		vec4 texColor = textureCubeUV( envMap, vWorldDirection, backgroundBlurriness );\n	#else\n		vec4 texColor = vec4( 0.0, 0.0, 0.0, 1.0 );\n	#endif\n	texColor.rgb *= backgroundIntensity;\n	gl_FragColor = texColor;\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n}";
 const vertex$f = "varying vec3 vWorldDirection;\n#include <common>\nvoid main() {\n	vWorldDirection = transformDirection( position, modelMatrix );\n	#include <begin_vertex>\n	#include <project_vertex>\n	gl_Position.z = gl_Position.w;\n}";
@@ -12050,7 +12125,7 @@ const fragment$7 = "#define NORMAL\nuniform float opacity;\n#if defined( FLAT_SH
 const vertex$6 = "#define PHONG\nvarying vec3 vViewPosition;\n#include <common>\n#include <uv_pars_vertex>\n#include <displacementmap_pars_vertex>\n#include <envmap_pars_vertex>\n#include <color_pars_vertex>\n#include <fog_pars_vertex>\n#include <normal_pars_vertex>\n#include <morphtarget_pars_vertex>\n#include <skinning_pars_vertex>\n#include <shadowmap_pars_vertex>\n#include <logdepthbuf_pars_vertex>\n#include <clipping_planes_pars_vertex>\nvoid main() {\n	#include <uv_vertex>\n	#include <color_vertex>\n	#include <morphcolor_vertex>\n	#include <beginnormal_vertex>\n	#include <morphnormal_vertex>\n	#include <skinbase_vertex>\n	#include <skinnormal_vertex>\n	#include <defaultnormal_vertex>\n	#include <normal_vertex>\n	#include <begin_vertex>\n	#include <morphtarget_vertex>\n	#include <skinning_vertex>\n	#include <displacementmap_vertex>\n	#include <project_vertex>\n	#include <logdepthbuf_vertex>\n	#include <clipping_planes_vertex>\n	vViewPosition = - mvPosition.xyz;\n	#include <worldpos_vertex>\n	#include <envmap_vertex>\n	#include <shadowmap_vertex>\n	#include <fog_vertex>\n}";
 const fragment$6 = "#define PHONG\nuniform vec3 diffuse;\nuniform vec3 emissive;\nuniform vec3 specular;\nuniform float shininess;\nuniform float opacity;\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n#include <uv_pars_fragment>\n#include <map_pars_fragment>\n#include <alphamap_pars_fragment>\n#include <alphatest_pars_fragment>\n#include <alphahash_pars_fragment>\n#include <aomap_pars_fragment>\n#include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n#include <envmap_common_pars_fragment>\n#include <envmap_pars_fragment>\n#include <fog_pars_fragment>\n#include <bsdfs>\n#include <lights_pars_begin>\n#include <normal_pars_fragment>\n#include <lights_phong_pars_fragment>\n#include <shadowmap_pars_fragment>\n#include <bumpmap_pars_fragment>\n#include <normalmap_pars_fragment>\n#include <specularmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\nvoid main() {\n	#include <clipping_planes_fragment>\n	vec4 diffuseColor = vec4( diffuse, opacity );\n	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n	vec3 totalEmissiveRadiance = emissive;\n	#include <logdepthbuf_fragment>\n	#include <map_fragment>\n	#include <color_fragment>\n	#include <alphamap_fragment>\n	#include <alphatest_fragment>\n	#include <alphahash_fragment>\n	#include <specularmap_fragment>\n	#include <normal_fragment_begin>\n	#include <normal_fragment_maps>\n	#include <emissivemap_fragment>\n	#include <lights_phong_fragment>\n	#include <lights_fragment_begin>\n	#include <lights_fragment_maps>\n	#include <lights_fragment_end>\n	#include <aomap_fragment>\n	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;\n	#include <envmap_fragment>\n	#include <opaque_fragment>\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n	#include <fog_fragment>\n	#include <premultiplied_alpha_fragment>\n	#include <dithering_fragment>\n}";
 const vertex$5 = "#define STANDARD\nvarying vec3 vViewPosition;\n#ifdef USE_TRANSMISSION\n	varying vec3 vWorldPosition;\n#endif\n#include <common>\n#include <uv_pars_vertex>\n#include <displacementmap_pars_vertex>\n#include <color_pars_vertex>\n#include <fog_pars_vertex>\n#include <normal_pars_vertex>\n#include <morphtarget_pars_vertex>\n#include <skinning_pars_vertex>\n#include <shadowmap_pars_vertex>\n#include <logdepthbuf_pars_vertex>\n#include <clipping_planes_pars_vertex>\nvoid main() {\n	#include <uv_vertex>\n	#include <color_vertex>\n	#include <morphcolor_vertex>\n	#include <beginnormal_vertex>\n	#include <morphnormal_vertex>\n	#include <skinbase_vertex>\n	#include <skinnormal_vertex>\n	#include <defaultnormal_vertex>\n	#include <normal_vertex>\n	#include <begin_vertex>\n	#include <morphtarget_vertex>\n	#include <skinning_vertex>\n	#include <displacementmap_vertex>\n	#include <project_vertex>\n	#include <logdepthbuf_vertex>\n	#include <clipping_planes_vertex>\n	vViewPosition = - mvPosition.xyz;\n	#include <worldpos_vertex>\n	#include <shadowmap_vertex>\n	#include <fog_vertex>\n#ifdef USE_TRANSMISSION\n	vWorldPosition = worldPosition.xyz;\n#endif\n}";
-const fragment$5 = "#define STANDARD\n#ifdef PHYSICAL\n	#define IOR\n	#define USE_SPECULAR\n#endif\nuniform vec3 diffuse;\nuniform vec3 emissive;\nuniform float roughness;\nuniform float metalness;\nuniform float opacity;\n#ifdef IOR\n	uniform float ior;\n#endif\n#ifdef USE_SPECULAR\n	uniform float specularIntensity;\n	uniform vec3 specularColor;\n	#ifdef USE_SPECULAR_COLORMAP\n		uniform sampler2D specularColorMap;\n	#endif\n	#ifdef USE_SPECULAR_INTENSITYMAP\n		uniform sampler2D specularIntensityMap;\n	#endif\n#endif\n#ifdef USE_CLEARCOAT\n	uniform float clearcoat;\n	uniform float clearcoatRoughness;\n#endif\n#ifdef USE_IRIDESCENCE\n	uniform float iridescence;\n	uniform float iridescenceIOR;\n	uniform float iridescenceThicknessMinimum;\n	uniform float iridescenceThicknessMaximum;\n#endif\n#ifdef USE_SHEEN\n	uniform vec3 sheenColor;\n	uniform float sheenRoughness;\n	#ifdef USE_SHEEN_COLORMAP\n		uniform sampler2D sheenColorMap;\n	#endif\n	#ifdef USE_SHEEN_ROUGHNESSMAP\n		uniform sampler2D sheenRoughnessMap;\n	#endif\n#endif\n#ifdef USE_ANISOTROPY\n	uniform vec2 anisotropyVector;\n	#ifdef USE_ANISOTROPYMAP\n		uniform sampler2D anisotropyMap;\n	#endif\n#endif\nvarying vec3 vViewPosition;\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n#include <uv_pars_fragment>\n#include <map_pars_fragment>\n#include <alphamap_pars_fragment>\n#include <alphatest_pars_fragment>\n#include <alphahash_pars_fragment>\n#include <aomap_pars_fragment>\n#include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n#include <iridescence_fragment>\n#include <cube_uv_reflection_fragment>\n#include <envmap_common_pars_fragment>\n#include <envmap_physical_pars_fragment>\n#include <fog_pars_fragment>\n#include <lights_pars_begin>\n#include <normal_pars_fragment>\n#include <lights_physical_pars_fragment>\n#include <transmission_pars_fragment>\n#include <shadowmap_pars_fragment>\n#include <bumpmap_pars_fragment>\n#include <normalmap_pars_fragment>\n#include <clearcoat_pars_fragment>\n#include <iridescence_pars_fragment>\n#include <roughnessmap_pars_fragment>\n#include <metalnessmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\nvoid main() {\n	#include <clipping_planes_fragment>\n	vec4 diffuseColor = vec4( diffuse, opacity );\n	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n	vec3 totalEmissiveRadiance = emissive;\n	#include <logdepthbuf_fragment>\n	#include <map_fragment>\n	#include <color_fragment>\n	#include <alphamap_fragment>\n	#include <alphatest_fragment>\n	#include <alphahash_fragment>\n	#include <roughnessmap_fragment>\n	#include <metalnessmap_fragment>\n	#include <normal_fragment_begin>\n	#include <normal_fragment_maps>\n	#include <clearcoat_normal_fragment_begin>\n	#include <clearcoat_normal_fragment_maps>\n	#include <emissivemap_fragment>\n	#include <lights_physical_fragment>\n	#include <lights_fragment_begin>\n	#include <lights_fragment_maps>\n	#include <lights_fragment_end>\n	#include <aomap_fragment>\n	vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;\n	vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;\n	#include <transmission_fragment>\n	vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;\n	#ifdef USE_SHEEN\n		float sheenEnergyComp = 1.0 - 0.157 * max3( material.sheenColor );\n		outgoingLight = outgoingLight * sheenEnergyComp + sheenSpecular;\n	#endif\n	#ifdef USE_CLEARCOAT\n		float dotNVcc = saturate( dot( geometry.clearcoatNormal, geometry.viewDir ) );\n		vec3 Fcc = F_Schlick( material.clearcoatF0, material.clearcoatF90, dotNVcc );\n		outgoingLight = outgoingLight * ( 1.0 - material.clearcoat * Fcc ) + clearcoatSpecular * material.clearcoat;\n	#endif\n	#include <opaque_fragment>\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n	#include <fog_fragment>\n	#include <premultiplied_alpha_fragment>\n	#include <dithering_fragment>\n}";
+const fragment$5 = "#define STANDARD\n#ifdef PHYSICAL\n	#define IOR\n	#define USE_SPECULAR\n#endif\nuniform vec3 diffuse;\nuniform vec3 emissive;\nuniform float roughness;\nuniform float metalness;\nuniform float opacity;\n#ifdef IOR\n	uniform float ior;\n#endif\n#ifdef USE_SPECULAR\n	uniform float specularIntensity;\n	uniform vec3 specularColor;\n	#ifdef USE_SPECULAR_COLORMAP\n		uniform sampler2D specularColorMap;\n	#endif\n	#ifdef USE_SPECULAR_INTENSITYMAP\n		uniform sampler2D specularIntensityMap;\n	#endif\n#endif\n#ifdef USE_CLEARCOAT\n	uniform float clearcoat;\n	uniform float clearcoatRoughness;\n#endif\n#ifdef USE_IRIDESCENCE\n	uniform float iridescence;\n	uniform float iridescenceIOR;\n	uniform float iridescenceThicknessMinimum;\n	uniform float iridescenceThicknessMaximum;\n#endif\n#ifdef USE_SHEEN\n	uniform vec3 sheenColor;\n	uniform float sheenRoughness;\n	#ifdef USE_SHEEN_COLORMAP\n		uniform sampler2D sheenColorMap;\n	#endif\n	#ifdef USE_SHEEN_ROUGHNESSMAP\n		uniform sampler2D sheenRoughnessMap;\n	#endif\n#endif\n#ifdef USE_ANISOTROPY\n	uniform vec2 anisotropyVector;\n	#ifdef USE_ANISOTROPYMAP\n		uniform sampler2D anisotropyMap;\n	#endif\n#endif\nvarying vec3 vViewPosition;\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n#include <uv_pars_fragment>\n#include <map_pars_fragment>\n#include <alphamap_pars_fragment>\n#include <alphatest_pars_fragment>\n#include <alphahash_pars_fragment>\n#include <aomap_pars_fragment>\n#include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n#include <iridescence_fragment>\n#include <cube_uv_reflection_fragment>\n#include <envmap_common_pars_fragment>\n#include <envmap_physical_pars_fragment>\n#include <fog_pars_fragment>\n#include <lights_pars_begin>\n#include <normal_pars_fragment>\n#include <lights_physical_pars_fragment>\n#include <transmission_pars_fragment>\n#include <shadowmap_pars_fragment>\n#include <bumpmap_pars_fragment>\n#include <normalmap_pars_fragment>\n#include <clearcoat_pars_fragment>\n#include <iridescence_pars_fragment>\n#include <roughnessmap_pars_fragment>\n#include <metalnessmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\nvoid main() {\n	#include <clipping_planes_fragment>\n	vec4 diffuseColor = vec4( diffuse, opacity );\n	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n	vec3 totalEmissiveRadiance = emissive;\n	#include <logdepthbuf_fragment>\n	#include <map_fragment>\n	#include <color_fragment>\n	#include <alphamap_fragment>\n	#include <alphatest_fragment>\n	#include <alphahash_fragment>\n	#include <roughnessmap_fragment>\n	#include <metalnessmap_fragment>\n	#include <normal_fragment_begin>\n	#include <normal_fragment_maps>\n	#include <clearcoat_normal_fragment_begin>\n	#include <clearcoat_normal_fragment_maps>\n	#include <emissivemap_fragment>\n	#include <lights_physical_fragment>\n	#include <lights_fragment_begin>\n	#include <lights_fragment_maps>\n	#include <lights_fragment_end>\n	#include <aomap_fragment>\n	vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;\n	vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;\n	#include <transmission_fragment>\n	vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;\n	#ifdef USE_SHEEN\n		float sheenEnergyComp = 1.0 - 0.157 * max3( material.sheenColor );\n		outgoingLight = outgoingLight * sheenEnergyComp + sheenSpecularDirect + sheenSpecularIndirect;\n	#endif\n	#ifdef USE_CLEARCOAT\n		float dotNVcc = saturate( dot( geometryClearcoatNormal, geometryViewDir ) );\n		vec3 Fcc = F_Schlick( material.clearcoatF0, material.clearcoatF90, dotNVcc );\n		outgoingLight = outgoingLight * ( 1.0 - material.clearcoat * Fcc ) + ( clearcoatSpecularDirect + clearcoatSpecularIndirect ) * material.clearcoat;\n	#endif\n	#include <opaque_fragment>\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n	#include <fog_fragment>\n	#include <premultiplied_alpha_fragment>\n	#include <dithering_fragment>\n}";
 const vertex$4 = "#define TOON\nvarying vec3 vViewPosition;\n#include <common>\n#include <uv_pars_vertex>\n#include <displacementmap_pars_vertex>\n#include <color_pars_vertex>\n#include <fog_pars_vertex>\n#include <normal_pars_vertex>\n#include <morphtarget_pars_vertex>\n#include <skinning_pars_vertex>\n#include <shadowmap_pars_vertex>\n#include <logdepthbuf_pars_vertex>\n#include <clipping_planes_pars_vertex>\nvoid main() {\n	#include <uv_vertex>\n	#include <color_vertex>\n	#include <morphcolor_vertex>\n	#include <beginnormal_vertex>\n	#include <morphnormal_vertex>\n	#include <skinbase_vertex>\n	#include <skinnormal_vertex>\n	#include <defaultnormal_vertex>\n	#include <normal_vertex>\n	#include <begin_vertex>\n	#include <morphtarget_vertex>\n	#include <skinning_vertex>\n	#include <displacementmap_vertex>\n	#include <project_vertex>\n	#include <logdepthbuf_vertex>\n	#include <clipping_planes_vertex>\n	vViewPosition = - mvPosition.xyz;\n	#include <worldpos_vertex>\n	#include <shadowmap_vertex>\n	#include <fog_vertex>\n}";
 const fragment$4 = "#define TOON\nuniform vec3 diffuse;\nuniform vec3 emissive;\nuniform float opacity;\n#include <common>\n#include <packing>\n#include <dithering_pars_fragment>\n#include <color_pars_fragment>\n#include <uv_pars_fragment>\n#include <map_pars_fragment>\n#include <alphamap_pars_fragment>\n#include <alphatest_pars_fragment>\n#include <alphahash_pars_fragment>\n#include <aomap_pars_fragment>\n#include <lightmap_pars_fragment>\n#include <emissivemap_pars_fragment>\n#include <gradientmap_pars_fragment>\n#include <fog_pars_fragment>\n#include <bsdfs>\n#include <lights_pars_begin>\n#include <normal_pars_fragment>\n#include <lights_toon_pars_fragment>\n#include <shadowmap_pars_fragment>\n#include <bumpmap_pars_fragment>\n#include <normalmap_pars_fragment>\n#include <logdepthbuf_pars_fragment>\n#include <clipping_planes_pars_fragment>\nvoid main() {\n	#include <clipping_planes_fragment>\n	vec4 diffuseColor = vec4( diffuse, opacity );\n	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );\n	vec3 totalEmissiveRadiance = emissive;\n	#include <logdepthbuf_fragment>\n	#include <map_fragment>\n	#include <color_fragment>\n	#include <alphamap_fragment>\n	#include <alphatest_fragment>\n	#include <alphahash_fragment>\n	#include <normal_fragment_begin>\n	#include <normal_fragment_maps>\n	#include <emissivemap_fragment>\n	#include <lights_toon_fragment>\n	#include <lights_fragment_begin>\n	#include <lights_fragment_maps>\n	#include <lights_fragment_end>\n	#include <aomap_fragment>\n	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;\n	#include <opaque_fragment>\n	#include <tonemapping_fragment>\n	#include <colorspace_fragment>\n	#include <fog_fragment>\n	#include <premultiplied_alpha_fragment>\n	#include <dithering_fragment>\n}";
 const vertex$3 = "uniform float size;\nuniform float scale;\n#include <common>\n#include <color_pars_vertex>\n#include <fog_pars_vertex>\n#include <morphtarget_pars_vertex>\n#include <logdepthbuf_pars_vertex>\n#include <clipping_planes_pars_vertex>\n#ifdef USE_POINTS_UV\n	varying vec2 vUv;\n	uniform mat3 uvTransform;\n#endif\nvoid main() {\n	#ifdef USE_POINTS_UV\n		vUv = ( uvTransform * vec3( uv, 1 ) ).xy;\n	#endif\n	#include <color_vertex>\n	#include <morphcolor_vertex>\n	#include <begin_vertex>\n	#include <morphtarget_vertex>\n	#include <project_vertex>\n	gl_PointSize = size;\n	#ifdef USE_SIZEATTENUATION\n		bool isPerspective = isPerspectiveMatrix( projectionMatrix );\n		if ( isPerspective ) gl_PointSize *= ( scale / - mvPosition.z );\n	#endif\n	#include <logdepthbuf_vertex>\n	#include <clipping_planes_vertex>\n	#include <worldpos_vertex>\n	#include <fog_vertex>\n}";
@@ -12967,21 +13042,9 @@ function WebGLBackground(renderer, cubemaps, cubeuvmaps, state, objects, alpha, 
             setClear(background, 1);
             forceClear = true;
         }
-        const xr = renderer.xr;
-        const environmentBlendMode = xr.getEnvironmentBlendMode();
-        switch(environmentBlendMode){
-            case "opaque":
-                forceClear = true;
-                break;
-            case "additive":
-                state.buffers.color.setClear(0, 0, 0, 1, premultipliedAlpha);
-                forceClear = true;
-                break;
-            case "alpha-blend":
-                state.buffers.color.setClear(0, 0, 0, 0, premultipliedAlpha);
-                forceClear = true;
-                break;
-        }
+        const environmentBlendMode = renderer.xr.getEnvironmentBlendMode();
+        if (environmentBlendMode === "additive") state.buffers.color.setClear(0, 0, 0, 1, premultipliedAlpha);
+        else if (environmentBlendMode === "alpha-blend") state.buffers.color.setClear(0, 0, 0, 0, premultipliedAlpha);
         if (renderer.autoClear || forceClear) renderer.clear(renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil);
         if (background && (background.isCubeTexture || background.mapping === CubeUVReflectionMapping)) {
             if (boxMesh === undefined) {
@@ -13012,7 +13075,7 @@ function WebGLBackground(renderer, cubemaps, cubeuvmaps, state, objects, alpha, 
             boxMesh.material.uniforms.flipEnvMap.value = background.isCubeTexture && background.isRenderTargetTexture === false ? -1 : 1;
             boxMesh.material.uniforms.backgroundBlurriness.value = scene.backgroundBlurriness;
             boxMesh.material.uniforms.backgroundIntensity.value = scene.backgroundIntensity;
-            boxMesh.material.toneMapped = background.colorSpace === SRGBColorSpace ? false : true;
+            boxMesh.material.toneMapped = ColorManagement.getTransfer(background.colorSpace) !== SRGBTransfer;
             if (currentBackground !== background || currentBackgroundVersion !== background.version || currentTonemapping !== renderer.toneMapping) {
                 boxMesh.material.needsUpdate = true;
                 currentBackground = background;
@@ -13045,7 +13108,7 @@ function WebGLBackground(renderer, cubemaps, cubeuvmaps, state, objects, alpha, 
             }
             planeMesh.material.uniforms.t2D.value = background;
             planeMesh.material.uniforms.backgroundIntensity.value = scene.backgroundIntensity;
-            planeMesh.material.toneMapped = background.colorSpace === SRGBColorSpace ? false : true;
+            planeMesh.material.toneMapped = ColorManagement.getTransfer(background.colorSpace) !== SRGBTransfer;
             if (background.matrixAutoUpdate === true) background.updateMatrix();
             planeMesh.material.uniforms.uvTransform.value.copy(background.matrix);
             if (currentBackground !== background || currentBackgroundVersion !== background.version || currentTonemapping !== renderer.toneMapping) {
@@ -13701,6 +13764,8 @@ const MAX_SAMPLES = 20;
 const _flatCamera = /*@__PURE__*/ new OrthographicCamera();
 const _clearColor = /*@__PURE__*/ new Color();
 let _oldTarget = null;
+let _oldActiveCubeFace = 0;
+let _oldActiveMipmapLevel = 0;
 // Golden Ratio
 const PHI = (1 + Math.sqrt(5)) / 2;
 const INV_PHI = 1 / PHI;
@@ -13753,6 +13818,8 @@ const _axisDirections = [
 	 * is placed at the origin).
 	 */ fromScene(scene, sigma = 0, near = 0.1, far = 100) {
         _oldTarget = this._renderer.getRenderTarget();
+        _oldActiveCubeFace = this._renderer.getActiveCubeFace();
+        _oldActiveMipmapLevel = this._renderer.getActiveMipmapLevel();
         this._setSize(256);
         const cubeUVRenderTarget = this._allocateTargets();
         cubeUVRenderTarget.depthBuffer = true;
@@ -13814,7 +13881,7 @@ const _axisDirections = [
         for(let i = 0; i < this._lodPlanes.length; i++)this._lodPlanes[i].dispose();
     }
     _cleanup(outputTarget) {
-        this._renderer.setRenderTarget(_oldTarget);
+        this._renderer.setRenderTarget(_oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel);
         outputTarget.scissorTest = false;
         _setViewport(outputTarget, 0, 0, outputTarget.width, outputTarget.height);
     }
@@ -13822,6 +13889,8 @@ const _axisDirections = [
         if (texture.mapping === CubeReflectionMapping || texture.mapping === CubeRefractionMapping) this._setSize(texture.image.length === 0 ? 16 : texture.image[0].width || texture.image[0].image.width);
         else this._setSize(texture.image.width / 4);
         _oldTarget = this._renderer.getRenderTarget();
+        _oldActiveCubeFace = this._renderer.getActiveCubeFace();
+        _oldActiveMipmapLevel = this._renderer.getActiveMipmapLevel();
         const cubeUVRenderTarget = renderTarget || this._allocateTargets();
         this._textureToCubeUV(texture, cubeUVRenderTarget);
         this._applyPMREM(cubeUVRenderTarget);
@@ -14493,7 +14562,7 @@ function WebGLGeometries(gl, attributes, info, bindingStates) {
                 const c = array[i + 2];
                 indices.push(a, b, b, c, c, a);
             }
-        } else {
+        } else if (geometryPosition !== undefined) {
             const array = geometryPosition.array;
             version = geometryPosition.version;
             for(let i = 0, l = array.length / 3 - 1; i < l; i += 3){
@@ -14502,7 +14571,7 @@ function WebGLGeometries(gl, attributes, info, bindingStates) {
                 const c = i + 2;
                 indices.push(a, b, b, c, c, a);
             }
-        }
+        } else return;
         const attribute = new (arrayNeedsUint32(indices) ? Uint32BufferAttribute : Uint16BufferAttribute)(indices, 1);
         attribute.version = version;
         // Updating index buffer in VAO now. See WebGLBindingStates
@@ -15492,6 +15561,8 @@ function WebGLShader(gl, type, string) {
     gl.compileShader(shader);
     return shader;
 }
+// From https://www.khronos.org/registry/webgl/extensions/KHR_parallel_shader_compile/
+const COMPLETION_STATUS_KHR = 0x91B1;
 let programIdCount = 0;
 function handleSource(string, errorLine) {
     const lines = string.split("\n");
@@ -15505,22 +15576,30 @@ function handleSource(string, errorLine) {
     return lines2.join("\n");
 }
 function getEncodingComponents(colorSpace1) {
+    const workingPrimaries = ColorManagement.getPrimaries(ColorManagement.workingColorSpace);
+    const encodingPrimaries = ColorManagement.getPrimaries(colorSpace1);
+    let gamutMapping;
+    if (workingPrimaries === encodingPrimaries) gamutMapping = "";
+    else if (workingPrimaries === P3Primaries && encodingPrimaries === Rec709Primaries) gamutMapping = "LinearDisplayP3ToLinearSRGB";
+    else if (workingPrimaries === Rec709Primaries && encodingPrimaries === P3Primaries) gamutMapping = "LinearSRGBToLinearDisplayP3";
     switch(colorSpace1){
         case LinearSRGBColorSpace:
+        case LinearDisplayP3ColorSpace:
             return [
-                "Linear",
-                "( value )"
+                gamutMapping,
+                "LinearTransferOETF"
             ];
         case SRGBColorSpace:
+        case DisplayP3ColorSpace:
             return [
-                "sRGB",
-                "( value )"
+                gamutMapping,
+                "sRGBTransferOETF"
             ];
         default:
             console.warn("THREE.WebGLProgram: Unsupported color space:", colorSpace1);
             return [
-                "Linear",
-                "( value )"
+                gamutMapping,
+                "LinearTransferOETF"
             ];
     }
 }
@@ -15538,7 +15617,7 @@ function getShaderErrors(gl, shader, type) {
 }
 function getTexelEncodingFunction(functionName, colorSpace1) {
     const components = getEncodingComponents(colorSpace1);
-    return "vec4 " + functionName + "( vec4 value ) { return LinearTo" + components[0] + components[1] + "; }";
+    return `vec4 ${functionName}( vec4 value ) { return ${components[0]}( ${components[1]}( value ) ); }`;
 }
 function getToneMappingFunction(functionName, toneMapping) {
     let toneMappingName;
@@ -15767,6 +15846,7 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
             parameters.normalMapTangentSpace ? "#define USE_NORMALMAP_TANGENTSPACE" : "",
             parameters.displacementMap ? "#define USE_DISPLACEMENTMAP" : "",
             parameters.emissiveMap ? "#define USE_EMISSIVEMAP" : "",
+            parameters.anisotropy ? "#define USE_ANISOTROPY" : "",
             parameters.anisotropyMap ? "#define USE_ANISOTROPYMAP" : "",
             parameters.clearcoatMap ? "#define USE_CLEARCOATMAP" : "",
             parameters.clearcoatRoughnessMap ? "#define USE_CLEARCOAT_ROUGHNESSMAP" : "",
@@ -15830,6 +15910,7 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
             parameters.shadowMapEnabled ? "#define USE_SHADOWMAP" : "",
             parameters.shadowMapEnabled ? "#define " + shadowMapTypeDefine : "",
             parameters.sizeAttenuation ? "#define USE_SIZEATTENUATION" : "",
+            parameters.numLightProbes > 0 ? "#define USE_LIGHT_PROBES" : "",
             parameters.useLegacyLights ? "#define LEGACY_LIGHTS" : "",
             parameters.logarithmicDepthBuffer ? "#define USE_LOGDEPTHBUF" : "",
             parameters.logarithmicDepthBuffer && parameters.rendererExtensionFragDepth ? "#define USE_LOGDEPTHBUF_EXT" : "",
@@ -15950,7 +16031,9 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
             parameters.shadowMapEnabled ? "#define USE_SHADOWMAP" : "",
             parameters.shadowMapEnabled ? "#define " + shadowMapTypeDefine : "",
             parameters.premultipliedAlpha ? "#define PREMULTIPLIED_ALPHA" : "",
+            parameters.numLightProbes > 0 ? "#define USE_LIGHT_PROBES" : "",
             parameters.useLegacyLights ? "#define LEGACY_LIGHTS" : "",
+            parameters.decodeVideoTexture ? "#define DECODE_VIDEO_TEXTURE" : "",
             parameters.logarithmicDepthBuffer ? "#define USE_LOGDEPTHBUF" : "",
             parameters.logarithmicDepthBuffer && parameters.rendererExtensionFragDepth ? "#define USE_LOGDEPTHBUF_EXT" : "",
             "uniform mat4 viewMatrix;",
@@ -15985,6 +16068,7 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
             "#define texture2D texture"
         ].join("\n") + "\n" + prefixVertex;
         prefixFragment = [
+            "precision mediump sampler2DArray;",
             "#define varying in",
             parameters.glslVersion === GLSL3 ? "" : "layout(location = 0) out highp vec4 pc_fragColor;",
             parameters.glslVersion === GLSL3 ? "" : "#define gl_FragColor pc_fragColor",
@@ -16013,54 +16097,67 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
     else if (parameters.morphTargets === true) // programs with morphTargets displace position out of attribute 0
     gl.bindAttribLocation(program, 0, "position");
     gl.linkProgram(program);
-    // check for link errors
-    if (renderer.debug.checkShaderErrors) {
-        const programLog = gl.getProgramInfoLog(program).trim();
-        const vertexLog = gl.getShaderInfoLog(glVertexShader).trim();
-        const fragmentLog = gl.getShaderInfoLog(glFragmentShader).trim();
-        let runnable = true;
-        let haveDiagnostics = true;
-        if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
-            runnable = false;
-            if (typeof renderer.debug.onShaderError === "function") renderer.debug.onShaderError(gl, program, glVertexShader, glFragmentShader);
-            else {
-                // default error reporting
-                const vertexErrors = getShaderErrors(gl, glVertexShader, "vertex");
-                const fragmentErrors = getShaderErrors(gl, glFragmentShader, "fragment");
-                console.error("THREE.WebGLProgram: Shader Error " + gl.getError() + " - " + "VALIDATE_STATUS " + gl.getProgramParameter(program, gl.VALIDATE_STATUS) + "\n\n" + "Program Info Log: " + programLog + "\n" + vertexErrors + "\n" + fragmentErrors);
-            }
-        } else if (programLog !== "") console.warn("THREE.WebGLProgram: Program Info Log:", programLog);
-        else if (vertexLog === "" || fragmentLog === "") haveDiagnostics = false;
-        if (haveDiagnostics) this.diagnostics = {
-            runnable: runnable,
-            programLog: programLog,
-            vertexShader: {
-                log: vertexLog,
-                prefix: prefixVertex
-            },
-            fragmentShader: {
-                log: fragmentLog,
-                prefix: prefixFragment
-            }
-        };
+    function onFirstUse(self1) {
+        // check for link errors
+        if (renderer.debug.checkShaderErrors) {
+            const programLog = gl.getProgramInfoLog(program).trim();
+            const vertexLog = gl.getShaderInfoLog(glVertexShader).trim();
+            const fragmentLog = gl.getShaderInfoLog(glFragmentShader).trim();
+            let runnable = true;
+            let haveDiagnostics = true;
+            if (gl.getProgramParameter(program, gl.LINK_STATUS) === false) {
+                runnable = false;
+                if (typeof renderer.debug.onShaderError === "function") renderer.debug.onShaderError(gl, program, glVertexShader, glFragmentShader);
+                else {
+                    // default error reporting
+                    const vertexErrors = getShaderErrors(gl, glVertexShader, "vertex");
+                    const fragmentErrors = getShaderErrors(gl, glFragmentShader, "fragment");
+                    console.error("THREE.WebGLProgram: Shader Error " + gl.getError() + " - " + "VALIDATE_STATUS " + gl.getProgramParameter(program, gl.VALIDATE_STATUS) + "\n\n" + "Program Info Log: " + programLog + "\n" + vertexErrors + "\n" + fragmentErrors);
+                }
+            } else if (programLog !== "") console.warn("THREE.WebGLProgram: Program Info Log:", programLog);
+            else if (vertexLog === "" || fragmentLog === "") haveDiagnostics = false;
+            if (haveDiagnostics) self1.diagnostics = {
+                runnable: runnable,
+                programLog: programLog,
+                vertexShader: {
+                    log: vertexLog,
+                    prefix: prefixVertex
+                },
+                fragmentShader: {
+                    log: fragmentLog,
+                    prefix: prefixFragment
+                }
+            };
+        }
+        // Clean up
+        // Crashes in iOS9 and iOS10. #18402
+        // gl.detachShader( program, glVertexShader );
+        // gl.detachShader( program, glFragmentShader );
+        gl.deleteShader(glVertexShader);
+        gl.deleteShader(glFragmentShader);
+        cachedUniforms = new WebGLUniforms(gl, program);
+        cachedAttributes = fetchAttributeLocations(gl, program);
     }
-    // Clean up
-    // Crashes in iOS9 and iOS10. #18402
-    // gl.detachShader( program, glVertexShader );
-    // gl.detachShader( program, glFragmentShader );
-    gl.deleteShader(glVertexShader);
-    gl.deleteShader(glFragmentShader);
     // set up caching for uniform locations
     let cachedUniforms;
     this.getUniforms = function() {
-        if (cachedUniforms === undefined) cachedUniforms = new WebGLUniforms(gl, program);
+        if (cachedUniforms === undefined) // Populates cachedUniforms and cachedAttributes
+        onFirstUse(this);
         return cachedUniforms;
     };
     // set up caching for attribute locations
     let cachedAttributes;
     this.getAttributes = function() {
-        if (cachedAttributes === undefined) cachedAttributes = fetchAttributeLocations(gl, program);
+        if (cachedAttributes === undefined) // Populates cachedAttributes and cachedUniforms
+        onFirstUse(this);
         return cachedAttributes;
+    };
+    // indicate when the program is ready to be used. if the KHR_parallel_shader_compile extension isn't supported,
+    // flag the program as ready immediately. It may cause a stall when it's first used.
+    let programReady = parameters.rendererExtensionParallelShaderCompile === false;
+    this.isReady = function() {
+        if (programReady === false) programReady = gl.getProgramParameter(program, COMPLETION_STATUS_KHR);
+        return programReady;
     };
     // free resource
     this.destroy = function() {
@@ -16079,7 +16176,7 @@ function WebGLProgram(renderer, cacheKey, parameters, bindingStates) {
     this.fragmentShader = glFragmentShader;
     return this;
 }
-let _id = 0;
+let _id$1 = 0;
 class WebGLShaderCache {
     constructor(){
         this.shaderCache = new Map();
@@ -16141,7 +16238,7 @@ class WebGLShaderCache {
 }
 class WebGLShaderStage {
     constructor(code){
-        this.id = _id++;
+        this.id = _id$1++;
         this.code = code;
         this.usedTimes = 0;
     }
@@ -16248,6 +16345,10 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
         const HAS_ATTRIBUTE_UV1 = !!geometry.attributes.uv1;
         const HAS_ATTRIBUTE_UV2 = !!geometry.attributes.uv2;
         const HAS_ATTRIBUTE_UV3 = !!geometry.attributes.uv3;
+        let toneMapping = NoToneMapping;
+        if (material.toneMapped) {
+            if (currentRenderTarget === null || currentRenderTarget.isXRRenderTarget === true) toneMapping = renderer.toneMapping;
+        }
         const parameters = {
             isWebGL2: IS_WEBGL2,
             shaderID: shaderID,
@@ -16358,13 +16459,15 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
             numPointLightShadows: lights.pointShadowMap.length,
             numSpotLightShadows: lights.spotShadowMap.length,
             numSpotLightShadowsWithMaps: lights.numSpotLightShadowsWithMaps,
+            numLightProbes: lights.numLightProbes,
             numClippingPlanes: clipping.numPlanes,
             numClipIntersection: clipping.numIntersection,
             dithering: material.dithering,
             shadowMapEnabled: renderer.shadowMap.enabled && shadows.length > 0,
             shadowMapType: renderer.shadowMap.type,
-            toneMapping: material.toneMapped ? renderer.toneMapping : NoToneMapping,
-            useLegacyLights: renderer.useLegacyLights,
+            toneMapping: toneMapping,
+            useLegacyLights: renderer._useLegacyLights,
+            decodeVideoTexture: HAS_MAP && material.map.isVideoTexture === true && ColorManagement.getTransfer(material.map.colorSpace) === SRGBTransfer,
             premultipliedAlpha: material.premultipliedAlpha,
             doubleSided: material.side === DoubleSide,
             flipSided: material.side === BackSide,
@@ -16378,6 +16481,7 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
             rendererExtensionFragDepth: IS_WEBGL2 || extensions.has("EXT_frag_depth"),
             rendererExtensionDrawBuffers: IS_WEBGL2 || extensions.has("WEBGL_draw_buffers"),
             rendererExtensionShaderTextureLod: IS_WEBGL2 || extensions.has("EXT_shader_texture_lod"),
+            rendererExtensionParallelShaderCompile: extensions.has("KHR_parallel_shader_compile"),
             customProgramCacheKey: material.customProgramCacheKey()
         };
         return parameters;
@@ -16444,6 +16548,7 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
         array.push(parameters.numPointLightShadows);
         array.push(parameters.numSpotLightShadows);
         array.push(parameters.numSpotLightShadowsWithMaps);
+        array.push(parameters.numLightProbes);
         array.push(parameters.shadowMapType);
         array.push(parameters.toneMapping);
         array.push(parameters.numClippingPlanes);
@@ -16470,6 +16575,7 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
         if (parameters.vertexUv3s) _programLayers.enable(15);
         if (parameters.vertexTangents) _programLayers.enable(16);
         if (parameters.anisotropy) _programLayers.enable(17);
+        if (parameters.alphaHash) _programLayers.enable(18);
         array.push(_programLayers.mask);
         _programLayers.disableAll();
         if (parameters.fog) _programLayers.enable(0);
@@ -16491,6 +16597,7 @@ function WebGLPrograms(renderer, cubemaps, cubeuvmaps, extensions, capabilities,
         if (parameters.sheen) _programLayers.enable(16);
         if (parameters.opaque) _programLayers.enable(17);
         if (parameters.pointsUvs) _programLayers.enable(18);
+        if (parameters.decodeVideoTexture) _programLayers.enable(19);
         array.push(_programLayers.mask);
     }
     function getUniforms(material) {
@@ -16799,7 +16906,8 @@ function WebGLLights(extensions, capabilities) {
             numDirectionalShadows: -1,
             numPointShadows: -1,
             numSpotShadows: -1,
-            numSpotMaps: -1
+            numSpotMaps: -1,
+            numLightProbes: -1
         },
         ambient: [
             0,
@@ -16824,7 +16932,8 @@ function WebGLLights(extensions, capabilities) {
         pointShadowMap: [],
         pointShadowMatrix: [],
         hemi: [],
-        numSpotLightShadowsWithMaps: 0
+        numSpotLightShadowsWithMaps: 0,
+        numLightProbes: 0
     };
     for(let i = 0; i < 9; i++)state.probe.push(new Vector3());
     const vector3 = new Vector3();
@@ -16843,6 +16952,7 @@ function WebGLLights(extensions, capabilities) {
         let numSpotShadows = 0;
         let numSpotMaps = 0;
         let numSpotShadowsWithMaps = 0;
+        let numLightProbes = 0;
         // ordering : [shadow casting + map texturing, map texturing, shadow casting, none ]
         lights.sort(shadowCastingAndTexturingLightsFirst);
         // artist-friendly light intensity scaling factor
@@ -16857,8 +16967,10 @@ function WebGLLights(extensions, capabilities) {
                 r += color.r * intensity * scaleFactor;
                 g += color.g * intensity * scaleFactor;
                 b += color.b * intensity * scaleFactor;
-            } else if (light.isLightProbe) for(let j = 0; j < 9; j++)state.probe[j].addScaledVector(light.sh.coefficients[j], intensity);
-            else if (light.isDirectionalLight) {
+            } else if (light.isLightProbe) {
+                for(let j = 0; j < 9; j++)state.probe[j].addScaledVector(light.sh.coefficients[j], intensity);
+                numLightProbes++;
+            } else if (light.isDirectionalLight) {
                 const uniforms = cache.get(light);
                 uniforms.color.copy(light.color).multiplyScalar(light.intensity * scaleFactor);
                 if (light.castShadow) {
@@ -16961,7 +17073,7 @@ function WebGLLights(extensions, capabilities) {
         state.ambient[1] = g;
         state.ambient[2] = b;
         const hash = state.hash;
-        if (hash.directionalLength !== directionalLength || hash.pointLength !== pointLength || hash.spotLength !== spotLength || hash.rectAreaLength !== rectAreaLength || hash.hemiLength !== hemiLength || hash.numDirectionalShadows !== numDirectionalShadows || hash.numPointShadows !== numPointShadows || hash.numSpotShadows !== numSpotShadows || hash.numSpotMaps !== numSpotMaps) {
+        if (hash.directionalLength !== directionalLength || hash.pointLength !== pointLength || hash.spotLength !== spotLength || hash.rectAreaLength !== rectAreaLength || hash.hemiLength !== hemiLength || hash.numDirectionalShadows !== numDirectionalShadows || hash.numPointShadows !== numPointShadows || hash.numSpotShadows !== numSpotShadows || hash.numSpotMaps !== numSpotMaps || hash.numLightProbes !== numLightProbes) {
             state.directional.length = directionalLength;
             state.spot.length = spotLength;
             state.rectArea.length = rectAreaLength;
@@ -16978,6 +17090,7 @@ function WebGLLights(extensions, capabilities) {
             state.spotLightMatrix.length = numSpotShadows + numSpotMaps - numSpotShadowsWithMaps;
             state.spotLightMap.length = numSpotMaps;
             state.numSpotLightShadowsWithMaps = numSpotShadowsWithMaps;
+            state.numLightProbes = numLightProbes;
             hash.directionalLength = directionalLength;
             hash.pointLength = pointLength;
             hash.spotLength = spotLength;
@@ -16987,6 +17100,7 @@ function WebGLLights(extensions, capabilities) {
             hash.numPointShadows = numPointShadows;
             hash.numSpotShadows = numSpotShadows;
             hash.numSpotMaps = numSpotMaps;
+            hash.numLightProbes = numLightProbes;
             state.version = nextVersion++;
         }
     }
@@ -17555,6 +17669,8 @@ function WebGLState(gl, extensions, capabilities) {
     let currentBlendEquationAlpha = null;
     let currentBlendSrcAlpha = null;
     let currentBlendDstAlpha = null;
+    let currentBlendColor = new Color(0, 0, 0);
+    let currentBlendAlpha = 0;
     let currentPremultipledAlpha = false;
     let currentFlipSided = null;
     let currentCullFace = null;
@@ -17694,9 +17810,13 @@ function WebGLState(gl, extensions, capabilities) {
         [OneMinusSrcColorFactor]: gl.ONE_MINUS_SRC_COLOR,
         [OneMinusSrcAlphaFactor]: gl.ONE_MINUS_SRC_ALPHA,
         [OneMinusDstColorFactor]: gl.ONE_MINUS_DST_COLOR,
-        [OneMinusDstAlphaFactor]: gl.ONE_MINUS_DST_ALPHA
+        [OneMinusDstAlphaFactor]: gl.ONE_MINUS_DST_ALPHA,
+        [ConstantColorFactor]: gl.CONSTANT_COLOR,
+        [OneMinusConstantColorFactor]: gl.ONE_MINUS_CONSTANT_COLOR,
+        [ConstantAlphaFactor]: gl.CONSTANT_ALPHA,
+        [OneMinusConstantAlphaFactor]: gl.ONE_MINUS_CONSTANT_ALPHA
     };
-    function setBlending(blending, blendEquation, blendSrc, blendDst, blendEquationAlpha, blendSrcAlpha, blendDstAlpha, premultipliedAlpha) {
+    function setBlending(blending, blendEquation, blendSrc, blendDst, blendEquationAlpha, blendSrcAlpha, blendDstAlpha, blendColor, blendAlpha, premultipliedAlpha) {
         if (blending === NoBlending) {
             if (currentBlendingEnabled === true) {
                 disable(gl.BLEND);
@@ -17753,6 +17873,8 @@ function WebGLState(gl, extensions, capabilities) {
                 currentBlendDst = null;
                 currentBlendSrcAlpha = null;
                 currentBlendDstAlpha = null;
+                currentBlendColor.set(0, 0, 0);
+                currentBlendAlpha = 0;
                 currentBlending = blending;
                 currentPremultipledAlpha = premultipliedAlpha;
             }
@@ -17774,6 +17896,11 @@ function WebGLState(gl, extensions, capabilities) {
             currentBlendSrcAlpha = blendSrcAlpha;
             currentBlendDstAlpha = blendDstAlpha;
         }
+        if (blendColor.equals(currentBlendColor) === false || blendAlpha !== currentBlendAlpha) {
+            gl.blendColor(blendColor.r, blendColor.g, blendColor.b, blendAlpha);
+            currentBlendColor.copy(blendColor);
+            currentBlendAlpha = blendAlpha;
+        }
         currentBlending = blending;
         currentPremultipledAlpha = false;
     }
@@ -17782,7 +17909,7 @@ function WebGLState(gl, extensions, capabilities) {
         let flipSided = material.side === BackSide;
         if (frontFaceCW) flipSided = !flipSided;
         setFlipSided(flipSided);
-        material.blending === NormalBlending && material.transparent === false ? setBlending(NoBlending) : setBlending(material.blending, material.blendEquation, material.blendSrc, material.blendDst, material.blendEquationAlpha, material.blendSrcAlpha, material.blendDstAlpha, material.premultipliedAlpha);
+        material.blending === NormalBlending && material.transparent === false ? setBlending(NoBlending) : setBlending(material.blending, material.blendEquation, material.blendSrc, material.blendDst, material.blendEquationAlpha, material.blendSrcAlpha, material.blendDstAlpha, material.blendColor, material.blendAlpha, material.premultipliedAlpha);
         depthBuffer.setFunc(material.depthFunc);
         depthBuffer.setTest(material.depthTest);
         depthBuffer.setMask(material.depthWrite);
@@ -17992,6 +18119,7 @@ function WebGLState(gl, extensions, capabilities) {
         gl.blendEquation(gl.FUNC_ADD);
         gl.blendFunc(gl.ONE, gl.ZERO);
         gl.blendFuncSeparate(gl.ONE, gl.ZERO, gl.ONE, gl.ZERO);
+        gl.blendColor(0, 0, 0, 0);
         gl.colorMask(true, true, true, true);
         gl.clearColor(0, 0, 0, 0);
         gl.depthMask(true);
@@ -18030,6 +18158,8 @@ function WebGLState(gl, extensions, capabilities) {
         currentBlendEquationAlpha = null;
         currentBlendSrcAlpha = null;
         currentBlendDstAlpha = null;
+        currentBlendColor = new Color(0, 0, 0);
+        currentBlendAlpha = 0;
         currentPremultipledAlpha = false;
         currentFlipSided = null;
         currentCullFace = null;
@@ -18157,15 +18287,24 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
             if (glType === _gl.HALF_FLOAT) internalFormat = _gl.R16F;
             if (glType === _gl.UNSIGNED_BYTE) internalFormat = _gl.R8;
         }
+        if (glFormat === _gl.RED_INTEGER) {
+            if (glType === _gl.UNSIGNED_BYTE) internalFormat = _gl.R8UI;
+            if (glType === _gl.UNSIGNED_SHORT) internalFormat = _gl.R16UI;
+            if (glType === _gl.UNSIGNED_INT) internalFormat = _gl.R32UI;
+            if (glType === _gl.BYTE) internalFormat = _gl.R8I;
+            if (glType === _gl.SHORT) internalFormat = _gl.R16I;
+            if (glType === _gl.INT) internalFormat = _gl.R32I;
+        }
         if (glFormat === _gl.RG) {
             if (glType === _gl.FLOAT) internalFormat = _gl.RG32F;
             if (glType === _gl.HALF_FLOAT) internalFormat = _gl.RG16F;
             if (glType === _gl.UNSIGNED_BYTE) internalFormat = _gl.RG8;
         }
         if (glFormat === _gl.RGBA) {
+            const transfer = forceLinearTransfer ? LinearTransfer : ColorManagement.getTransfer(colorSpace1);
             if (glType === _gl.FLOAT) internalFormat = _gl.RGBA32F;
             if (glType === _gl.HALF_FLOAT) internalFormat = _gl.RGBA16F;
-            if (glType === _gl.UNSIGNED_BYTE) internalFormat = colorSpace1 === SRGBColorSpace && forceLinearTransfer === false ? _gl.SRGB8_ALPHA8 : _gl.RGBA8;
+            if (glType === _gl.UNSIGNED_BYTE) internalFormat = transfer === SRGBTransfer ? _gl.SRGB8_ALPHA8 : _gl.RGBA8;
             if (glType === _gl.UNSIGNED_SHORT_4_4_4_4) internalFormat = _gl.RGBA4;
             if (glType === _gl.UNSIGNED_SHORT_5_5_5_1) internalFormat = _gl.RGB5_A1;
         }
@@ -18232,11 +18371,13 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         }
         if (renderTarget.depthTexture) renderTarget.depthTexture.dispose();
         if (renderTarget.isWebGLCubeRenderTarget) for(let i = 0; i < 6; i++){
-            _gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer[i]);
+            if (Array.isArray(renderTargetProperties.__webglFramebuffer[i])) for(let level = 0; level < renderTargetProperties.__webglFramebuffer[i].length; level++)_gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer[i][level]);
+            else _gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer[i]);
             if (renderTargetProperties.__webglDepthbuffer) _gl.deleteRenderbuffer(renderTargetProperties.__webglDepthbuffer[i]);
         }
         else {
-            _gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer);
+            if (Array.isArray(renderTargetProperties.__webglFramebuffer)) for(let level = 0; level < renderTargetProperties.__webglFramebuffer.length; level++)_gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer[level]);
+            else _gl.deleteFramebuffer(renderTargetProperties.__webglFramebuffer);
             if (renderTargetProperties.__webglDepthbuffer) _gl.deleteRenderbuffer(renderTargetProperties.__webglDepthbuffer);
             if (renderTargetProperties.__webglMultisampledFramebuffer) _gl.deleteFramebuffer(renderTargetProperties.__webglMultisampledFramebuffer);
             if (renderTargetProperties.__webglColorRenderbuffer) {
@@ -18430,15 +18571,18 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         const sourceProperties = properties.get(source);
         if (source.version !== sourceProperties.__version || forceUpload === true) {
             state.activeTexture(_gl.TEXTURE0 + slot);
+            const workingPrimaries = ColorManagement.getPrimaries(ColorManagement.workingColorSpace);
+            const texturePrimaries = texture.colorSpace === NoColorSpace ? null : ColorManagement.getPrimaries(texture.colorSpace);
+            const unpackConversion = texture.colorSpace === NoColorSpace || workingPrimaries === texturePrimaries ? _gl.NONE : _gl.BROWSER_DEFAULT_WEBGL;
             _gl.pixelStorei(_gl.UNPACK_FLIP_Y_WEBGL, texture.flipY);
             _gl.pixelStorei(_gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, texture.premultiplyAlpha);
             _gl.pixelStorei(_gl.UNPACK_ALIGNMENT, texture.unpackAlignment);
-            _gl.pixelStorei(_gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, _gl.NONE);
+            _gl.pixelStorei(_gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, unpackConversion);
             const needsPowerOfTwo = textureNeedsPowerOfTwo(texture) && isPowerOfTwo$1(texture.image) === false;
             let image = resizeImage(texture.image, needsPowerOfTwo, false, maxTextureSize);
             image = verifyColorSpace(texture, image);
             const supportsMips = isPowerOfTwo$1(image) || isWebGL2, glFormat = utils.convert(texture.format, texture.colorSpace);
-            let glType = utils.convert(texture.type), glInternalFormat = getInternalFormat(texture.internalFormat, glFormat, glType, texture.colorSpace);
+            let glType = utils.convert(texture.type), glInternalFormat = getInternalFormat(texture.internalFormat, glFormat, glType, texture.colorSpace, texture.isVideoTexture);
             setTextureParameters(textureType, texture, supportsMips);
             let mipmap;
             const mipmaps = texture.mipmaps;
@@ -18579,10 +18723,13 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         const sourceProperties = properties.get(source);
         if (source.version !== sourceProperties.__version || forceUpload === true) {
             state.activeTexture(_gl.TEXTURE0 + slot);
+            const workingPrimaries = ColorManagement.getPrimaries(ColorManagement.workingColorSpace);
+            const texturePrimaries = texture.colorSpace === NoColorSpace ? null : ColorManagement.getPrimaries(texture.colorSpace);
+            const unpackConversion = texture.colorSpace === NoColorSpace || workingPrimaries === texturePrimaries ? _gl.NONE : _gl.BROWSER_DEFAULT_WEBGL;
             _gl.pixelStorei(_gl.UNPACK_FLIP_Y_WEBGL, texture.flipY);
             _gl.pixelStorei(_gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, texture.premultiplyAlpha);
             _gl.pixelStorei(_gl.UNPACK_ALIGNMENT, texture.unpackAlignment);
-            _gl.pixelStorei(_gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, _gl.NONE);
+            _gl.pixelStorei(_gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, unpackConversion);
             const isCompressed = texture.isCompressedTexture || texture.image[0].isCompressedTexture;
             const isDataTexture = texture.image[0] && texture.image[0].isDataTexture;
             const cubeImage = [];
@@ -18649,25 +18796,27 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
     }
     // Render targets
     // Setup storage for target texture and bind it to correct framebuffer
-    function setupFrameBufferTexture(framebuffer, renderTarget, texture, attachment, textureTarget) {
+    function setupFrameBufferTexture(framebuffer, renderTarget, texture, attachment, textureTarget, level) {
         const glFormat = utils.convert(texture.format, texture.colorSpace);
         const glType = utils.convert(texture.type);
         const glInternalFormat = getInternalFormat(texture.internalFormat, glFormat, glType, texture.colorSpace);
         const renderTargetProperties = properties.get(renderTarget);
         if (!renderTargetProperties.__hasExternalTextures) {
-            if (textureTarget === _gl.TEXTURE_3D || textureTarget === _gl.TEXTURE_2D_ARRAY) state.texImage3D(textureTarget, 0, glInternalFormat, renderTarget.width, renderTarget.height, renderTarget.depth, 0, glFormat, glType, null);
-            else state.texImage2D(textureTarget, 0, glInternalFormat, renderTarget.width, renderTarget.height, 0, glFormat, glType, null);
+            const width = Math.max(1, renderTarget.width >> level);
+            const height = Math.max(1, renderTarget.height >> level);
+            if (textureTarget === _gl.TEXTURE_3D || textureTarget === _gl.TEXTURE_2D_ARRAY) state.texImage3D(textureTarget, level, glInternalFormat, width, height, renderTarget.depth, 0, glFormat, glType, null);
+            else state.texImage2D(textureTarget, level, glInternalFormat, width, height, 0, glFormat, glType, null);
         }
         state.bindFramebuffer(_gl.FRAMEBUFFER, framebuffer);
         if (useMultisampledRTT(renderTarget)) multisampledRTTExt.framebufferTexture2DMultisampleEXT(_gl.FRAMEBUFFER, attachment, textureTarget, properties.get(texture).__webglTexture, 0, getRenderTargetSamples(renderTarget));
-        else if (textureTarget === _gl.TEXTURE_2D || textureTarget >= _gl.TEXTURE_CUBE_MAP_POSITIVE_X && textureTarget <= _gl.TEXTURE_CUBE_MAP_NEGATIVE_Z) _gl.framebufferTexture2D(_gl.FRAMEBUFFER, attachment, textureTarget, properties.get(texture).__webglTexture, 0);
+        else if (textureTarget === _gl.TEXTURE_2D || textureTarget >= _gl.TEXTURE_CUBE_MAP_POSITIVE_X && textureTarget <= _gl.TEXTURE_CUBE_MAP_NEGATIVE_Z) _gl.framebufferTexture2D(_gl.FRAMEBUFFER, attachment, textureTarget, properties.get(texture).__webglTexture, level);
         state.bindFramebuffer(_gl.FRAMEBUFFER, null);
     }
     // Setup storage for internal depth/stencil buffers and bind to correct framebuffer
     function setupRenderBufferStorage(renderbuffer, renderTarget, isMultisample) {
         _gl.bindRenderbuffer(_gl.RENDERBUFFER, renderbuffer);
         if (renderTarget.depthBuffer && !renderTarget.stencilBuffer) {
-            let glInternalFormat = _gl.DEPTH_COMPONENT16;
+            let glInternalFormat = isWebGL2 === true ? _gl.DEPTH_COMPONENT24 : _gl.DEPTH_COMPONENT16;
             if (isMultisample || useMultisampledRTT(renderTarget)) {
                 const depthTexture = renderTarget.depthTexture;
                 if (depthTexture && depthTexture.isDepthTexture) {
@@ -18749,7 +18898,7 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
     // rebind framebuffer with external textures
     function rebindTextures(renderTarget, colorTexture, depthTexture) {
         const renderTargetProperties = properties.get(renderTarget);
-        if (colorTexture !== undefined) setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, renderTarget.texture, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_2D);
+        if (colorTexture !== undefined) setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, renderTarget.texture, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_2D, 0);
         if (depthTexture !== undefined) setupDepthRenderbuffer(renderTarget);
     }
     // Set up GL resources for the render target
@@ -18769,9 +18918,15 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         // Setup framebuffer
         if (isCube) {
             renderTargetProperties.__webglFramebuffer = [];
-            for(let i = 0; i < 6; i++)renderTargetProperties.__webglFramebuffer[i] = _gl.createFramebuffer();
+            for(let i = 0; i < 6; i++)if (isWebGL2 && texture.mipmaps && texture.mipmaps.length > 0) {
+                renderTargetProperties.__webglFramebuffer[i] = [];
+                for(let level = 0; level < texture.mipmaps.length; level++)renderTargetProperties.__webglFramebuffer[i][level] = _gl.createFramebuffer();
+            } else renderTargetProperties.__webglFramebuffer[i] = _gl.createFramebuffer();
         } else {
-            renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
+            if (isWebGL2 && texture.mipmaps && texture.mipmaps.length > 0) {
+                renderTargetProperties.__webglFramebuffer = [];
+                for(let level = 0; level < texture.mipmaps.length; level++)renderTargetProperties.__webglFramebuffer[level] = _gl.createFramebuffer();
+            } else renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
             if (isMultipleRenderTargets) {
                 if (capabilities.drawBuffers) {
                     const textures = renderTarget.texture;
@@ -18814,7 +18969,10 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         if (isCube) {
             state.bindTexture(_gl.TEXTURE_CUBE_MAP, textureProperties.__webglTexture);
             setTextureParameters(_gl.TEXTURE_CUBE_MAP, texture, supportsMips);
-            for(let i = 0; i < 6; i++)setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[i], renderTarget, texture, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i);
+            for(let i = 0; i < 6; i++){
+                if (isWebGL2 && texture.mipmaps && texture.mipmaps.length > 0) for(let level = 0; level < texture.mipmaps.length; level++)setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[i][level], renderTarget, texture, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, level);
+                else setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[i], renderTarget, texture, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0);
+            }
             if (textureNeedsGenerateMipmaps(texture, supportsMips)) generateMipmap(_gl.TEXTURE_CUBE_MAP);
             state.unbindTexture();
         } else if (isMultipleRenderTargets) {
@@ -18824,7 +18982,7 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
                 const attachmentProperties = properties.get(attachment);
                 state.bindTexture(_gl.TEXTURE_2D, attachmentProperties.__webglTexture);
                 setTextureParameters(_gl.TEXTURE_2D, attachment, supportsMips);
-                setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, attachment, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D);
+                setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, attachment, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D, 0);
                 if (textureNeedsGenerateMipmaps(attachment, supportsMips)) generateMipmap(_gl.TEXTURE_2D);
             }
             state.unbindTexture();
@@ -18836,7 +18994,8 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
             }
             state.bindTexture(glTextureType, textureProperties.__webglTexture);
             setTextureParameters(glTextureType, texture, supportsMips);
-            setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, texture, _gl.COLOR_ATTACHMENT0, glTextureType);
+            if (isWebGL2 && texture.mipmaps && texture.mipmaps.length > 0) for(let level = 0; level < texture.mipmaps.length; level++)setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[level], renderTarget, texture, _gl.COLOR_ATTACHMENT0, glTextureType, level);
+            else setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, texture, _gl.COLOR_ATTACHMENT0, glTextureType, 0);
             if (textureNeedsGenerateMipmaps(texture, supportsMips)) generateMipmap(glTextureType);
             state.unbindTexture();
         }
@@ -18936,10 +19095,10 @@ function WebGLTextures(_gl, extensions, state, properties, capabilities, utils, 
         const colorSpace1 = texture.colorSpace;
         const format = texture.format;
         const type = texture.type;
-        if (texture.isCompressedTexture === true || texture.format === _SRGBAFormat) return image;
+        if (texture.isCompressedTexture === true || texture.isVideoTexture === true || texture.format === _SRGBAFormat) return image;
         if (colorSpace1 !== LinearSRGBColorSpace && colorSpace1 !== NoColorSpace) {
             // sRGB
-            if (colorSpace1 === SRGBColorSpace) {
+            if (ColorManagement.getTransfer(colorSpace1) === SRGBTransfer) {
                 if (isWebGL2 === false) {
                     // in WebGL 1, try to use EXT_sRGB extension and unsized formats
                     if (extensions.has("EXT_sRGB") === true && format === RGBAFormat) {
@@ -18974,6 +19133,7 @@ function WebGLUtils(gl, extensions, capabilities) {
     const isWebGL2 = capabilities.isWebGL2;
     function convert(p, colorSpace1 = NoColorSpace) {
         let extension;
+        const transfer = ColorManagement.getTransfer(colorSpace1);
         if (p === UnsignedByteType) return gl.UNSIGNED_BYTE;
         if (p === UnsignedShort4444Type) return gl.UNSIGNED_SHORT_4_4_4_4;
         if (p === UnsignedShort5551Type) return gl.UNSIGNED_SHORT_5_5_5_1;
@@ -19009,7 +19169,7 @@ function WebGLUtils(gl, extensions, capabilities) {
         if (p === RGBAIntegerFormat) return gl.RGBA_INTEGER;
         // S3TC
         if (p === RGB_S3TC_DXT1_Format || p === RGBA_S3TC_DXT1_Format || p === RGBA_S3TC_DXT3_Format || p === RGBA_S3TC_DXT5_Format) {
-            if (colorSpace1 === SRGBColorSpace) {
+            if (transfer === SRGBTransfer) {
                 extension = extensions.get("WEBGL_compressed_texture_s3tc_srgb");
                 if (extension !== null) {
                     if (p === RGB_S3TC_DXT1_Format) return extension.COMPRESSED_SRGB_S3TC_DXT1_EXT;
@@ -19047,35 +19207,37 @@ function WebGLUtils(gl, extensions, capabilities) {
         if (p === RGB_ETC2_Format || p === RGBA_ETC2_EAC_Format) {
             extension = extensions.get("WEBGL_compressed_texture_etc");
             if (extension !== null) {
-                if (p === RGB_ETC2_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ETC2 : extension.COMPRESSED_RGB8_ETC2;
-                if (p === RGBA_ETC2_EAC_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : extension.COMPRESSED_RGBA8_ETC2_EAC;
+                if (p === RGB_ETC2_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ETC2 : extension.COMPRESSED_RGB8_ETC2;
+                if (p === RGBA_ETC2_EAC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : extension.COMPRESSED_RGBA8_ETC2_EAC;
             } else return null;
         }
         // ASTC
         if (p === RGBA_ASTC_4x4_Format || p === RGBA_ASTC_5x4_Format || p === RGBA_ASTC_5x5_Format || p === RGBA_ASTC_6x5_Format || p === RGBA_ASTC_6x6_Format || p === RGBA_ASTC_8x5_Format || p === RGBA_ASTC_8x6_Format || p === RGBA_ASTC_8x8_Format || p === RGBA_ASTC_10x5_Format || p === RGBA_ASTC_10x6_Format || p === RGBA_ASTC_10x8_Format || p === RGBA_ASTC_10x10_Format || p === RGBA_ASTC_12x10_Format || p === RGBA_ASTC_12x12_Format) {
             extension = extensions.get("WEBGL_compressed_texture_astc");
             if (extension !== null) {
-                if (p === RGBA_ASTC_4x4_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : extension.COMPRESSED_RGBA_ASTC_4x4_KHR;
-                if (p === RGBA_ASTC_5x4_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR : extension.COMPRESSED_RGBA_ASTC_5x4_KHR;
-                if (p === RGBA_ASTC_5x5_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR : extension.COMPRESSED_RGBA_ASTC_5x5_KHR;
-                if (p === RGBA_ASTC_6x5_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR : extension.COMPRESSED_RGBA_ASTC_6x5_KHR;
-                if (p === RGBA_ASTC_6x6_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR : extension.COMPRESSED_RGBA_ASTC_6x6_KHR;
-                if (p === RGBA_ASTC_8x5_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR : extension.COMPRESSED_RGBA_ASTC_8x5_KHR;
-                if (p === RGBA_ASTC_8x6_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR : extension.COMPRESSED_RGBA_ASTC_8x6_KHR;
-                if (p === RGBA_ASTC_8x8_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR : extension.COMPRESSED_RGBA_ASTC_8x8_KHR;
-                if (p === RGBA_ASTC_10x5_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR : extension.COMPRESSED_RGBA_ASTC_10x5_KHR;
-                if (p === RGBA_ASTC_10x6_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR : extension.COMPRESSED_RGBA_ASTC_10x6_KHR;
-                if (p === RGBA_ASTC_10x8_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR : extension.COMPRESSED_RGBA_ASTC_10x8_KHR;
-                if (p === RGBA_ASTC_10x10_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR : extension.COMPRESSED_RGBA_ASTC_10x10_KHR;
-                if (p === RGBA_ASTC_12x10_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR : extension.COMPRESSED_RGBA_ASTC_12x10_KHR;
-                if (p === RGBA_ASTC_12x12_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR : extension.COMPRESSED_RGBA_ASTC_12x12_KHR;
+                if (p === RGBA_ASTC_4x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : extension.COMPRESSED_RGBA_ASTC_4x4_KHR;
+                if (p === RGBA_ASTC_5x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR : extension.COMPRESSED_RGBA_ASTC_5x4_KHR;
+                if (p === RGBA_ASTC_5x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR : extension.COMPRESSED_RGBA_ASTC_5x5_KHR;
+                if (p === RGBA_ASTC_6x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR : extension.COMPRESSED_RGBA_ASTC_6x5_KHR;
+                if (p === RGBA_ASTC_6x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR : extension.COMPRESSED_RGBA_ASTC_6x6_KHR;
+                if (p === RGBA_ASTC_8x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR : extension.COMPRESSED_RGBA_ASTC_8x5_KHR;
+                if (p === RGBA_ASTC_8x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR : extension.COMPRESSED_RGBA_ASTC_8x6_KHR;
+                if (p === RGBA_ASTC_8x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR : extension.COMPRESSED_RGBA_ASTC_8x8_KHR;
+                if (p === RGBA_ASTC_10x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR : extension.COMPRESSED_RGBA_ASTC_10x5_KHR;
+                if (p === RGBA_ASTC_10x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR : extension.COMPRESSED_RGBA_ASTC_10x6_KHR;
+                if (p === RGBA_ASTC_10x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR : extension.COMPRESSED_RGBA_ASTC_10x8_KHR;
+                if (p === RGBA_ASTC_10x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR : extension.COMPRESSED_RGBA_ASTC_10x10_KHR;
+                if (p === RGBA_ASTC_12x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR : extension.COMPRESSED_RGBA_ASTC_12x10_KHR;
+                if (p === RGBA_ASTC_12x12_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR : extension.COMPRESSED_RGBA_ASTC_12x12_KHR;
             } else return null;
         }
         // BPTC
-        if (p === RGBA_BPTC_Format) {
+        if (p === RGBA_BPTC_Format || p === RGB_BPTC_SIGNED_Format || p === RGB_BPTC_UNSIGNED_Format) {
             extension = extensions.get("EXT_texture_compression_bptc");
             if (extension !== null) {
-                if (p === RGBA_BPTC_Format) return colorSpace1 === SRGBColorSpace ? extension.COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT : extension.COMPRESSED_RGBA_BPTC_UNORM_EXT;
+                if (p === RGBA_BPTC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT : extension.COMPRESSED_RGBA_BPTC_UNORM_EXT;
+                if (p === RGB_BPTC_SIGNED_Format) return extension.COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT;
+                if (p === RGB_BPTC_UNSIGNED_Format) return extension.COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT;
             } else return null;
         }
         // RGTC
@@ -19648,8 +19810,6 @@ class WebXRManager extends EventDispatcher {
             }
             camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
             camera.updateMatrixWorld(true);
-            const children = camera.children;
-            for(let i = 0, l = children.length; i < l; i++)children[i].updateMatrixWorld(true);
             camera.projectionMatrix.copy(cameraXR.projectionMatrix);
             camera.projectionMatrixInverse.copy(cameraXR.projectionMatrixInverse);
             if (camera.isPerspectiveCamera) {
@@ -19834,7 +19994,7 @@ function WebGLMaterials(renderer, properties) {
         if (material.lightMap) {
             uniforms.lightMap.value = material.lightMap;
             // artist-friendly light intensity scaling factor
-            const scaleFactor = renderer.useLegacyLights === true ? Math.PI : 1;
+            const scaleFactor = renderer._useLegacyLights === true ? Math.PI : 1;
             uniforms.lightMapIntensity.value = material.lightMapIntensity * scaleFactor;
             refreshTransformUniform(material.lightMap, uniforms.lightMapTransform);
         }
@@ -20234,11 +20394,6 @@ function WebGLUniformsGroups(gl, info, capabilities, state) {
         dispose: dispose
     };
 }
-function createCanvasElement() {
-    const canvas = createElementNS("canvas");
-    canvas.style.display = "block";
-    return canvas;
-}
 class WebGLRenderer {
     constructor(parameters = {}){
         const { canvas = createCanvasElement(), context = null, depth = true, stencil = true, alpha = false, antialias = false, premultipliedAlpha = true, preserveDrawingBuffer = false, powerPreference = "default", failIfMajorPerformanceCaveat = false } = parameters;
@@ -20278,9 +20433,9 @@ class WebGLRenderer {
         this.clippingPlanes = [];
         this.localClippingEnabled = false;
         // physically based shading
-        this.outputColorSpace = SRGBColorSpace;
+        this._outputColorSpace = SRGBColorSpace;
         // physical lights
-        this.useLegacyLights = true;
+        this._useLegacyLights = false;
         // tone mapping
         this.toneMapping = NoToneMapping;
         this.toneMappingExposure = 1.0;
@@ -20556,7 +20711,10 @@ class WebGLRenderer {
                 } else bits |= _gl.COLOR_BUFFER_BIT;
             }
             if (depth) bits |= _gl.DEPTH_BUFFER_BIT;
-            if (stencil) bits |= _gl.STENCIL_BUFFER_BIT;
+            if (stencil) {
+                bits |= _gl.STENCIL_BUFFER_BIT;
+                this.state.buffers.stencil.setMask(0xffffffff);
+            }
             _gl.clear(bits);
         };
         this.clearColor = function() {
@@ -20645,6 +20803,7 @@ class WebGLRenderer {
             let rangeFactor = 1;
             if (material.wireframe === true) {
                 index = geometries.getWireframeAttribute(geometry);
+                if (index === undefined) return;
                 rangeFactor = 2;
             }
             //
@@ -20697,40 +20856,84 @@ class WebGLRenderer {
             } else renderer.render(drawStart, drawCount);
         };
         // Compile
-        this.compile = function(scene, camera) {
-            function prepare(material, scene, object) {
-                if (material.transparent === true && material.side === DoubleSide && material.forceSinglePass === false) {
-                    material.side = BackSide;
-                    material.needsUpdate = true;
-                    getProgram(material, scene, object);
-                    material.side = FrontSide;
-                    material.needsUpdate = true;
-                    getProgram(material, scene, object);
-                    material.side = DoubleSide;
-                } else getProgram(material, scene, object);
-            }
-            currentRenderState = renderStates.get(scene);
+        function prepareMaterial(material, scene, object) {
+            if (material.transparent === true && material.side === DoubleSide && material.forceSinglePass === false) {
+                material.side = BackSide;
+                material.needsUpdate = true;
+                getProgram(material, scene, object);
+                material.side = FrontSide;
+                material.needsUpdate = true;
+                getProgram(material, scene, object);
+                material.side = DoubleSide;
+            } else getProgram(material, scene, object);
+        }
+        this.compile = function(scene, camera, targetScene = null) {
+            if (targetScene === null) targetScene = scene;
+            currentRenderState = renderStates.get(targetScene);
             currentRenderState.init();
             renderStateStack.push(currentRenderState);
-            scene.traverseVisible(function(object) {
+            // gather lights from both the target scene and the new object that will be added to the scene.
+            targetScene.traverseVisible(function(object) {
                 if (object.isLight && object.layers.test(camera.layers)) {
                     currentRenderState.pushLight(object);
                     if (object.castShadow) currentRenderState.pushShadow(object);
                 }
             });
-            currentRenderState.setupLights(_this.useLegacyLights);
+            if (scene !== targetScene) scene.traverseVisible(function(object) {
+                if (object.isLight && object.layers.test(camera.layers)) {
+                    currentRenderState.pushLight(object);
+                    if (object.castShadow) currentRenderState.pushShadow(object);
+                }
+            });
+            currentRenderState.setupLights(_this._useLegacyLights);
+            // Only initialize materials in the new scene, not the targetScene.
+            const materials = new Set();
             scene.traverse(function(object) {
                 const material = object.material;
                 if (material) {
                     if (Array.isArray(material)) for(let i = 0; i < material.length; i++){
                         const material2 = material[i];
-                        prepare(material2, scene, object);
+                        prepareMaterial(material2, targetScene, object);
+                        materials.add(material2);
                     }
-                    else prepare(material, scene, object);
+                    else {
+                        prepareMaterial(material, targetScene, object);
+                        materials.add(material);
+                    }
                 }
             });
             renderStateStack.pop();
             currentRenderState = null;
+            return materials;
+        };
+        // compileAsync
+        this.compileAsync = function(scene, camera, targetScene = null) {
+            const materials = this.compile(scene, camera, targetScene);
+            // Wait for all the materials in the new object to indicate that they're
+            // ready to be used before resolving the promise.
+            return new Promise((resolve)=>{
+                function checkMaterialsReady() {
+                    materials.forEach(function(material) {
+                        const materialProperties = properties.get(material);
+                        const program = materialProperties.currentProgram;
+                        if (program.isReady()) // remove any programs that report they're ready to use from the list
+                        materials.delete(material);
+                    });
+                    // once the list of compiling materials is empty, call the callback
+                    if (materials.size === 0) {
+                        resolve(scene);
+                        return;
+                    }
+                    // if some materials are still not ready, wait a bit and check again
+                    setTimeout(checkMaterialsReady, 10);
+                }
+                if (extensions.get("KHR_parallel_shader_compile") !== null) // If we can check the compilation status of the materials without
+                // blocking then do so right away.
+                checkMaterialsReady();
+                else // Otherwise start by waiting a bit to give the materials we just
+                // initialized a chance to finish.
+                setTimeout(checkMaterialsReady, 10);
+            });
         };
         // Animation Loop
         let onAnimationFrameCallback = null;
@@ -20794,7 +20997,7 @@ class WebGLRenderer {
             //
             background.render(currentRenderList, scene);
             // render scene
-            currentRenderState.setupLights(_this.useLegacyLights);
+            currentRenderState.setupLights(_this._useLegacyLights);
             if (camera.isArrayCamera) {
                 const cameras = camera.cameras;
                 for(let i = 0, l = cameras.length; i < l; i++){
@@ -20885,6 +21088,8 @@ class WebGLRenderer {
             state.setPolygonOffset(false);
         }
         function renderTransmissionPass(opaqueObjects, transmissiveObjects, scene, camera) {
+            const overrideMaterial = scene.isScene === true ? scene.overrideMaterial : null;
+            if (overrideMaterial !== null) return;
             const isWebGL2 = capabilities.isWebGL2;
             if (_transmissionRenderTarget === null) _transmissionRenderTarget = new WebGLRenderTarget(1, 1, {
                 generateMipmaps: true,
@@ -21024,16 +21229,22 @@ class WebGLRenderer {
                 uniforms.pointShadowMatrix.value = lights.state.pointShadowMatrix;
             // TODO (abelnation): add area lights shadow info to uniforms
             }
-            const progUniforms = program.getUniforms();
-            const uniformsList = WebGLUniforms.seqWithValue(progUniforms.seq, uniforms);
             materialProperties.currentProgram = program;
-            materialProperties.uniformsList = uniformsList;
+            materialProperties.uniformsList = null;
             return program;
+        }
+        function getUniformList(materialProperties) {
+            if (materialProperties.uniformsList === null) {
+                const progUniforms = materialProperties.currentProgram.getUniforms();
+                materialProperties.uniformsList = WebGLUniforms.seqWithValue(progUniforms.seq, materialProperties.uniforms);
+            }
+            return materialProperties.uniformsList;
         }
         function updateCommonMaterialProperties(material, parameters) {
             const materialProperties = properties.get(material);
             materialProperties.outputColorSpace = parameters.outputColorSpace;
             materialProperties.instancing = parameters.instancing;
+            materialProperties.instancingColor = parameters.instancingColor;
             materialProperties.skinning = parameters.skinning;
             materialProperties.morphTargets = parameters.morphTargets;
             materialProperties.morphNormals = parameters.morphNormals;
@@ -21057,7 +21268,10 @@ class WebGLRenderer {
             const morphTargets = !!geometry.morphAttributes.position;
             const morphNormals = !!geometry.morphAttributes.normal;
             const morphColors = !!geometry.morphAttributes.color;
-            const toneMapping = material.toneMapped ? _this.toneMapping : NoToneMapping;
+            let toneMapping = NoToneMapping;
+            if (material.toneMapped) {
+                if (_currentRenderTarget === null || _currentRenderTarget.isXRRenderTarget === true) toneMapping = _this.toneMapping;
+            }
             const morphAttribute = geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color;
             const morphTargetsCount = morphAttribute !== undefined ? morphAttribute.length : 0;
             const materialProperties = properties.get(material);
@@ -21080,6 +21294,8 @@ class WebGLRenderer {
                 else if (!object.isInstancedMesh && materialProperties.instancing === true) needsProgramChange = true;
                 else if (object.isSkinnedMesh && materialProperties.skinning === false) needsProgramChange = true;
                 else if (!object.isSkinnedMesh && materialProperties.skinning === true) needsProgramChange = true;
+                else if (object.isInstancedMesh && materialProperties.instancingColor === true && object.instanceColor === null) needsProgramChange = true;
+                else if (object.isInstancedMesh && materialProperties.instancingColor === false && object.instanceColor !== null) needsProgramChange = true;
                 else if (materialProperties.envMap !== envMap) needsProgramChange = true;
                 else if (material.fog === true && materialProperties.fog !== fog) needsProgramChange = true;
                 else if (materialProperties.numClippingPlanes !== undefined && (materialProperties.numClippingPlanes !== clipping.numPlanes || materialProperties.numIntersection !== clipping.numIntersection)) needsProgramChange = true;
@@ -21111,8 +21327,14 @@ class WebGLRenderer {
                 refreshMaterial = true;
             }
             if (refreshProgram || _currentCamera !== camera) {
+                // common camera uniforms
                 p_uniforms.setValue(_gl, "projectionMatrix", camera.projectionMatrix);
+                p_uniforms.setValue(_gl, "viewMatrix", camera.matrixWorldInverse);
+                const uCamPos = p_uniforms.map.cameraPosition;
+                if (uCamPos !== undefined) uCamPos.setValue(_gl, _vector3.setFromMatrixPosition(camera.matrixWorld));
                 if (capabilities.logarithmicDepthBuffer) p_uniforms.setValue(_gl, "logDepthBufFC", 2.0 / (Math.log(camera.far + 1.0) / Math.LN2));
+                // consider moving isOrthographic to UniformLib and WebGLMaterials, see https://github.com/mrdoob/three.js/pull/26467#issuecomment-1645185067
+                if (material.isMeshPhongMaterial || material.isMeshToonMaterial || material.isMeshLambertMaterial || material.isMeshBasicMaterial || material.isMeshStandardMaterial || material.isShaderMaterial) p_uniforms.setValue(_gl, "isOrthographic", camera.isOrthographicCamera === true);
                 if (_currentCamera !== camera) {
                     _currentCamera = camera;
                     // lighting uniforms depend on the camera so enforce an update
@@ -21121,14 +21343,6 @@ class WebGLRenderer {
                     refreshMaterial = true; // set to true on material change
                     refreshLights = true; // remains set until update done
                 }
-                // load material specific uniforms
-                // (shader material also gets them for the sake of genericity)
-                if (material.isShaderMaterial || material.isMeshPhongMaterial || material.isMeshToonMaterial || material.isMeshStandardMaterial || material.envMap) {
-                    const uCamPos = p_uniforms.map.cameraPosition;
-                    if (uCamPos !== undefined) uCamPos.setValue(_gl, _vector3.setFromMatrixPosition(camera.matrixWorld));
-                }
-                if (material.isMeshPhongMaterial || material.isMeshToonMaterial || material.isMeshLambertMaterial || material.isMeshBasicMaterial || material.isMeshStandardMaterial || material.isShaderMaterial) p_uniforms.setValue(_gl, "isOrthographic", camera.isOrthographicCamera === true);
-                if (material.isMeshPhongMaterial || material.isMeshToonMaterial || material.isMeshLambertMaterial || material.isMeshBasicMaterial || material.isMeshStandardMaterial || material.isShaderMaterial || material.isShadowMaterial || object.isSkinnedMesh) p_uniforms.setValue(_gl, "viewMatrix", camera.matrixWorldInverse);
             }
             // skinning and morph target uniforms must be set even if material didn't change
             // auto-setting of texture unit for bone and morph texture must go before other textures
@@ -21169,10 +21383,10 @@ class WebGLRenderer {
                 // refresh uniforms common to several materials
                 if (fog && material.fog === true) materials.refreshFogUniforms(m_uniforms, fog);
                 materials.refreshMaterialUniforms(m_uniforms, material, _pixelRatio, _height, _transmissionRenderTarget);
-                WebGLUniforms.upload(_gl, materialProperties.uniformsList, m_uniforms, textures);
+                WebGLUniforms.upload(_gl, getUniformList(materialProperties), m_uniforms, textures);
             }
             if (material.isShaderMaterial && material.uniformsNeedUpdate === true) {
-                WebGLUniforms.upload(_gl, materialProperties.uniformsList, m_uniforms, textures);
+                WebGLUniforms.upload(_gl, getUniformList(materialProperties), m_uniforms, textures);
                 material.uniformsNeedUpdate = false;
             }
             if (material.isSpriteMaterial) p_uniforms.setValue(_gl, "center", object.center);
@@ -21259,9 +21473,11 @@ class WebGLRenderer {
                 if (texture.isData3DTexture || texture.isDataArrayTexture || texture.isCompressedArrayTexture) isRenderTarget3D = true;
                 const __webglFramebuffer = properties.get(renderTarget).__webglFramebuffer;
                 if (renderTarget.isWebGLCubeRenderTarget) {
-                    framebuffer = __webglFramebuffer[activeCubeFace];
+                    if (Array.isArray(__webglFramebuffer[activeCubeFace])) framebuffer = __webglFramebuffer[activeCubeFace][activeMipmapLevel];
+                    else framebuffer = __webglFramebuffer[activeCubeFace];
                     isCube = true;
                 } else if (capabilities.isWebGL2 && renderTarget.samples > 0 && textures.useMultisampledRTT(renderTarget) === false) framebuffer = properties.get(renderTarget).__webglMultisampledFramebuffer;
+                else if (Array.isArray(__webglFramebuffer)) framebuffer = __webglFramebuffer[activeMipmapLevel];
                 else framebuffer = __webglFramebuffer;
                 _currentViewport.copy(renderTarget.viewport);
                 _currentScissor.copy(renderTarget.scissor);
@@ -21415,12 +21631,21 @@ class WebGLRenderer {
     get coordinateSystem() {
         return WebGLCoordinateSystem;
     }
+    get outputColorSpace() {
+        return this._outputColorSpace;
+    }
+    set outputColorSpace(colorSpace1) {
+        this._outputColorSpace = colorSpace1;
+        const gl = this.getContext();
+        gl.drawingBufferColorSpace = colorSpace1 === DisplayP3ColorSpace ? "display-p3" : "srgb";
+        gl.unpackColorSpace = ColorManagement.workingColorSpace === LinearDisplayP3ColorSpace ? "display-p3" : "srgb";
+    }
     get physicallyCorrectLights() {
-        console.warn("THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.");
+        console.warn("THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.");
         return !this.useLegacyLights;
     }
     set physicallyCorrectLights(value) {
-        console.warn("THREE.WebGLRenderer: the property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.");
+        console.warn("THREE.WebGLRenderer: The property .physicallyCorrectLights has been removed. Set renderer.useLegacyLights instead.");
         this.useLegacyLights = !value;
     }
     get outputEncoding() {
@@ -21430,6 +21655,14 @@ class WebGLRenderer {
     set outputEncoding(encoding) {
         console.warn("THREE.WebGLRenderer: Property .outputEncoding has been removed. Use .outputColorSpace instead.");
         this.outputColorSpace = encoding === sRGBEncoding ? SRGBColorSpace : LinearSRGBColorSpace;
+    }
+    get useLegacyLights() {
+        console.warn("THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: https://discourse.threejs.org/t/updates-to-lighting-in-three-js-r155/53733.");
+        return this._useLegacyLights;
+    }
+    set useLegacyLights(value) {
+        console.warn("THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: https://discourse.threejs.org/t/updates-to-lighting-in-three-js-r155/53733.");
+        this._useLegacyLights = value;
     }
 }
 class WebGL1Renderer extends WebGLRenderer {
@@ -21448,6 +21681,7 @@ class FogExp2 {
     toJSON() {
         return {
             type: "FogExp2",
+            name: this.name,
             color: this.color.getHex(),
             density: this.density
         };
@@ -21467,6 +21701,7 @@ class Fog {
     toJSON() {
         return {
             type: "Fog",
+            name: this.name,
             color: this.color.getHex(),
             near: this.near,
             far: this.far
@@ -21775,7 +22010,7 @@ const _uvA = /*@__PURE__*/ new Vector2();
 const _uvB = /*@__PURE__*/ new Vector2();
 const _uvC = /*@__PURE__*/ new Vector2();
 class Sprite extends Object3D {
-    constructor(material){
+    constructor(material = new SpriteMaterial()){
         super();
         this.isSprite = true;
         this.type = "Sprite";
@@ -21816,7 +22051,7 @@ class Sprite extends Object3D {
             _geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
         }
         this.geometry = _geometry;
-        this.material = material !== undefined ? material : new SpriteMaterial();
+        this.material = material;
         this.center = new Vector2(0.5, 0.5);
     }
     raycast(raycaster, intersects) {
@@ -21996,7 +22231,7 @@ class SkinnedMesh extends Mesh {
         super(geometry, material);
         this.isSkinnedMesh = true;
         this.type = "SkinnedMesh";
-        this.bindMode = "attached";
+        this.bindMode = AttachedBindMode;
         this.bindMatrix = new Matrix4();
         this.bindMatrixInverse = new Matrix4();
         this.boundingBox = null;
@@ -22008,8 +22243,7 @@ class SkinnedMesh extends Mesh {
         this.boundingBox.makeEmpty();
         const positionAttribute = geometry.getAttribute("position");
         for(let i = 0; i < positionAttribute.count; i++){
-            _vertex.fromBufferAttribute(positionAttribute, i);
-            this.applyBoneTransform(i, _vertex);
+            this.getVertexPosition(i, _vertex);
             this.boundingBox.expandByPoint(_vertex);
         }
     }
@@ -22019,8 +22253,7 @@ class SkinnedMesh extends Mesh {
         this.boundingSphere.makeEmpty();
         const positionAttribute = geometry.getAttribute("position");
         for(let i = 0; i < positionAttribute.count; i++){
-            _vertex.fromBufferAttribute(positionAttribute, i);
-            this.applyBoneTransform(i, _vertex);
+            this.getVertexPosition(i, _vertex);
             this.boundingSphere.expandByPoint(_vertex);
         }
     }
@@ -22084,8 +22317,8 @@ class SkinnedMesh extends Mesh {
     }
     updateMatrixWorld(force) {
         super.updateMatrixWorld(force);
-        if (this.bindMode === "attached") this.bindMatrixInverse.copy(this.matrixWorld).invert();
-        else if (this.bindMode === "detached") this.bindMatrixInverse.copy(this.bindMatrix).invert();
+        if (this.bindMode === AttachedBindMode) this.bindMatrixInverse.copy(this.matrixWorld).invert();
+        else if (this.bindMode === DetachedBindMode) this.bindMatrixInverse.copy(this.bindMatrix).invert();
         else console.warn("THREE.SkinnedMesh: Unrecognized bindMode: " + this.bindMode);
     }
     applyBoneTransform(index, vector) {
@@ -22426,7 +22659,7 @@ class Line extends Object3D {
     }
     copy(source, recursive) {
         super.copy(source, recursive);
-        this.material = source.material;
+        this.material = Array.isArray(source.material) ? source.material.slice() : source.material;
         this.geometry = source.geometry;
         return this;
     }
@@ -22609,7 +22842,7 @@ class Points extends Object3D {
     }
     copy(source, recursive) {
         super.copy(source, recursive);
-        this.material = source.material;
+        this.material = Array.isArray(source.material) ? source.material.slice() : source.material;
         this.geometry = source.geometry;
         return this;
     }
@@ -22744,6 +22977,14 @@ class CompressedArrayTexture extends CompressedTexture {
         this.isCompressedArrayTexture = true;
         this.image.depth = depth;
         this.wrapR = ClampToEdgeWrapping;
+    }
+}
+class CompressedCubeTexture extends CompressedTexture {
+    constructor(images, format, type){
+        super(undefined, images[0].width, images[0].height, format, type, CubeReflectionMapping);
+        this.isCompressedCubeTexture = true;
+        this.isCubeTexture = true;
+        this.image = images;
     }
 }
 class CanvasTexture extends Texture {
@@ -23582,7 +23823,11 @@ var Curves = /*#__PURE__*/ Object.freeze({
         // Add a line curve if start and end of lines are not connected
         const startPoint = this.curves[0].getPoint(0);
         const endPoint = this.curves[this.curves.length - 1].getPoint(1);
-        if (!startPoint.equals(endPoint)) this.curves.push(new LineCurve(endPoint, startPoint));
+        if (!startPoint.equals(endPoint)) {
+            const lineType = startPoint.isVector2 === true ? "LineCurve" : "LineCurve3";
+            this.curves.push(new Curves[lineType](endPoint, startPoint));
+        }
+        return this;
     }
     // To get accurate point with reference to
     // entire path distance at time t,
@@ -23897,7 +24142,7 @@ class CapsuleGeometry extends LatheGeometry {
         this.type = "CapsuleGeometry";
         this.parameters = {
             radius: radius,
-            height: length,
+            length: length,
             capSegments: capSegments,
             radialSegments: radialSegments
         };
@@ -26922,13 +27167,6 @@ class LineDashedMaterial extends LineBasicMaterial {
         return this;
     }
 }
-// same as Array.prototype.slice, but also works on typed arrays
-function arraySlice(array, from, to) {
-    if (isTypedArray(array)) // in ios9 array.subarray(from, undefined) will return empty array
-    // but array.subarray(from) or array.subarray(from, len) is correct
-    return new array.constructor(array.subarray(from, to !== undefined ? to : array.length));
-    return array.slice(from, to);
-}
 // converts an array to a specific type
 function convertArray(array, type, forceClone) {
     if (!array || // let 'undefined' and 'null' pass
@@ -27051,19 +27289,19 @@ function makeClipAdditive(targetClip, referenceFrame = 0, referenceClip = target
             // Reference frame is earlier than the first keyframe, so just use the first keyframe
             const startIndex = referenceOffset;
             const endIndex = referenceValueSize - referenceOffset;
-            referenceValue = arraySlice(referenceTrack.values, startIndex, endIndex);
+            referenceValue = referenceTrack.values.slice(startIndex, endIndex);
         } else if (referenceTime >= referenceTrack.times[lastIndex]) {
             // Reference frame is after the last keyframe, so just use the last keyframe
             const startIndex = lastIndex * referenceValueSize + referenceOffset;
             const endIndex = startIndex + referenceValueSize - referenceOffset;
-            referenceValue = arraySlice(referenceTrack.values, startIndex, endIndex);
+            referenceValue = referenceTrack.values.slice(startIndex, endIndex);
         } else {
             // Interpolate to the reference value
             const interpolant = referenceTrack.createInterpolant();
             const startIndex = referenceOffset;
             const endIndex = referenceValueSize - referenceOffset;
             interpolant.evaluate(referenceTime);
-            referenceValue = arraySlice(interpolant.resultBuffer, startIndex, endIndex);
+            referenceValue = interpolant.resultBuffer.slice(startIndex, endIndex);
         }
         // Conjugate the quaternion
         if (referenceTrackType === "quaternion") {
@@ -27087,7 +27325,6 @@ function makeClipAdditive(targetClip, referenceFrame = 0, referenceClip = target
     return targetClip;
 }
 const AnimationUtils = {
-    arraySlice: arraySlice,
     convertArray: convertArray,
     isTypedArray: isTypedArray,
     getKeyframeOrder: getKeyframeOrder,
@@ -27425,8 +27662,8 @@ class KeyframeTrack {
                 from = to - 1;
             }
             const stride = this.getValueSize();
-            this.times = arraySlice(times, from, to);
-            this.values = arraySlice(this.values, from * stride, to * stride);
+            this.times = times.slice(from, to);
+            this.values = this.values.slice(from * stride, to * stride);
         }
         return this;
     }
@@ -27474,7 +27711,7 @@ class KeyframeTrack {
     // (0,0,0,0,1,1,1,0,0,0,0,0,0,0) --> (0,0,1,1,0,0)
     optimize() {
         // times or values may be shared with other tracks, so overwriting is unsafe
-        const times = arraySlice(this.times), values = arraySlice(this.values), stride = this.getValueSize(), smoothInterpolation = this.getInterpolation() === InterpolateSmooth, lastIndex = times.length - 1;
+        const times = this.times.slice(), values = this.values.slice(), stride = this.getValueSize(), smoothInterpolation = this.getInterpolation() === InterpolateSmooth, lastIndex = times.length - 1;
         let writeIndex = 1;
         for(let i = 1; i < lastIndex; ++i){
             let keep = false;
@@ -27511,8 +27748,8 @@ class KeyframeTrack {
             ++writeIndex;
         }
         if (writeIndex !== times.length) {
-            this.times = arraySlice(times, 0, writeIndex);
-            this.values = arraySlice(values, 0, writeIndex * stride);
+            this.times = times.slice(0, writeIndex);
+            this.values = values.slice(0, writeIndex * stride);
         } else {
             this.times = times;
             this.values = values;
@@ -27520,8 +27757,8 @@ class KeyframeTrack {
         return this;
     }
     clone() {
-        const times = arraySlice(this.times, 0);
-        const values = arraySlice(this.values, 0);
+        const times = this.times.slice();
+        const values = this.values.slice();
         const TypedKeyframeTrack = this.constructor;
         const track = new TypedKeyframeTrack(this.name, times, values);
         // Interpolant argument to constructor is not saved, so copy the factory method directly.
@@ -28259,8 +28496,16 @@ class CubeTextureLoader extends Loader {
         loader.setPath(this.path);
         loader.setWithCredentials(scope.withCredentials);
         loader.load(url, function(buffer) {
-            const texData = scope.parse(buffer);
-            if (!texData) return;
+            let texData;
+            try {
+                texData = scope.parse(buffer);
+            } catch (error) {
+                if (onError !== undefined) onError(error);
+                else {
+                    console.error(error);
+                    return;
+                }
+            }
             if (texData.image !== undefined) texture.image = texData.image;
             else if (texData.data !== undefined) {
                 texture.image.width = texData.width;
@@ -28853,10 +29098,18 @@ class MaterialLoader extends Loader {
         if (json.transparent !== undefined) material.transparent = json.transparent;
         if (json.alphaTest !== undefined) material.alphaTest = json.alphaTest;
         if (json.alphaHash !== undefined) material.alphaHash = json.alphaHash;
+        if (json.depthFunc !== undefined) material.depthFunc = json.depthFunc;
         if (json.depthTest !== undefined) material.depthTest = json.depthTest;
         if (json.depthWrite !== undefined) material.depthWrite = json.depthWrite;
         if (json.colorWrite !== undefined) material.colorWrite = json.colorWrite;
-        if (json.stencilWrite !== undefined) material.stencilWrite = json.stencilWrite;
+        if (json.blendSrc !== undefined) material.blendSrc = json.blendSrc;
+        if (json.blendDst !== undefined) material.blendDst = json.blendDst;
+        if (json.blendEquation !== undefined) material.blendEquation = json.blendEquation;
+        if (json.blendSrcAlpha !== undefined) material.blendSrcAlpha = json.blendSrcAlpha;
+        if (json.blendDstAlpha !== undefined) material.blendDstAlpha = json.blendDstAlpha;
+        if (json.blendEquationAlpha !== undefined) material.blendEquationAlpha = json.blendEquationAlpha;
+        if (json.blendColor !== undefined && material.blendColor !== undefined) material.blendColor.setHex(json.blendColor);
+        if (json.blendAlpha !== undefined) material.blendAlpha = json.blendAlpha;
         if (json.stencilWriteMask !== undefined) material.stencilWriteMask = json.stencilWriteMask;
         if (json.stencilFunc !== undefined) material.stencilFunc = json.stencilFunc;
         if (json.stencilRef !== undefined) material.stencilRef = json.stencilRef;
@@ -28864,12 +29117,13 @@ class MaterialLoader extends Loader {
         if (json.stencilFail !== undefined) material.stencilFail = json.stencilFail;
         if (json.stencilZFail !== undefined) material.stencilZFail = json.stencilZFail;
         if (json.stencilZPass !== undefined) material.stencilZPass = json.stencilZPass;
+        if (json.stencilWrite !== undefined) material.stencilWrite = json.stencilWrite;
         if (json.wireframe !== undefined) material.wireframe = json.wireframe;
         if (json.wireframeLinewidth !== undefined) material.wireframeLinewidth = json.wireframeLinewidth;
         if (json.wireframeLinecap !== undefined) material.wireframeLinecap = json.wireframeLinecap;
         if (json.wireframeLinejoin !== undefined) material.wireframeLinejoin = json.wireframeLinejoin;
         if (json.rotation !== undefined) material.rotation = json.rotation;
-        if (json.linewidth !== 1) material.linewidth = json.linewidth;
+        if (json.linewidth !== undefined) material.linewidth = json.linewidth;
         if (json.dashSize !== undefined) material.dashSize = json.dashSize;
         if (json.gapSize !== undefined) material.gapSize = json.gapSize;
         if (json.scale !== undefined) material.scale = json.scale;
@@ -29502,6 +29756,7 @@ class ObjectLoader extends Loader {
                 if (data.fog !== undefined) {
                     if (data.fog.type === "Fog") object.fog = new Fog(data.fog.color, data.fog.near, data.fog.far);
                     else if (data.fog.type === "FogExp2") object.fog = new FogExp2(data.fog.color, data.fog.density);
+                    if (data.fog.name !== "") object.fog.name = data.fog.name;
                 }
                 if (data.backgroundBlurriness !== undefined) object.backgroundBlurriness = data.backgroundBlurriness;
                 if (data.backgroundIntensity !== undefined) object.backgroundIntensity = data.backgroundIntensity;
@@ -29760,30 +30015,6 @@ class AudioLoader extends Loader {
             else console.error(e);
             scope.manager.itemError(url);
         }
-    }
-}
-class HemisphereLightProbe extends LightProbe {
-    constructor(skyColor, groundColor, intensity = 1){
-        super(undefined, intensity);
-        this.isHemisphereLightProbe = true;
-        const color1 = new Color().set(skyColor);
-        const color2 = new Color().set(groundColor);
-        const sky = new Vector3(color1.r, color1.g, color1.b);
-        const ground = new Vector3(color2.r, color2.g, color2.b);
-        // without extra factor of PI in the shader, should = 1 / Math.sqrt( Math.PI );
-        const c0 = Math.sqrt(Math.PI);
-        const c1 = c0 * Math.sqrt(0.75);
-        this.sh.coefficients[0].copy(sky).add(ground).multiplyScalar(c0);
-        this.sh.coefficients[1].copy(sky).sub(ground).multiplyScalar(c1);
-    }
-}
-class AmbientLightProbe extends LightProbe {
-    constructor(color, intensity = 1){
-        super(undefined, intensity);
-        this.isAmbientLightProbe = true;
-        const color1 = new Color().set(color);
-        // without extra factor of PI in the shader, would be 2 / Math.sqrt( Math.PI );
-        this.sh.coefficients[0].set(color1.r, color1.g, color1.b).multiplyScalar(2 * Math.sqrt(Math.PI));
     }
 }
 const _eyeRight = /*@__PURE__*/ new Matrix4();
@@ -30080,6 +30311,7 @@ class Audio extends Object3D {
         return this;
     }
     disconnect() {
+        if (this._connected === false) return;
         if (this.filters.length > 0) {
             this.source.disconnect(this.filters[0]);
             for(let i = 1, l = this.filters.length; i < l; i++)this.filters[i - 1].disconnect(this.filters[i]);
@@ -30636,7 +30868,7 @@ class PropertyBinding {
         this.setValue = this._setValue_unavailable;
         // ensure there is a value node
         if (!targetObject) {
-            console.error("THREE.PropertyBinding: Trying to update node for track: " + this.path + " but it wasn't found.");
+            console.warn("THREE.PropertyBinding: No target node found for track: " + this.path + ".");
             return;
         }
         if (objectName) {
@@ -31720,13 +31952,13 @@ class Uniform {
         return new Uniform(this.value.clone === undefined ? this.value : this.value.clone());
     }
 }
-let id = 0;
+let _id = 0;
 class UniformsGroup extends EventDispatcher {
     constructor(){
         super();
         this.isUniformsGroup = true;
         Object.defineProperty(this, "id", {
-            value: id++
+            value: _id++
         });
         this.name = "";
         this.usage = StaticDrawUsage;
@@ -33302,7 +33534,7 @@ exports.defineInteropFlag = function(a) {
 };
 exports.exportAll = function(source, dest) {
     Object.keys(source).forEach(function(key) {
-        if (key === "default" || key === "__esModule" || dest.hasOwnProperty(key)) return;
+        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
         Object.defineProperty(dest, key, {
             enumerable: true,
             get: function() {
@@ -33609,7 +33841,7 @@ function deinterleaveGeometry(geometry) {
     }
 }
 /**
- * @param {Array<BufferGeometry>} geometry
+ * @param {BufferGeometry} geometry
  * @return {number}
  */ function estimateBytesUsed(geometry) {
     // Return the estimated memory used by this geometry in bytes
@@ -33665,8 +33897,10 @@ function deinterleaveGeometry(geometry) {
         if (morphAttr) tmpMorphAttributes[name] = new (0, _three.BufferAttribute)(new morphAttr.array.constructor(morphAttr.count * morphAttr.itemSize), morphAttr.itemSize, morphAttr.normalized);
     }
     // convert the error tolerance to an amount of decimal places to truncate to
-    const decimalShift = Math.log10(1 / tolerance);
-    const shiftMultiplier = Math.pow(10, decimalShift);
+    const halfTolerance = tolerance * 0.5;
+    const exponent = Math.log10(1 / tolerance);
+    const hashMultiplier = Math.pow(10, exponent);
+    const hashAdditive = halfTolerance * hashMultiplier;
     for(let i = 0; i < vertexCount; i++){
         const index = indices ? indices.getX(i) : i;
         // Generate a hash for the vertex attributes at the current index 'i'
@@ -33676,7 +33910,7 @@ function deinterleaveGeometry(geometry) {
             const attribute = geometry.getAttribute(name);
             const itemSize = attribute.itemSize;
             for(let k = 0; k < itemSize; k++)// double tilde truncates the decimal value
-            hash += `${~~(attribute[getters[k]](index) * shiftMultiplier)},`;
+            hash += `${~~(attribute[getters[k]](index) * hashMultiplier + hashAdditive)},`;
         }
         // Add another reference to the vertex if it's already
         // used by another index
@@ -33960,12 +34194,18 @@ function mergeGroups(geometry) {
     }
     return geometry;
 }
-// Creates a new, non-indexed geometry with smooth normals everywhere except faces that meet at
-// an angle greater than the crease angle.
-function toCreasedNormals(geometry, creaseAngle = Math.PI / 3 /* 60 degrees */ ) {
+/**
+ * Modifies the supplied geometry if it is non-indexed, otherwise creates a new,
+ * non-indexed geometry. Returns the geometry with smooth normals everywhere except
+ * faces that meet at an angle greater than the crease angle.
+ *
+ * @param {BufferGeometry} geometry
+ * @param {number} [creaseAngle]
+ * @return {BufferGeometry}
+ */ function toCreasedNormals(geometry, creaseAngle = Math.PI / 3 /* 60 degrees */ ) {
     const creaseDot = Math.cos(creaseAngle);
     const hashMultiplier = (1 + 1e-10) * 1e2;
-    // reusable vertors
+    // reusable vectors
     const verts = [
         new (0, _three.Vector3)(),
         new (0, _three.Vector3)(),
@@ -33982,7 +34222,9 @@ function toCreasedNormals(geometry, creaseAngle = Math.PI / 3 /* 60 degrees */ )
         const z = ~~(v.z * hashMultiplier);
         return `${x},${y},${z}`;
     }
-    const resultGeometry = geometry.toNonIndexed();
+    // BufferGeometry.toNonIndexed() warns if the geometry is non-indexed
+    // and returns the original geometry
+    const resultGeometry = geometry.index ? geometry.toNonIndexed() : geometry;
     const posAttr = resultGeometry.attributes.position;
     const vertexMap = {};
     // find all the normals shared by commonly located vertices
@@ -38399,8 +38641,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "й",
-                            upperCase: "Й"
+                            lowerCase: "\u0439",
+                            upperCase: "\u0419"
                         },
                         {
                             lowerCase: "q",
@@ -38412,8 +38654,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ц",
-                            upperCase: "Ц"
+                            lowerCase: "\u0446",
+                            upperCase: "\u0426"
                         },
                         {
                             lowerCase: "w",
@@ -38425,8 +38667,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "у",
-                            upperCase: "У"
+                            lowerCase: "\u0443",
+                            upperCase: "\u0423"
                         },
                         {
                             lowerCase: "e",
@@ -38438,8 +38680,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "к",
-                            upperCase: "К"
+                            lowerCase: "\u043A",
+                            upperCase: "\u041A"
                         },
                         {
                             lowerCase: "r",
@@ -38451,8 +38693,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "е",
-                            upperCase: "Е"
+                            lowerCase: "\u0435",
+                            upperCase: "\u0415"
                         },
                         {
                             lowerCase: "t",
@@ -38464,8 +38706,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "н",
-                            upperCase: "Н"
+                            lowerCase: "\u043D",
+                            upperCase: "\u041D"
                         },
                         {
                             lowerCase: "y",
@@ -38477,8 +38719,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "г",
-                            upperCase: "Г"
+                            lowerCase: "\u0433",
+                            upperCase: "\u0413"
                         },
                         {
                             lowerCase: "u",
@@ -38490,8 +38732,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ш",
-                            upperCase: "Ш"
+                            lowerCase: "\u0448",
+                            upperCase: "\u0428"
                         },
                         {
                             lowerCase: "i",
@@ -38503,8 +38745,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "щ",
-                            upperCase: "Щ"
+                            lowerCase: "\u0449",
+                            upperCase: "\u0429"
                         },
                         {
                             lowerCase: "o",
@@ -38516,8 +38758,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "з",
-                            upperCase: "З"
+                            lowerCase: "\u0437",
+                            upperCase: "\u0417"
                         },
                         {
                             lowerCase: "p",
@@ -38529,8 +38771,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "х",
-                            upperCase: "Х"
+                            lowerCase: "\u0445",
+                            upperCase: "\u0425"
                         },
                         {
                             lowerCase: "{",
@@ -38542,8 +38784,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ъ",
-                            upperCase: "Ъ"
+                            lowerCase: "\u044A",
+                            upperCase: "\u042A"
                         },
                         {
                             lowerCase: "}",
@@ -38557,8 +38799,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ф",
-                            upperCase: "Ф"
+                            lowerCase: "\u0444",
+                            upperCase: "\u0424"
                         },
                         {
                             lowerCase: "a",
@@ -38570,8 +38812,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ы",
-                            upperCase: "Ы"
+                            lowerCase: "\u044B",
+                            upperCase: "\u042B"
                         },
                         {
                             lowerCase: "s",
@@ -38583,8 +38825,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "в",
-                            upperCase: "В"
+                            lowerCase: "\u0432",
+                            upperCase: "\u0412"
                         },
                         {
                             lowerCase: "d",
@@ -38596,8 +38838,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "а",
-                            upperCase: "А"
+                            lowerCase: "\u0430",
+                            upperCase: "\u0410"
                         },
                         {
                             lowerCase: "f",
@@ -38609,8 +38851,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "п",
-                            upperCase: "П"
+                            lowerCase: "\u043F",
+                            upperCase: "\u041F"
                         },
                         {
                             lowerCase: "g",
@@ -38622,8 +38864,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "р",
-                            upperCase: "Р"
+                            lowerCase: "\u0440",
+                            upperCase: "\u0420"
                         },
                         {
                             lowerCase: "h",
@@ -38635,8 +38877,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "о",
-                            upperCase: "О"
+                            lowerCase: "\u043E",
+                            upperCase: "\u041E"
                         },
                         {
                             lowerCase: "j",
@@ -38648,8 +38890,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "л",
-                            upperCase: "Л"
+                            lowerCase: "\u043B",
+                            upperCase: "\u041B"
                         },
                         {
                             lowerCase: "k",
@@ -38661,8 +38903,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "д",
-                            upperCase: "Д"
+                            lowerCase: "\u0434",
+                            upperCase: "\u0414"
                         },
                         {
                             lowerCase: "l",
@@ -38674,8 +38916,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ж",
-                            upperCase: "Ж"
+                            lowerCase: "\u0436",
+                            upperCase: "\u0416"
                         },
                         {
                             lowerCase: ":",
@@ -38687,8 +38929,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "э",
-                            upperCase: "Э"
+                            lowerCase: "\u044D",
+                            upperCase: "\u042D"
                         },
                         {
                             lowerCase: '"',
@@ -38700,8 +38942,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ё",
-                            upperCase: "Ё"
+                            lowerCase: "\u0451",
+                            upperCase: "\u0401"
                         },
                         {
                             lowerCase: "|",
@@ -38724,8 +38966,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "я",
-                            upperCase: "Я"
+                            lowerCase: "\u044F",
+                            upperCase: "\u042F"
                         },
                         {
                             lowerCase: "z",
@@ -38737,8 +38979,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ч",
-                            upperCase: "Ч"
+                            lowerCase: "\u0447",
+                            upperCase: "\u0427"
                         },
                         {
                             lowerCase: "x",
@@ -38750,8 +38992,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "с",
-                            upperCase: "С"
+                            lowerCase: "\u0441",
+                            upperCase: "\u0421"
                         },
                         {
                             lowerCase: "c",
@@ -38763,8 +39005,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "м",
-                            upperCase: "М"
+                            lowerCase: "\u043C",
+                            upperCase: "\u041C"
                         },
                         {
                             lowerCase: "v",
@@ -38776,8 +39018,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "и",
-                            upperCase: "И"
+                            lowerCase: "\u0438",
+                            upperCase: "\u0418"
                         },
                         {
                             lowerCase: "b",
@@ -38789,8 +39031,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "т",
-                            upperCase: "Т"
+                            lowerCase: "\u0442",
+                            upperCase: "\u0422"
                         },
                         {
                             lowerCase: "n",
@@ -38802,8 +39044,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ь",
-                            upperCase: "Ь"
+                            lowerCase: "\u044C",
+                            upperCase: "\u042C"
                         },
                         {
                             lowerCase: "m",
@@ -38815,8 +39057,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "б",
-                            upperCase: "Б"
+                            lowerCase: "\u0431",
+                            upperCase: "\u0411"
                         },
                         {
                             lowerCase: ",",
@@ -38828,8 +39070,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 1 / 12,
                     chars: [
                         {
-                            lowerCase: "ю",
-                            upperCase: "Ю"
+                            lowerCase: "\u044E",
+                            upperCase: "\u042E"
                         },
                         {
                             lowerCase: ".",
@@ -39140,7 +39382,7 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     command: "switch",
                     chars: [
                         {
-                            lowerCase: "АБВ"
+                            lowerCase: "\u0410\u0411\u0412"
                         }
                     ]
                 },
@@ -40418,8 +40660,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ς",
-                            upperCase: "ς"
+                            lowerCase: "\u03C2",
+                            upperCase: "\u03C2"
                         },
                         {
                             lowerCase: "w",
@@ -40431,8 +40673,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ε",
-                            upperCase: "Ε"
+                            lowerCase: "\u03B5",
+                            upperCase: "\u0395"
                         },
                         {
                             lowerCase: "e",
@@ -40444,8 +40686,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ρ",
-                            upperCase: "Ρ"
+                            lowerCase: "\u03C1",
+                            upperCase: "\u03A1"
                         },
                         {
                             lowerCase: "r",
@@ -40457,8 +40699,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "τ",
-                            upperCase: "Τ"
+                            lowerCase: "\u03C4",
+                            upperCase: "\u03A4"
                         },
                         {
                             lowerCase: "t",
@@ -40470,8 +40712,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "υ",
-                            upperCase: "Υ"
+                            lowerCase: "\u03C5",
+                            upperCase: "\u03A5"
                         },
                         {
                             lowerCase: "y",
@@ -40483,8 +40725,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "θ",
-                            upperCase: "Θ"
+                            lowerCase: "\u03B8",
+                            upperCase: "\u0398"
                         },
                         {
                             lowerCase: "u",
@@ -40496,8 +40738,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ι",
-                            upperCase: "Ι"
+                            lowerCase: "\u03B9",
+                            upperCase: "\u0399"
                         },
                         {
                             lowerCase: "i",
@@ -40509,8 +40751,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ο",
-                            upperCase: "Ο"
+                            lowerCase: "\u03BF",
+                            upperCase: "\u039F"
                         },
                         {
                             lowerCase: "o",
@@ -40522,8 +40764,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "π",
-                            upperCase: "Π"
+                            lowerCase: "\u03C0",
+                            upperCase: "\u03A0"
                         },
                         {
                             lowerCase: "p",
@@ -40537,8 +40779,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "α",
-                            upperCase: "Α"
+                            lowerCase: "\u03B1",
+                            upperCase: "\u0391"
                         },
                         {
                             lowerCase: "a",
@@ -40550,8 +40792,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "σ",
-                            upperCase: "Σ"
+                            lowerCase: "\u03C3",
+                            upperCase: "\u03A3"
                         },
                         {
                             lowerCase: "s",
@@ -40563,8 +40805,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "δ",
-                            upperCase: "Δ"
+                            lowerCase: "\u03B4",
+                            upperCase: "\u0394"
                         },
                         {
                             lowerCase: "d",
@@ -40576,8 +40818,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "φ",
-                            upperCase: "Φ"
+                            lowerCase: "\u03C6",
+                            upperCase: "\u03A6"
                         },
                         {
                             lowerCase: "f",
@@ -40589,8 +40831,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "γ",
-                            upperCase: "Γ"
+                            lowerCase: "\u03B3",
+                            upperCase: "\u0393"
                         },
                         {
                             lowerCase: "g",
@@ -40602,8 +40844,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "η",
-                            upperCase: "Η"
+                            lowerCase: "\u03B7",
+                            upperCase: "\u0397"
                         },
                         {
                             lowerCase: "h",
@@ -40615,8 +40857,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ξ",
-                            upperCase: "Ξ"
+                            lowerCase: "\u03BE",
+                            upperCase: "\u039E"
                         },
                         {
                             lowerCase: "j",
@@ -40628,8 +40870,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "κ",
-                            upperCase: "Κ"
+                            lowerCase: "\u03BA",
+                            upperCase: "\u039A"
                         },
                         {
                             lowerCase: "k",
@@ -40641,8 +40883,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "λ",
-                            upperCase: "Λ"
+                            lowerCase: "\u03BB",
+                            upperCase: "\u039B"
                         },
                         {
                             lowerCase: "l",
@@ -40665,8 +40907,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ζ",
-                            upperCase: "Ζ"
+                            lowerCase: "\u03B6",
+                            upperCase: "\u0396"
                         },
                         {
                             lowerCase: "z",
@@ -40678,8 +40920,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "χ",
-                            upperCase: "Χ"
+                            lowerCase: "\u03C7",
+                            upperCase: "\u03A7"
                         },
                         {
                             lowerCase: "x",
@@ -40691,8 +40933,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ψ",
-                            upperCase: "Ψ"
+                            lowerCase: "\u03C8",
+                            upperCase: "\u03A8"
                         },
                         {
                             lowerCase: "c",
@@ -40704,8 +40946,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ω",
-                            upperCase: "Ω"
+                            lowerCase: "\u03C9",
+                            upperCase: "\u03A9"
                         },
                         {
                             lowerCase: "v",
@@ -40717,8 +40959,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "β",
-                            upperCase: "Β"
+                            lowerCase: "\u03B2",
+                            upperCase: "\u0392"
                         },
                         {
                             lowerCase: "b",
@@ -40730,8 +40972,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "ν",
-                            upperCase: "Ν"
+                            lowerCase: "\u03BD",
+                            upperCase: "\u039D"
                         },
                         {
                             lowerCase: "n",
@@ -40743,8 +40985,8 @@ and if not passed tries to detect the language. If not found, it uses the basic 
                     width: 0.1,
                     chars: [
                         {
-                            lowerCase: "μ",
-                            upperCase: "Μ"
+                            lowerCase: "\u03BC",
+                            upperCase: "\u039C"
                         },
                         {
                             lowerCase: "m",
@@ -41951,7 +42193,7 @@ var __webpack_exports__default = __webpack_exports__.ZP;
 var __webpack_exports__update = __webpack_exports__.Vx;
 
 },{"three":"2gBPR","@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}],"7want":[function(require,module,exports) {
-module.exports = JSON.parse('{"pages":["Roboto-Regular.png"],"chars":[{"id":40,"index":12,"char":"(","width":15,"height":47,"xoffset":1,"yoffset":0,"xadvance":14,"chnl":15,"x":0,"y":0,"page":0},{"id":41,"index":13,"char":")","width":15,"height":47,"xoffset":-1,"yoffset":0,"xadvance":15,"chnl":15,"x":0,"y":48,"page":0},{"id":91,"index":63,"char":"[","width":12,"height":45,"xoffset":1,"yoffset":0,"xadvance":11,"chnl":15,"x":0,"y":96,"page":0},{"id":93,"index":65,"char":"]","width":12,"height":45,"xoffset":-2,"yoffset":0,"xadvance":11,"chnl":15,"x":0,"y":142,"page":0},{"id":123,"index":95,"char":"{","width":16,"height":44,"xoffset":-1,"yoffset":1,"xadvance":14,"chnl":15,"x":0,"y":188,"page":0},{"id":125,"index":97,"char":"}","width":16,"height":44,"xoffset":-2,"yoffset":1,"xadvance":14,"chnl":15,"x":13,"y":96,"page":0},{"id":1092,"index":247,"char":"ф","width":30,"height":44,"xoffset":0,"yoffset":3,"xadvance":30,"chnl":15,"x":13,"y":141,"page":0},{"id":197,"index":644,"char":"\xc5","width":30,"height":44,"xoffset":-1,"yoffset":-6,"xadvance":27,"chnl":15,"x":16,"y":0,"page":0},{"id":106,"index":78,"char":"j","width":12,"height":43,"xoffset":-3,"yoffset":4,"xadvance":10,"chnl":15,"x":16,"y":45,"page":0},{"id":36,"index":8,"char":"$","width":23,"height":43,"xoffset":0,"yoffset":-1,"xadvance":24,"chnl":15,"x":29,"y":45,"page":0},{"id":64,"index":36,"char":"@","width":37,"height":43,"xoffset":0,"yoffset":5,"xadvance":38,"chnl":15,"x":47,"y":0,"page":0},{"id":198,"index":129,"char":"\xc6","width":43,"height":34,"xoffset":-2,"yoffset":4,"xadvance":39,"chnl":15,"x":30,"y":89,"page":0},{"id":958,"index":197,"char":"ξ","width":21,"height":42,"xoffset":0,"yoffset":4,"xadvance":21,"chnl":15,"x":53,"y":44,"page":0},{"id":950,"index":192,"char":"ζ","width":22,"height":42,"xoffset":0,"yoffset":4,"xadvance":22,"chnl":15,"x":0,"y":233,"page":0},{"id":946,"index":188,"char":"β","width":23,"height":42,"xoffset":1,"yoffset":4,"xadvance":25,"chnl":15,"x":17,"y":186,"page":0},{"id":1044,"index":217,"char":"Д","width":33,"height":41,"xoffset":-1,"yoffset":4,"xadvance":32,"chnl":15,"x":0,"y":276,"page":0},{"id":1025,"index":941,"char":"Ё","width":23,"height":41,"xoffset":1,"yoffset":-3,"xadvance":24,"chnl":15,"x":23,"y":229,"page":0},{"id":1046,"index":218,"char":"Ж","width":41,"height":34,"xoffset":-1,"yoffset":4,"xadvance":38,"chnl":15,"x":41,"y":186,"page":0},{"id":1049,"index":954,"char":"Й","width":27,"height":41,"xoffset":2,"yoffset":-3,"xadvance":30,"chnl":15,"x":44,"y":124,"page":0},{"id":1062,"index":224,"char":"Ц","width":30,"height":41,"xoffset":2,"yoffset":4,"xadvance":31,"chnl":15,"x":72,"y":124,"page":0},{"id":1065,"index":227,"char":"Щ","width":39,"height":41,"xoffset":2,"yoffset":4,"xadvance":41,"chnl":15,"x":75,"y":44,"page":0},{"id":220,"index":664,"char":"\xdc","width":26,"height":41,"xoffset":1,"yoffset":-3,"xadvance":27,"chnl":15,"x":85,"y":0,"page":0},{"id":214,"index":660,"char":"\xd6","width":28,"height":41,"xoffset":0,"yoffset":-3,"xadvance":29,"chnl":15,"x":112,"y":0,"page":0},{"id":196,"index":643,"char":"\xc4","width":30,"height":41,"xoffset":-1,"yoffset":-3,"xadvance":27,"chnl":15,"x":0,"y":318,"page":0},{"id":209,"index":655,"char":"\xd1","width":27,"height":41,"xoffset":1,"yoffset":-3,"xadvance":30,"chnl":15,"x":0,"y":360,"page":0},{"id":81,"index":53,"char":"Q","width":28,"height":39,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":0,"y":402,"page":0},{"id":87,"index":59,"char":"W","width":39,"height":34,"xoffset":-1,"yoffset":4,"xadvance":37,"chnl":15,"x":74,"y":87,"page":0},{"id":124,"index":96,"char":"|","width":7,"height":39,"xoffset":2,"yoffset":4,"xadvance":10,"chnl":15,"x":28,"y":360,"page":0},{"id":229,"index":671,"char":"\xe5","width":22,"height":38,"xoffset":0,"yoffset":1,"xadvance":23,"chnl":15,"x":31,"y":318,"page":0},{"id":216,"index":131,"char":"\xd8","width":28,"height":37,"xoffset":0,"yoffset":3,"xadvance":29,"chnl":15,"x":34,"y":271,"page":0},{"id":100,"index":72,"char":"d","width":23,"height":36,"xoffset":0,"yoffset":3,"xadvance":24,"chnl":15,"x":47,"y":221,"page":0},{"id":102,"index":74,"char":"f","width":17,"height":36,"xoffset":-1,"yoffset":2,"xadvance":15,"chnl":15,"x":0,"y":442,"page":0},{"id":104,"index":76,"char":"h","width":21,"height":36,"xoffset":1,"yoffset":3,"xadvance":23,"chnl":15,"x":18,"y":442,"page":0},{"id":107,"index":79,"char":"k","width":22,"height":36,"xoffset":1,"yoffset":3,"xadvance":21,"chnl":15,"x":29,"y":400,"page":0},{"id":108,"index":80,"char":"l","width":8,"height":36,"xoffset":1,"yoffset":3,"xadvance":10,"chnl":15,"x":36,"y":357,"page":0},{"id":98,"index":70,"char":"b","width":23,"height":36,"xoffset":1,"yoffset":3,"xadvance":24,"chnl":15,"x":45,"y":357,"page":0},{"id":47,"index":19,"char":"/","width":20,"height":36,"xoffset":-2,"yoffset":4,"xadvance":17,"chnl":15,"x":54,"y":309,"page":0},{"id":92,"index":64,"char":"\\\\","width":20,"height":36,"xoffset":-1,"yoffset":4,"xadvance":17,"chnl":15,"x":63,"y":258,"page":0},{"id":1073,"index":234,"char":"б","width":24,"height":36,"xoffset":0,"yoffset":2,"xadvance":23,"chnl":15,"x":71,"y":221,"page":0},{"id":1060,"index":223,"char":"Ф","width":33,"height":36,"xoffset":0,"yoffset":3,"xadvance":32,"chnl":15,"x":83,"y":166,"page":0},{"id":1064,"index":226,"char":"Ш","width":36,"height":34,"xoffset":2,"yoffset":4,"xadvance":40,"chnl":15,"x":103,"y":122,"page":0},{"id":1070,"index":232,"char":"Ю","width":36,"height":35,"xoffset":2,"yoffset":4,"xadvance":38,"chnl":15,"x":114,"y":86,"page":0},{"id":948,"index":190,"char":"δ","width":24,"height":36,"xoffset":0,"yoffset":2,"xadvance":24,"chnl":15,"x":115,"y":42,"page":0},{"id":966,"index":204,"char":"φ","width":30,"height":36,"xoffset":0,"yoffset":12,"xadvance":30,"chnl":15,"x":140,"y":42,"page":0},{"id":968,"index":205,"char":"ψ","width":30,"height":36,"xoffset":0,"yoffset":12,"xadvance":29,"chnl":15,"x":141,"y":0,"page":0},{"id":230,"index":134,"char":"\xe6","width":36,"height":27,"xoffset":0,"yoffset":11,"xadvance":35,"chnl":15,"x":0,"y":479,"page":0},{"id":121,"index":93,"char":"y","width":23,"height":35,"xoffset":-2,"yoffset":12,"xadvance":20,"chnl":15,"x":40,"y":437,"page":0},{"id":112,"index":84,"char":"p","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":40,"y":473,"page":0},{"id":113,"index":85,"char":"q","width":23,"height":35,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":52,"y":394,"page":0},{"id":103,"index":75,"char":"g","width":23,"height":35,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":69,"y":346,"page":0},{"id":109,"index":81,"char":"m","width":35,"height":27,"xoffset":1,"yoffset":11,"xadvance":37,"chnl":15,"x":75,"y":295,"page":0},{"id":79,"index":51,"char":"O","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":84,"y":258,"page":0},{"id":83,"index":55,"char":"S","width":26,"height":35,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":96,"y":203,"page":0},{"id":71,"index":43,"char":"G","width":27,"height":35,"xoffset":1,"yoffset":4,"xadvance":29,"chnl":15,"x":117,"y":157,"page":0},{"id":67,"index":39,"char":"C","width":27,"height":35,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":64,"y":430,"page":0},{"id":56,"index":28,"char":"8","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":64,"y":466,"page":0},{"id":51,"index":23,"char":"3","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":88,"y":466,"page":0},{"id":48,"index":20,"char":"0","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":76,"y":382,"page":0},{"id":37,"index":9,"char":"%","width":31,"height":35,"xoffset":0,"yoffset":4,"xadvance":31,"chnl":15,"x":92,"y":418,"page":0},{"id":8364,"index":413,"char":"€","width":24,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":93,"y":323,"page":0},{"id":38,"index":10,"char":"&","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":112,"y":454,"page":0},{"id":1105,"index":971,"char":"ё","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":22,"chnl":15,"x":100,"y":359,"page":0},{"id":1078,"index":238,"char":"ж","width":35,"height":26,"xoffset":-2,"yoffset":12,"xadvance":32,"chnl":15,"x":111,"y":294,"page":0},{"id":1047,"index":219,"char":"З","width":26,"height":35,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":118,"y":321,"page":0},{"id":1054,"index":957,"char":"О","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":113,"y":239,"page":0},{"id":1088,"index":967,"char":"р","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":123,"y":193,"page":0},{"id":1057,"index":960,"char":"С","width":27,"height":35,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":142,"y":229,"page":0},{"id":1091,"index":969,"char":"у","width":23,"height":35,"xoffset":-2,"yoffset":12,"xadvance":20,"chnl":15,"x":145,"y":122,"page":0},{"id":1097,"index":251,"char":"щ","width":35,"height":33,"xoffset":1,"yoffset":12,"xadvance":35,"chnl":15,"x":145,"y":158,"page":0},{"id":1069,"index":231,"char":"Э","width":27,"height":35,"xoffset":1,"yoffset":4,"xadvance":28,"chnl":15,"x":147,"y":192,"page":0},{"id":252,"index":691,"char":"\xfc","width":21,"height":35,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":151,"y":79,"page":0},{"id":246,"index":687,"char":"\xf6","width":24,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":171,"y":37,"page":0},{"id":228,"index":670,"char":"\xe4","width":22,"height":35,"xoffset":0,"yoffset":4,"xadvance":23,"chnl":15,"x":172,"y":0,"page":0},{"id":241,"index":682,"char":"\xf1","width":21,"height":35,"xoffset":1,"yoffset":3,"xadvance":23,"chnl":15,"x":195,"y":0,"page":0},{"id":961,"index":199,"char":"ρ","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":169,"y":115,"page":0},{"id":952,"index":194,"char":"θ","width":23,"height":35,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":173,"y":73,"page":0},{"id":947,"index":189,"char":"γ","width":23,"height":35,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":196,"y":36,"page":0},{"id":951,"index":193,"char":"η","width":22,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":217,"y":0,"page":0},{"id":955,"index":196,"char":"λ","width":25,"height":35,"xoffset":-1,"yoffset":3,"xadvance":23,"chnl":15,"x":124,"y":357,"page":0},{"id":967,"index":935,"char":"χ","width":26,"height":35,"xoffset":0,"yoffset":12,"xadvance":21,"chnl":15,"x":145,"y":321,"page":0},{"id":956,"index":933,"char":"μ","width":21,"height":35,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":147,"y":265,"page":0},{"id":920,"index":179,"char":"Θ","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":169,"y":265,"page":0},{"id":927,"index":919,"char":"Ο","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":170,"y":228,"page":0},{"id":105,"index":77,"char":"i","width":8,"height":34,"xoffset":1,"yoffset":4,"xadvance":10,"chnl":15,"x":175,"y":192,"page":0},{"id":119,"index":91,"char":"w","width":34,"height":26,"xoffset":-1,"yoffset":12,"xadvance":32,"chnl":15,"x":181,"y":151,"page":0},{"id":65,"index":37,"char":"A","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":193,"y":109,"page":0},{"id":90,"index":62,"char":"Z","width":26,"height":34,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":197,"y":72,"page":0},{"id":69,"index":41,"char":"E","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":220,"y":36,"page":0},{"id":82,"index":54,"char":"R","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":240,"y":0,"page":0},{"id":84,"index":56,"char":"T","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":184,"y":178,"page":0},{"id":89,"index":61,"char":"Y","width":29,"height":34,"xoffset":-2,"yoffset":4,"xadvance":25,"chnl":15,"x":124,"y":393,"page":0},{"id":85,"index":57,"char":"U","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":27,"chnl":15,"x":150,"y":357,"page":0},{"id":73,"index":45,"char":"I","width":8,"height":34,"xoffset":2,"yoffset":4,"xadvance":11,"chnl":15,"x":172,"y":301,"page":0},{"id":80,"index":52,"char":"P","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":141,"y":428,"page":0},{"id":68,"index":40,"char":"D","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":28,"chnl":15,"x":154,"y":392,"page":0},{"id":70,"index":42,"char":"F","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":141,"y":463,"page":0},{"id":72,"index":44,"char":"H","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":164,"y":463,"page":0},{"id":74,"index":46,"char":"J","width":23,"height":34,"xoffset":-1,"yoffset":4,"xadvance":23,"chnl":15,"x":167,"y":427,"page":0},{"id":75,"index":47,"char":"K","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":177,"y":336,"page":0},{"id":76,"index":48,"char":"L","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":181,"y":301,"page":0},{"id":77,"index":49,"char":"M","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":198,"y":264,"page":0},{"id":88,"index":60,"char":"X","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":204,"y":299,"page":0},{"id":86,"index":58,"char":"V","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":199,"y":213,"page":0},{"id":66,"index":38,"char":"B","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":212,"y":178,"page":0},{"id":78,"index":50,"char":"N","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":230,"y":213,"page":0},{"id":55,"index":27,"char":"7","width":24,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":181,"y":371,"page":0},{"id":57,"index":29,"char":"9","width":23,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":205,"y":334,"page":0},{"id":52,"index":24,"char":"4","width":26,"height":34,"xoffset":-1,"yoffset":4,"xadvance":24,"chnl":15,"x":191,"y":406,"page":0},{"id":53,"index":25,"char":"5","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":206,"y":369,"page":0},{"id":54,"index":26,"char":"6","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":229,"y":334,"page":0},{"id":49,"index":21,"char":"1","width":15,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":192,"y":441,"page":0},{"id":50,"index":22,"char":"2","width":24,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":192,"y":476,"page":0},{"id":33,"index":5,"char":"!","width":8,"height":34,"xoffset":1,"yoffset":4,"xadvance":11,"chnl":15,"x":208,"y":441,"page":0},{"id":63,"index":35,"char":"?","width":21,"height":34,"xoffset":0,"yoffset":4,"xadvance":20,"chnl":15,"x":217,"y":441,"page":0},{"id":163,"index":101,"char":"\xa3","width":25,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":218,"y":404,"page":0},{"id":35,"index":7,"char":"#","width":27,"height":34,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":230,"y":369,"page":0},{"id":1040,"index":950,"char":"А","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":217,"y":476,"page":0},{"id":1041,"index":216,"char":"Б","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":239,"y":439,"page":0},{"id":1042,"index":951,"char":"В","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":244,"y":404,"page":0},{"id":1043,"index":952,"char":"Г","width":22,"height":34,"xoffset":2,"yoffset":4,"xadvance":23,"chnl":15,"x":248,"y":474,"page":0},{"id":1045,"index":953,"char":"Е","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":265,"y":439,"page":0},{"id":1048,"index":220,"char":"И","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":271,"y":474,"page":0},{"id":1081,"index":965,"char":"й","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":233,"y":248,"page":0},{"id":1050,"index":947,"char":"К","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":27,"chnl":15,"x":233,"y":283,"page":0},{"id":1051,"index":221,"char":"Л","width":29,"height":34,"xoffset":-1,"yoffset":4,"xadvance":30,"chnl":15,"x":256,"y":248,"page":0},{"id":1052,"index":955,"char":"М","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":253,"y":318,"page":0},{"id":1053,"index":956,"char":"Н","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":261,"y":283,"page":0},{"id":1055,"index":958,"char":"П","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":258,"y":353,"page":0},{"id":1056,"index":959,"char":"Р","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":269,"y":388,"page":0},{"id":1058,"index":961,"char":"Т","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":286,"y":353,"page":0},{"id":1059,"index":222,"char":"У","width":28,"height":34,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":288,"y":318,"page":0},{"id":1061,"index":962,"char":"Х","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":289,"y":423,"page":0},{"id":1063,"index":225,"char":"Ч","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":29,"chnl":15,"x":295,"y":388,"page":0},{"id":1066,"index":228,"char":"Ъ","width":34,"height":34,"xoffset":-2,"yoffset":4,"xadvance":32,"chnl":15,"x":314,"y":353,"page":0},{"id":1067,"index":229,"char":"Ы","width":33,"height":34,"xoffset":2,"yoffset":4,"xadvance":36,"chnl":15,"x":299,"y":458,"page":0},{"id":1068,"index":230,"char":"Ь","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":318,"y":423,"page":0},{"id":1071,"index":233,"char":"Я","width":25,"height":34,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":322,"y":388,"page":0},{"id":962,"index":200,"char":"ς","width":22,"height":34,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":333,"y":458,"page":0},{"id":969,"index":206,"char":"ω","width":34,"height":27,"xoffset":1,"yoffset":12,"xadvance":35,"chnl":15,"x":216,"y":144,"page":0},{"id":917,"index":912,"char":"Ε","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":344,"y":423,"page":0},{"id":929,"index":920,"char":"Ρ","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":348,"y":388,"page":0},{"id":932,"index":921,"char":"Τ","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":237,"y":172,"page":0},{"id":933,"index":922,"char":"Υ","width":29,"height":34,"xoffset":-2,"yoffset":4,"xadvance":25,"chnl":15,"x":258,"y":207,"page":0},{"id":921,"index":915,"char":"Ι","width":8,"height":34,"xoffset":2,"yoffset":4,"xadvance":11,"chnl":15,"x":286,"y":242,"page":0},{"id":928,"index":182,"char":"Π","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":289,"y":277,"page":0},{"id":913,"index":910,"char":"Α","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":356,"y":458,"page":0},{"id":931,"index":183,"char":"Σ","width":25,"height":34,"xoffset":-1,"yoffset":4,"xadvance":24,"chnl":15,"x":368,"y":423,"page":0},{"id":916,"index":178,"char":"Δ","width":32,"height":34,"xoffset":-1,"yoffset":4,"xadvance":30,"chnl":15,"x":387,"y":458,"page":0},{"id":934,"index":184,"char":"Φ","width":31,"height":34,"xoffset":0,"yoffset":4,"xadvance":30,"chnl":15,"x":224,"y":71,"page":0},{"id":915,"index":177,"char":"Γ","width":22,"height":34,"xoffset":2,"yoffset":4,"xadvance":23,"chnl":15,"x":244,"y":35,"page":0},{"id":919,"index":914,"char":"Η","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":224,"y":106,"page":0},{"id":926,"index":181,"char":"Ξ","width":23,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":252,"y":106,"page":0},{"id":922,"index":916,"char":"Κ","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":256,"y":70,"page":0},{"id":923,"index":180,"char":"Λ","width":29,"height":34,"xoffset":-1,"yoffset":4,"xadvance":28,"chnl":15,"x":265,"y":141,"page":0},{"id":918,"index":913,"char":"Ζ","width":26,"height":34,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":276,"y":105,"page":0},{"id":935,"index":923,"char":"Χ","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":288,"y":176,"page":0},{"id":936,"index":185,"char":"Ψ","width":29,"height":34,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":295,"y":140,"page":0},{"id":937,"index":186,"char":"Ω","width":27,"height":34,"xoffset":0,"yoffset":4,"xadvance":28,"chnl":15,"x":295,"y":211,"page":0},{"id":914,"index":911,"char":"Β","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":317,"y":175,"page":0},{"id":925,"index":918,"char":"Ν","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":267,"y":0,"page":0},{"id":924,"index":917,"char":"Μ","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":267,"y":35,"page":0},{"id":1076,"index":237,"char":"д","width":27,"height":33,"xoffset":-1,"yoffset":12,"xadvance":25,"chnl":15,"x":284,"y":70,"page":0},{"id":1094,"index":248,"char":"ц","width":24,"height":33,"xoffset":1,"yoffset":12,"xadvance":25,"chnl":15,"x":295,"y":0,"page":0},{"id":1102,"index":256,"char":"ю","width":33,"height":27,"xoffset":1,"yoffset":11,"xadvance":34,"chnl":15,"x":295,"y":246,"page":0},{"id":116,"index":88,"char":"t","width":16,"height":32,"xoffset":-2,"yoffset":6,"xadvance":14,"chnl":15,"x":303,"y":104,"page":0},{"id":59,"index":31,"char":";","width":10,"height":32,"xoffset":-1,"yoffset":12,"xadvance":9,"chnl":15,"x":302,"y":34,"page":0},{"id":1096,"index":250,"char":"ш","width":32,"height":26,"xoffset":1,"yoffset":12,"xadvance":34,"chnl":15,"x":323,"y":210,"page":0},{"id":248,"index":137,"char":"\xf8","width":24,"height":32,"xoffset":0,"yoffset":9,"xadvance":24,"chnl":15,"x":312,"y":67,"page":0},{"id":1099,"index":253,"char":"ы","width":30,"height":26,"xoffset":1,"yoffset":12,"xadvance":33,"chnl":15,"x":313,"y":34,"page":0},{"id":1084,"index":243,"char":"м","width":29,"height":26,"xoffset":1,"yoffset":12,"xadvance":31,"chnl":15,"x":320,"y":0,"page":0},{"id":1098,"index":252,"char":"ъ","width":28,"height":26,"xoffset":-1,"yoffset":12,"xadvance":26,"chnl":15,"x":320,"y":100,"page":0},{"id":960,"index":198,"char":"π","width":28,"height":26,"xoffset":-1,"yoffset":12,"xadvance":25,"chnl":15,"x":337,"y":61,"page":0},{"id":97,"index":69,"char":"a","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":265,"y":176,"page":0},{"id":101,"index":73,"char":"e","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":344,"y":27,"page":0},{"id":114,"index":86,"char":"r","width":15,"height":27,"xoffset":1,"yoffset":11,"xadvance":14,"chnl":15,"x":325,"y":127,"page":0},{"id":117,"index":89,"char":"u","width":21,"height":27,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":341,"y":127,"page":0},{"id":111,"index":83,"char":"o","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":349,"y":88,"page":0},{"id":115,"index":87,"char":"s","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":366,"y":55,"page":0},{"id":99,"index":71,"char":"c","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":342,"y":155,"page":0},{"id":110,"index":82,"char":"n","width":21,"height":27,"xoffset":1,"yoffset":11,"xadvance":23,"chnl":15,"x":363,"y":116,"page":0},{"id":58,"index":30,"char":":","width":9,"height":27,"xoffset":1,"yoffset":12,"xadvance":10,"chnl":15,"x":251,"y":141,"page":0},{"id":126,"index":98,"char":"~","width":27,"height":12,"xoffset":1,"yoffset":18,"xadvance":29,"chnl":15,"x":112,"y":490,"page":0},{"id":1072,"index":963,"char":"а","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":374,"y":83,"page":0},{"id":1077,"index":964,"char":"е","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":368,"y":0,"page":0},{"id":1079,"index":239,"char":"з","width":21,"height":27,"xoffset":0,"yoffset":11,"xadvance":21,"chnl":15,"x":389,"y":28,"page":0},{"id":1086,"index":966,"char":"о","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":392,"y":0,"page":0},{"id":1089,"index":968,"char":"с","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":317,"y":274,"page":0},{"id":1101,"index":255,"char":"э","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":329,"y":237,"page":0},{"id":949,"index":191,"char":"ε","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":317,"y":302,"page":0},{"id":964,"index":202,"char":"τ","width":23,"height":27,"xoffset":0,"yoffset":12,"xadvance":22,"chnl":15,"x":341,"y":265,"page":0},{"id":965,"index":203,"char":"υ","width":22,"height":27,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":352,"y":237,"page":0},{"id":959,"index":932,"char":"ο","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":356,"y":183,"page":0},{"id":945,"index":187,"char":"α","width":25,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":366,"y":144,"page":0},{"id":963,"index":201,"char":"σ","width":26,"height":27,"xoffset":0,"yoffset":12,"xadvance":24,"chnl":15,"x":385,"y":111,"page":0},{"id":122,"index":94,"char":"z","width":22,"height":26,"xoffset":0,"yoffset":12,"xadvance":21,"chnl":15,"x":389,"y":56,"page":0},{"id":120,"index":92,"char":"x","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":397,"y":83,"page":0},{"id":118,"index":90,"char":"v","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":411,"y":28,"page":0},{"id":43,"index":15,"char":"+","width":24,"height":26,"xoffset":0,"yoffset":9,"xadvance":24,"chnl":15,"x":417,"y":0,"page":0},{"id":1074,"index":235,"char":"в","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":412,"y":55,"page":0},{"id":1075,"index":236,"char":"г","width":18,"height":26,"xoffset":1,"yoffset":12,"xadvance":18,"chnl":15,"x":368,"y":28,"page":0},{"id":1080,"index":240,"char":"и","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":435,"y":27,"page":0},{"id":1082,"index":241,"char":"к","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":442,"y":0,"page":0},{"id":1083,"index":242,"char":"л","width":24,"height":26,"xoffset":-1,"yoffset":12,"xadvance":24,"chnl":15,"x":466,"y":0,"page":0},{"id":1085,"index":244,"char":"н","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":458,"y":27,"page":0},{"id":1087,"index":245,"char":"п","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":481,"y":27,"page":0},{"id":1090,"index":246,"char":"т","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":341,"y":293,"page":0},{"id":1093,"index":970,"char":"х","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":341,"y":320,"page":0},{"id":1095,"index":249,"char":"ч","width":22,"height":26,"xoffset":0,"yoffset":12,"xadvance":23,"chnl":15,"x":349,"y":347,"page":0},{"id":1100,"index":254,"char":"ь","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":436,"y":54,"page":0},{"id":1103,"index":257,"char":"я","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":23,"chnl":15,"x":459,"y":54,"page":0},{"id":953,"index":195,"char":"ι","width":12,"height":26,"xoffset":2,"yoffset":12,"xadvance":14,"chnl":15,"x":350,"y":0,"page":0},{"id":954,"index":931,"char":"κ","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":483,"y":54,"page":0},{"id":957,"index":934,"char":"ν","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":436,"y":81,"page":0},{"id":8211,"index":385,"char":"–","width":25,"height":7,"xoffset":1,"yoffset":18,"xadvance":28,"chnl":15,"x":64,"y":503,"page":0},{"id":95,"index":67,"char":"_","width":23,"height":7,"xoffset":-2,"yoffset":34,"xadvance":19,"chnl":15,"x":100,"y":395,"page":0},{"id":42,"index":14,"char":"*","width":21,"height":21,"xoffset":-1,"yoffset":4,"xadvance":18,"chnl":15,"x":491,"y":0,"page":0},{"id":61,"index":33,"char":"=","width":21,"height":16,"xoffset":1,"yoffset":14,"xadvance":23,"chnl":15,"x":113,"y":275,"page":0},{"id":176,"index":113,"char":"\xb0","width":14,"height":15,"xoffset":1,"yoffset":4,"xadvance":16,"chnl":15,"x":199,"y":248,"page":0},{"id":45,"index":17,"char":"-","width":14,"height":7,"xoffset":-1,"yoffset":20,"xadvance":12,"chnl":15,"x":54,"y":346,"page":0},{"id":44,"index":16,"char":",","width":10,"height":14,"xoffset":-1,"yoffset":30,"xadvance":8,"chnl":15,"x":184,"y":213,"page":0},{"id":34,"index":6,"char":"\\"","width":12,"height":14,"xoffset":1,"yoffset":3,"xadvance":13,"chnl":15,"x":83,"y":203,"page":0},{"id":39,"index":11,"char":"\'","width":7,"height":14,"xoffset":0,"yoffset":3,"xadvance":7,"chnl":15,"x":140,"y":498,"page":0},{"id":46,"index":18,"char":".","width":9,"height":9,"xoffset":1,"yoffset":30,"xadvance":11,"chnl":15,"x":123,"y":229,"page":0}],"info":{"face":"Roboto-Regular","size":42,"bold":0,"italic":0,"charset":["a","z","e","r","t","y","u","i","o","p","q","s","d","f","g","h","j","k","l","m","w","x","c","v","b","n","A","Z","E","R","T","Y","U","I","O","P","Q","S","D","F","G","H","J","K","L","M","W","X","C","V","B","N","/","\\\\","*","-","–","+","7","8","9","4","5","6","1","2","3","0",",",";",":","!","?",".","%","$","\xa3","€","=","{","}","(",")","[","]","&","~","\\"","\'","#","_","|","\xb0","@","А","а","Б","б","В","в","Г","г","Д","д","Е","е","Ё","ё","Ж","ж","З","з","И","и","Й","й","К","к","Л","л","М","м","Н","н","О","о","П","п","Р","р","С","с","Т","т","У","у","Ф","ф","Х","х","Ц","ц","Ч","ч","Ш","ш","Щ","щ","Ъ","ъ","Ы","ы","Ь","ь","Э","э","Ю","ю","Я","я","\xfc","\xdc","\xf6","\xd6","\xe4","\xc4","\xf1","\xd1","ς","ε","ρ","τ","υ","θ","ι","ο","π","α","σ","δ","φ","γ","η","ξ","κ","λ","ζ","χ","ψ","ω","β","ν","μ","Ε","Ρ","Τ","Υ","Θ","Ι","Ο","Π","Α","Σ","Δ","Φ","Γ","Η","Ξ","Κ","Λ","Ζ","Χ","Ψ","Ω","Β","Ν","Μ","\xe5","\xc5","\xe6","\xc6","\xf8","\xd8"],"unicode":1,"stretchH":100,"smooth":1,"aa":1,"padding":[2,2,2,2],"spacing":[0,0]},"common":{"lineHeight":44,"base":34,"scaleW":512,"scaleH":512,"pages":1,"packed":0,"alphaChnl":0,"redChnl":0,"greenChnl":0,"blueChnl":0},"distanceField":{"fieldType":"msdf","distanceRange":4},"kernings":[{"first":97,"second":121,"amount":0},{"first":97,"second":118,"amount":0},{"first":97,"second":34,"amount":-1},{"first":97,"second":39,"amount":-1},{"first":97,"second":1090,"amount":0},{"first":97,"second":1091,"amount":0},{"first":97,"second":947,"amount":0},{"first":97,"second":957,"amount":0},{"first":122,"second":101,"amount":0},{"first":122,"second":111,"amount":0},{"first":122,"second":113,"amount":0},{"first":122,"second":100,"amount":0},{"first":122,"second":103,"amount":0},{"first":122,"second":99,"amount":0},{"first":122,"second":1077,"amount":0},{"first":122,"second":1105,"amount":0},{"first":122,"second":1086,"amount":0},{"first":122,"second":1089,"amount":0},{"first":122,"second":1092,"amount":0},{"first":122,"second":246,"amount":0},{"first":122,"second":962,"amount":0},{"first":122,"second":959,"amount":0},{"first":122,"second":945,"amount":0},{"first":122,"second":963,"amount":0},{"first":101,"second":121,"amount":0},{"first":101,"second":118,"amount":0},{"first":101,"second":34,"amount":0},{"first":101,"second":39,"amount":0},{"first":101,"second":1090,"amount":0},{"first":101,"second":1091,"amount":0},{"first":101,"second":947,"amount":0},{"first":101,"second":957,"amount":0},{"first":114,"second":97,"amount":-1},{"first":114,"second":101,"amount":0},{"first":114,"second":116,"amount":1},{"first":114,"second":121,"amount":0},{"first":114,"second":111,"amount":0},{"first":114,"second":113,"amount":0},{"first":114,"second":100,"amount":0},{"first":114,"second":102,"amount":0},{"first":114,"second":103,"amount":0},{"first":114,"second":119,"amount":0},{"first":114,"second":99,"amount":0},{"first":114,"second":118,"amount":0},{"first":114,"second":44,"amount":-3},{"first":114,"second":46,"amount":-3},{"first":114,"second":34,"amount":0},{"first":114,"second":39,"amount":0},{"first":114,"second":1072,"amount":-1},{"first":114,"second":1077,"amount":0},{"first":114,"second":1105,"amount":0},{"first":114,"second":1086,"amount":0},{"first":114,"second":1089,"amount":0},{"first":114,"second":1091,"amount":0},{"first":114,"second":1092,"amount":0},{"first":114,"second":246,"amount":0},{"first":114,"second":228,"amount":-1},{"first":114,"second":962,"amount":0},{"first":114,"second":959,"amount":0},{"first":114,"second":945,"amount":0},{"first":114,"second":963,"amount":0},{"first":114,"second":947,"amount":0},{"first":114,"second":957,"amount":0},{"first":114,"second":229,"amount":-1},{"first":116,"second":111,"amount":0},{"first":116,"second":1086,"amount":0},{"first":116,"second":246,"amount":0},{"first":116,"second":959,"amount":0},{"first":121,"second":97,"amount":0},{"first":121,"second":101,"amount":0},{"first":121,"second":111,"amount":0},{"first":121,"second":113,"amount":0},{"first":121,"second":100,"amount":0},{"first":121,"second":102,"amount":0},{"first":121,"second":103,"amount":0},{"first":121,"second":99,"amount":0},{"first":121,"second":44,"amount":-2},{"first":121,"second":46,"amount":-2},{"first":121,"second":34,"amount":0},{"first":121,"second":39,"amount":0},{"first":121,"second":1072,"amount":0},{"first":121,"second":1076,"amount":-1},{"first":121,"second":1077,"amount":0},{"first":121,"second":1105,"amount":0},{"first":121,"second":1083,"amount":-1},{"first":121,"second":1086,"amount":0},{"first":121,"second":1089,"amount":0},{"first":121,"second":1092,"amount":0},{"first":121,"second":246,"amount":0},{"first":121,"second":228,"amount":0},{"first":121,"second":962,"amount":0},{"first":121,"second":961,"amount":0},{"first":121,"second":964,"amount":0},{"first":121,"second":959,"amount":0},{"first":121,"second":960,"amount":0},{"first":121,"second":945,"amount":0},{"first":121,"second":963,"amount":0},{"first":121,"second":948,"amount":0},{"first":121,"second":229,"amount":0},{"first":111,"second":122,"amount":0},{"first":111,"second":121,"amount":0},{"first":111,"second":120,"amount":0},{"first":111,"second":118,"amount":0},{"first":111,"second":34,"amount":-3},{"first":111,"second":39,"amount":-3},{"first":111,"second":1076,"amount":-1},{"first":111,"second":1078,"amount":0},{"first":111,"second":1083,"amount":0},{"first":111,"second":1090,"amount":0},{"first":111,"second":1091,"amount":0},{"first":111,"second":1093,"amount":0},{"first":111,"second":964,"amount":0},{"first":111,"second":947,"amount":0},{"first":111,"second":957,"amount":0},{"first":112,"second":122,"amount":0},{"first":112,"second":121,"amount":0},{"first":112,"second":120,"amount":0},{"first":112,"second":118,"amount":0},{"first":112,"second":34,"amount":-1},{"first":112,"second":39,"amount":-1},{"first":112,"second":1076,"amount":0},{"first":112,"second":1078,"amount":0},{"first":112,"second":1083,"amount":0},{"first":112,"second":1090,"amount":-2},{"first":112,"second":1091,"amount":0},{"first":112,"second":1093,"amount":0},{"first":112,"second":964,"amount":0},{"first":112,"second":947,"amount":0},{"first":112,"second":957,"amount":0},{"first":102,"second":101,"amount":0},{"first":102,"second":113,"amount":0},{"first":102,"second":100,"amount":0},{"first":102,"second":103,"amount":0},{"first":102,"second":99,"amount":0},{"first":102,"second":125,"amount":0},{"first":102,"second":41,"amount":0},{"first":102,"second":93,"amount":0},{"first":102,"second":34,"amount":0},{"first":102,"second":39,"amount":0},{"first":102,"second":1077,"amount":0},{"first":102,"second":1105,"amount":0},{"first":102,"second":1089,"amount":0},{"first":102,"second":1092,"amount":0},{"first":102,"second":962,"amount":0},{"first":102,"second":945,"amount":0},{"first":102,"second":963,"amount":0},{"first":104,"second":34,"amount":-2},{"first":104,"second":39,"amount":-2},{"first":104,"second":1090,"amount":-1},{"first":107,"second":101,"amount":0},{"first":107,"second":113,"amount":0},{"first":107,"second":100,"amount":0},{"first":107,"second":103,"amount":0},{"first":107,"second":99,"amount":0},{"first":107,"second":1077,"amount":0},{"first":107,"second":1105,"amount":0},{"first":107,"second":1089,"amount":0},{"first":107,"second":1092,"amount":0},{"first":107,"second":962,"amount":0},{"first":107,"second":945,"amount":0},{"first":107,"second":963,"amount":0},{"first":109,"second":34,"amount":-2},{"first":109,"second":39,"amount":-2},{"first":109,"second":1090,"amount":-1},{"first":119,"second":44,"amount":-3},{"first":119,"second":46,"amount":-3},{"first":120,"second":101,"amount":0},{"first":120,"second":111,"amount":0},{"first":120,"second":113,"amount":0},{"first":120,"second":100,"amount":0},{"first":120,"second":103,"amount":0},{"first":120,"second":99,"amount":0},{"first":120,"second":1077,"amount":0},{"first":120,"second":1105,"amount":0},{"first":120,"second":1086,"amount":0},{"first":120,"second":1089,"amount":0},{"first":120,"second":1092,"amount":0},{"first":120,"second":246,"amount":0},{"first":120,"second":962,"amount":0},{"first":120,"second":959,"amount":0},{"first":120,"second":945,"amount":0},{"first":120,"second":963,"amount":0},{"first":99,"second":34,"amount":0},{"first":99,"second":39,"amount":0},{"first":118,"second":97,"amount":0},{"first":118,"second":101,"amount":0},{"first":118,"second":111,"amount":0},{"first":118,"second":113,"amount":0},{"first":118,"second":100,"amount":0},{"first":118,"second":102,"amount":0},{"first":118,"second":103,"amount":0},{"first":118,"second":99,"amount":0},{"first":118,"second":44,"amount":-2},{"first":118,"second":46,"amount":-2},{"first":118,"second":34,"amount":0},{"first":118,"second":39,"amount":0},{"first":118,"second":1072,"amount":0},{"first":118,"second":1076,"amount":-1},{"first":118,"second":1077,"amount":0},{"first":118,"second":1105,"amount":0},{"first":118,"second":1083,"amount":-1},{"first":118,"second":1086,"amount":0},{"first":118,"second":1089,"amount":0},{"first":118,"second":1092,"amount":0},{"first":118,"second":246,"amount":0},{"first":118,"second":228,"amount":0},{"first":118,"second":962,"amount":0},{"first":118,"second":961,"amount":0},{"first":118,"second":964,"amount":0},{"first":118,"second":959,"amount":0},{"first":118,"second":960,"amount":0},{"first":118,"second":945,"amount":0},{"first":118,"second":963,"amount":0},{"first":118,"second":948,"amount":0},{"first":118,"second":229,"amount":0},{"first":98,"second":122,"amount":0},{"first":98,"second":121,"amount":0},{"first":98,"second":120,"amount":0},{"first":98,"second":118,"amount":0},{"first":98,"second":34,"amount":-1},{"first":98,"second":39,"amount":-1},{"first":98,"second":1076,"amount":0},{"first":98,"second":1078,"amount":0},{"first":98,"second":1083,"amount":0},{"first":98,"second":1090,"amount":-2},{"first":98,"second":1091,"amount":0},{"first":98,"second":1093,"amount":0},{"first":98,"second":964,"amount":0},{"first":98,"second":947,"amount":0},{"first":98,"second":957,"amount":0},{"first":110,"second":34,"amount":-2},{"first":110,"second":39,"amount":-2},{"first":110,"second":1090,"amount":-1},{"first":65,"second":122,"amount":0},{"first":65,"second":116,"amount":0},{"first":65,"second":121,"amount":-1},{"first":65,"second":117,"amount":0},{"first":65,"second":111,"amount":0},{"first":65,"second":119,"amount":-1},{"first":65,"second":118,"amount":-1},{"first":65,"second":84,"amount":-3},{"first":65,"second":89,"amount":-2},{"first":65,"second":85,"amount":0},{"first":65,"second":79,"amount":0},{"first":65,"second":81,"amount":0},{"first":65,"second":71,"amount":0},{"first":65,"second":87,"amount":-1},{"first":65,"second":67,"amount":0},{"first":65,"second":86,"amount":-2},{"first":65,"second":63,"amount":-1},{"first":65,"second":34,"amount":-2},{"first":65,"second":39,"amount":-2},{"first":65,"second":1044,"amount":0},{"first":65,"second":1051,"amount":0},{"first":65,"second":1083,"amount":0},{"first":65,"second":1054,"amount":0},{"first":65,"second":1086,"amount":0},{"first":65,"second":1057,"amount":0},{"first":65,"second":1058,"amount":-3},{"first":65,"second":1090,"amount":-1},{"first":65,"second":1091,"amount":-1},{"first":65,"second":1063,"amount":-1},{"first":65,"second":1095,"amount":-2},{"first":65,"second":1068,"amount":-1},{"first":65,"second":252,"amount":0},{"first":65,"second":220,"amount":0},{"first":65,"second":246,"amount":0},{"first":65,"second":214,"amount":0},{"first":65,"second":964,"amount":-1},{"first":65,"second":965,"amount":0},{"first":65,"second":959,"amount":0},{"first":65,"second":947,"amount":-1},{"first":65,"second":955,"amount":0},{"first":65,"second":957,"amount":-1},{"first":65,"second":933,"amount":-2},{"first":65,"second":920,"amount":0},{"first":65,"second":927,"amount":0},{"first":65,"second":934,"amount":-1},{"first":65,"second":936,"amount":-1},{"first":65,"second":216,"amount":0},{"first":90,"second":101,"amount":0},{"first":90,"second":121,"amount":-1},{"first":90,"second":117,"amount":0},{"first":90,"second":111,"amount":0},{"first":90,"second":113,"amount":0},{"first":90,"second":100,"amount":0},{"first":90,"second":103,"amount":0},{"first":90,"second":119,"amount":-1},{"first":90,"second":99,"amount":0},{"first":90,"second":118,"amount":-1},{"first":90,"second":65,"amount":0},{"first":90,"second":79,"amount":-1},{"first":90,"second":81,"amount":-1},{"first":90,"second":71,"amount":-1},{"first":90,"second":67,"amount":-1},{"first":90,"second":1040,"amount":0},{"first":90,"second":1077,"amount":0},{"first":90,"second":1105,"amount":0},{"first":90,"second":1054,"amount":-1},{"first":90,"second":1086,"amount":0},{"first":90,"second":1057,"amount":-1},{"first":90,"second":1089,"amount":0},{"first":90,"second":1091,"amount":-1},{"first":90,"second":1092,"amount":0},{"first":90,"second":252,"amount":0},{"first":90,"second":246,"amount":0},{"first":90,"second":214,"amount":-1},{"first":90,"second":196,"amount":0},{"first":90,"second":962,"amount":0},{"first":90,"second":965,"amount":0},{"first":90,"second":959,"amount":0},{"first":90,"second":945,"amount":0},{"first":90,"second":963,"amount":0},{"first":90,"second":947,"amount":-1},{"first":90,"second":968,"amount":-1},{"first":90,"second":957,"amount":-1},{"first":90,"second":920,"amount":-1},{"first":90,"second":927,"amount":-1},{"first":90,"second":913,"amount":0},{"first":90,"second":916,"amount":0},{"first":90,"second":934,"amount":-1},{"first":90,"second":923,"amount":0},{"first":90,"second":197,"amount":0},{"first":90,"second":216,"amount":-1},{"first":69,"second":101,"amount":0},{"first":69,"second":121,"amount":-1},{"first":69,"second":117,"amount":0},{"first":69,"second":111,"amount":0},{"first":69,"second":113,"amount":0},{"first":69,"second":100,"amount":0},{"first":69,"second":102,"amount":0},{"first":69,"second":103,"amount":0},{"first":69,"second":119,"amount":0},{"first":69,"second":99,"amount":0},{"first":69,"second":118,"amount":-1},{"first":69,"second":84,"amount":0},{"first":69,"second":1077,"amount":0},{"first":69,"second":1105,"amount":0},{"first":69,"second":1086,"amount":0},{"first":69,"second":1089,"amount":0},{"first":69,"second":1058,"amount":0},{"first":69,"second":1091,"amount":-1},{"first":69,"second":1092,"amount":0},{"first":69,"second":252,"amount":0},{"first":69,"second":246,"amount":0},{"first":69,"second":962,"amount":0},{"first":69,"second":965,"amount":0},{"first":69,"second":959,"amount":0},{"first":69,"second":945,"amount":0},{"first":69,"second":963,"amount":0},{"first":69,"second":947,"amount":-1},{"first":69,"second":957,"amount":-1},{"first":82,"second":84,"amount":-2},{"first":82,"second":89,"amount":-1},{"first":82,"second":86,"amount":0},{"first":82,"second":1058,"amount":-2},{"first":82,"second":933,"amount":-1},{"first":84,"second":97,"amount":-2},{"first":84,"second":122,"amount":-1},{"first":84,"second":101,"amount":-2},{"first":84,"second":114,"amount":-2},{"first":84,"second":121,"amount":-1},{"first":84,"second":117,"amount":-2},{"first":84,"second":111,"amount":-2},{"first":84,"second":112,"amount":-2},{"first":84,"second":113,"amount":-2},{"first":84,"second":115,"amount":-2},{"first":84,"second":100,"amount":-2},{"first":84,"second":103,"amount":-2},{"first":84,"second":109,"amount":-2},{"first":84,"second":119,"amount":-1},{"first":84,"second":120,"amount":-2},{"first":84,"second":99,"amount":-2},{"first":84,"second":118,"amount":-1},{"first":84,"second":110,"amount":-2},{"first":84,"second":65,"amount":-2},{"first":84,"second":84,"amount":0},{"first":84,"second":89,"amount":0},{"first":84,"second":79,"amount":-1},{"first":84,"second":81,"amount":-1},{"first":84,"second":83,"amount":0},{"first":84,"second":71,"amount":-1},{"first":84,"second":74,"amount":-5},{"first":84,"second":87,"amount":0},{"first":84,"second":67,"amount":-1},{"first":84,"second":86,"amount":0},{"first":84,"second":45,"amount":-5},{"first":84,"second":8211,"amount":-5},{"first":84,"second":44,"amount":-4},{"first":84,"second":46,"amount":-4},{"first":84,"second":1040,"amount":-2},{"first":84,"second":1072,"amount":-2},{"first":84,"second":1073,"amount":-1},{"first":84,"second":1074,"amount":-2},{"first":84,"second":1075,"amount":-2},{"first":84,"second":1044,"amount":-2},{"first":84,"second":1076,"amount":-3},{"first":84,"second":1077,"amount":-2},{"first":84,"second":1105,"amount":-2},{"first":84,"second":1078,"amount":-2},{"first":84,"second":1079,"amount":-3},{"first":84,"second":1080,"amount":-2},{"first":84,"second":1081,"amount":-2},{"first":84,"second":1082,"amount":-2},{"first":84,"second":1051,"amount":-1},{"first":84,"second":1083,"amount":-3},{"first":84,"second":1084,"amount":-2},{"first":84,"second":1085,"amount":-2},{"first":84,"second":1054,"amount":-1},{"first":84,"second":1086,"amount":-2},{"first":84,"second":1087,"amount":-2},{"first":84,"second":1088,"amount":-2},{"first":84,"second":1057,"amount":-1},{"first":84,"second":1089,"amount":-2},{"first":84,"second":1058,"amount":0},{"first":84,"second":1090,"amount":-2},{"first":84,"second":1091,"amount":-1},{"first":84,"second":1092,"amount":-2},{"first":84,"second":1093,"amount":-2},{"first":84,"second":1094,"amount":-2},{"first":84,"second":1095,"amount":-3},{"first":84,"second":1096,"amount":-2},{"first":84,"second":1097,"amount":-2},{"first":84,"second":1099,"amount":-3},{"first":84,"second":1068,"amount":0},{"first":84,"second":1100,"amount":-2},{"first":84,"second":1101,"amount":-3},{"first":84,"second":1102,"amount":-2},{"first":84,"second":1103,"amount":-3},{"first":84,"second":252,"amount":-2},{"first":84,"second":246,"amount":-2},{"first":84,"second":214,"amount":-1},{"first":84,"second":228,"amount":-2},{"first":84,"second":196,"amount":-2},{"first":84,"second":241,"amount":-2},{"first":84,"second":962,"amount":-2},{"first":84,"second":949,"amount":-3},{"first":84,"second":961,"amount":-3},{"first":84,"second":964,"amount":-2},{"first":84,"second":965,"amount":-2},{"first":84,"second":953,"amount":-3},{"first":84,"second":959,"amount":-2},{"first":84,"second":960,"amount":-2},{"first":84,"second":945,"amount":-2},{"first":84,"second":963,"amount":-2},{"first":84,"second":948,"amount":-1},{"first":84,"second":966,"amount":-3},{"first":84,"second":947,"amount":-1},{"first":84,"second":951,"amount":-2},{"first":84,"second":968,"amount":-3},{"first":84,"second":969,"amount":-3},{"first":84,"second":957,"amount":-1},{"first":84,"second":933,"amount":0},{"first":84,"second":920,"amount":-1},{"first":84,"second":927,"amount":-1},{"first":84,"second":913,"amount":-2},{"first":84,"second":916,"amount":-2},{"first":84,"second":934,"amount":-2},{"first":84,"second":923,"amount":-2},{"first":84,"second":229,"amount":-2},{"first":84,"second":197,"amount":-2},{"first":84,"second":230,"amount":-2},{"first":84,"second":198,"amount":-4},{"first":84,"second":248,"amount":-2},{"first":84,"second":216,"amount":-1},{"first":89,"second":97,"amount":-1},{"first":89,"second":122,"amount":-1},{"first":89,"second":101,"amount":-1},{"first":89,"second":114,"amount":-1},{"first":89,"second":116,"amount":0},{"first":89,"second":121,"amount":0},{"first":89,"second":117,"amount":-1},{"first":89,"second":111,"amount":-1},{"first":89,"second":112,"amount":-1},{"first":89,"second":113,"amount":-1},{"first":89,"second":115,"amount":-1},{"first":89,"second":100,"amount":-1},{"first":89,"second":102,"amount":0},{"first":89,"second":103,"amount":-1},{"first":89,"second":109,"amount":-1},{"first":89,"second":120,"amount":0},{"first":89,"second":99,"amount":-1},{"first":89,"second":118,"amount":0},{"first":89,"second":110,"amount":-1},{"first":89,"second":65,"amount":-2},{"first":89,"second":84,"amount":0},{"first":89,"second":89,"amount":0},{"first":89,"second":85,"amount":-2},{"first":89,"second":79,"amount":-1},{"first":89,"second":81,"amount":-1},{"first":89,"second":83,"amount":0},{"first":89,"second":71,"amount":-1},{"first":89,"second":74,"amount":-2},{"first":89,"second":87,"amount":0},{"first":89,"second":88,"amount":0},{"first":89,"second":67,"amount":-1},{"first":89,"second":86,"amount":0},{"first":89,"second":42,"amount":-1},{"first":89,"second":45,"amount":-1},{"first":89,"second":8211,"amount":-1},{"first":89,"second":44,"amount":-4},{"first":89,"second":46,"amount":-4},{"first":89,"second":125,"amount":0},{"first":89,"second":41,"amount":0},{"first":89,"second":93,"amount":0},{"first":89,"second":38,"amount":-1},{"first":89,"second":1040,"amount":-2},{"first":89,"second":1072,"amount":-1},{"first":89,"second":1075,"amount":-1},{"first":89,"second":1077,"amount":-1},{"first":89,"second":1105,"amount":-1},{"first":89,"second":1046,"amount":0},{"first":89,"second":1078,"amount":0},{"first":89,"second":1080,"amount":-1},{"first":89,"second":1081,"amount":-1},{"first":89,"second":1082,"amount":-1},{"first":89,"second":1084,"amount":-1},{"first":89,"second":1085,"amount":-1},{"first":89,"second":1054,"amount":-1},{"first":89,"second":1086,"amount":-1},{"first":89,"second":1087,"amount":-1},{"first":89,"second":1088,"amount":-1},{"first":89,"second":1057,"amount":-1},{"first":89,"second":1089,"amount":-1},{"first":89,"second":1058,"amount":0},{"first":89,"second":1091,"amount":0},{"first":89,"second":1092,"amount":-1},{"first":89,"second":1061,"amount":0},{"first":89,"second":1093,"amount":0},{"first":89,"second":1094,"amount":-1},{"first":89,"second":1096,"amount":-1},{"first":89,"second":1097,"amount":-1},{"first":89,"second":1100,"amount":-1},{"first":89,"second":1102,"amount":-1},{"first":89,"second":252,"amount":-1},{"first":89,"second":220,"amount":-2},{"first":89,"second":246,"amount":-1},{"first":89,"second":214,"amount":-1},{"first":89,"second":228,"amount":-1},{"first":89,"second":196,"amount":-2},{"first":89,"second":241,"amount":-1},{"first":89,"second":962,"amount":-1},{"first":89,"second":949,"amount":-1},{"first":89,"second":961,"amount":-1},{"first":89,"second":964,"amount":0},{"first":89,"second":965,"amount":-1},{"first":89,"second":952,"amount":0},{"first":89,"second":953,"amount":-1},{"first":89,"second":959,"amount":-1},{"first":89,"second":960,"amount":0},{"first":89,"second":945,"amount":-1},{"first":89,"second":963,"amount":-1},{"first":89,"second":948,"amount":0},{"first":89,"second":966,"amount":-1},{"first":89,"second":947,"amount":0},{"first":89,"second":951,"amount":-1},{"first":89,"second":950,"amount":0},{"first":89,"second":968,"amount":-1},{"first":89,"second":969,"amount":-1},{"first":89,"second":946,"amount":0},{"first":89,"second":957,"amount":0},{"first":89,"second":933,"amount":0},{"first":89,"second":920,"amount":-1},{"first":89,"second":927,"amount":-1},{"first":89,"second":913,"amount":-2},{"first":89,"second":916,"amount":-2},{"first":89,"second":934,"amount":-1},{"first":89,"second":923,"amount":-2},{"first":89,"second":935,"amount":0},{"first":89,"second":229,"amount":-1},{"first":89,"second":197,"amount":-2},{"first":89,"second":230,"amount":-1},{"first":89,"second":198,"amount":-2},{"first":89,"second":248,"amount":-1},{"first":89,"second":216,"amount":-1},{"first":85,"second":65,"amount":0},{"first":85,"second":1040,"amount":0},{"first":85,"second":196,"amount":0},{"first":85,"second":913,"amount":0},{"first":85,"second":916,"amount":0},{"first":85,"second":923,"amount":0},{"first":85,"second":197,"amount":0},{"first":73,"second":65,"amount":0},{"first":73,"second":84,"amount":-1},{"first":73,"second":89,"amount":-1},{"first":73,"second":88,"amount":0},{"first":73,"second":1040,"amount":0},{"first":73,"second":1044,"amount":0},{"first":73,"second":1076,"amount":0},{"first":73,"second":1046,"amount":0},{"first":73,"second":1051,"amount":0},{"first":73,"second":1083,"amount":0},{"first":73,"second":1058,"amount":-1},{"first":73,"second":1061,"amount":0},{"first":73,"second":1063,"amount":-1},{"first":73,"second":1095,"amount":-1},{"first":73,"second":196,"amount":0},{"first":73,"second":933,"amount":-1},{"first":73,"second":913,"amount":0},{"first":73,"second":916,"amount":0},{"first":73,"second":923,"amount":0},{"first":73,"second":935,"amount":0},{"first":73,"second":197,"amount":0},{"first":79,"second":65,"amount":0},{"first":79,"second":90,"amount":0},{"first":79,"second":84,"amount":-1},{"first":79,"second":89,"amount":-1},{"first":79,"second":88,"amount":0},{"first":79,"second":86,"amount":0},{"first":79,"second":44,"amount":-2},{"first":79,"second":46,"amount":-2},{"first":79,"second":1040,"amount":0},{"first":79,"second":1044,"amount":-1},{"first":79,"second":1046,"amount":0},{"first":79,"second":1051,"amount":-1},{"first":79,"second":1058,"amount":-1},{"first":79,"second":1061,"amount":0},{"first":79,"second":1068,"amount":-1},{"first":79,"second":196,"amount":0},{"first":79,"second":955,"amount":0},{"first":79,"second":933,"amount":-1},{"first":79,"second":913,"amount":0},{"first":79,"second":931,"amount":0},{"first":79,"second":916,"amount":0},{"first":79,"second":926,"amount":0},{"first":79,"second":923,"amount":0},{"first":79,"second":918,"amount":0},{"first":79,"second":935,"amount":0},{"first":79,"second":197,"amount":0},{"first":79,"second":198,"amount":-1},{"first":80,"second":97,"amount":0},{"first":80,"second":101,"amount":0},{"first":80,"second":116,"amount":0},{"first":80,"second":121,"amount":0},{"first":80,"second":111,"amount":0},{"first":80,"second":113,"amount":0},{"first":80,"second":100,"amount":0},{"first":80,"second":103,"amount":0},{"first":80,"second":99,"amount":0},{"first":80,"second":118,"amount":0},{"first":80,"second":65,"amount":-3},{"first":80,"second":90,"amount":-1},{"first":80,"second":74,"amount":-4},{"first":80,"second":88,"amount":-1},{"first":80,"second":44,"amount":-7},{"first":80,"second":46,"amount":-7},{"first":80,"second":1040,"amount":-3},{"first":80,"second":1072,"amount":0},{"first":80,"second":1044,"amount":-2},{"first":80,"second":1076,"amount":-1},{"first":80,"second":1077,"amount":0},{"first":80,"second":1105,"amount":0},{"first":80,"second":1046,"amount":-1},{"first":80,"second":1051,"amount":-1},{"first":80,"second":1083,"amount":-1},{"first":80,"second":1086,"amount":0},{"first":80,"second":1089,"amount":0},{"first":80,"second":1091,"amount":0},{"first":80,"second":1092,"amount":0},{"first":80,"second":1061,"amount":-1},{"first":80,"second":246,"amount":0},{"first":80,"second":228,"amount":0},{"first":80,"second":196,"amount":-3},{"first":80,"second":962,"amount":0},{"first":80,"second":961,"amount":-1},{"first":80,"second":959,"amount":0},{"first":80,"second":945,"amount":0},{"first":80,"second":963,"amount":0},{"first":80,"second":948,"amount":0},{"first":80,"second":947,"amount":0},{"first":80,"second":955,"amount":-1},{"first":80,"second":957,"amount":0},{"first":80,"second":913,"amount":-3},{"first":80,"second":916,"amount":-3},{"first":80,"second":923,"amount":-3},{"first":80,"second":918,"amount":-1},{"first":80,"second":935,"amount":-1},{"first":80,"second":229,"amount":0},{"first":80,"second":197,"amount":-3},{"first":80,"second":198,"amount":-2},{"first":81,"second":84,"amount":-1},{"first":81,"second":89,"amount":-1},{"first":81,"second":87,"amount":0},{"first":81,"second":86,"amount":-1},{"first":81,"second":1058,"amount":-1},{"first":81,"second":933,"amount":-1},{"first":68,"second":65,"amount":0},{"first":68,"second":90,"amount":0},{"first":68,"second":84,"amount":-1},{"first":68,"second":89,"amount":-1},{"first":68,"second":88,"amount":0},{"first":68,"second":86,"amount":0},{"first":68,"second":44,"amount":-2},{"first":68,"second":46,"amount":-2},{"first":68,"second":1040,"amount":0},{"first":68,"second":1044,"amount":-1},{"first":68,"second":1046,"amount":0},{"first":68,"second":1051,"amount":-1},{"first":68,"second":1058,"amount":-1},{"first":68,"second":1061,"amount":0},{"first":68,"second":1068,"amount":-1},{"first":68,"second":196,"amount":0},{"first":68,"second":955,"amount":0},{"first":68,"second":933,"amount":-1},{"first":68,"second":913,"amount":0},{"first":68,"second":931,"amount":0},{"first":68,"second":916,"amount":0},{"first":68,"second":926,"amount":0},{"first":68,"second":923,"amount":0},{"first":68,"second":918,"amount":0},{"first":68,"second":935,"amount":0},{"first":68,"second":197,"amount":0},{"first":68,"second":198,"amount":-1},{"first":70,"second":97,"amount":-1},{"first":70,"second":101,"amount":0},{"first":70,"second":114,"amount":-1},{"first":70,"second":121,"amount":0},{"first":70,"second":117,"amount":0},{"first":70,"second":111,"amount":0},{"first":70,"second":113,"amount":0},{"first":70,"second":100,"amount":0},{"first":70,"second":103,"amount":0},{"first":70,"second":99,"amount":0},{"first":70,"second":118,"amount":0},{"first":70,"second":65,"amount":-3},{"first":70,"second":84,"amount":0},{"first":70,"second":74,"amount":-5},{"first":70,"second":44,"amount":-5},{"first":70,"second":46,"amount":-5},{"first":70,"second":1040,"amount":-3},{"first":70,"second":1072,"amount":-1},{"first":70,"second":1077,"amount":0},{"first":70,"second":1105,"amount":0},{"first":70,"second":1086,"amount":0},{"first":70,"second":1089,"amount":0},{"first":70,"second":1058,"amount":0},{"first":70,"second":1091,"amount":0},{"first":70,"second":1092,"amount":0},{"first":70,"second":252,"amount":0},{"first":70,"second":246,"amount":0},{"first":70,"second":228,"amount":-1},{"first":70,"second":196,"amount":-3},{"first":70,"second":962,"amount":0},{"first":70,"second":965,"amount":0},{"first":70,"second":959,"amount":0},{"first":70,"second":945,"amount":0},{"first":70,"second":963,"amount":0},{"first":70,"second":947,"amount":0},{"first":70,"second":957,"amount":0},{"first":70,"second":913,"amount":-3},{"first":70,"second":916,"amount":-3},{"first":70,"second":923,"amount":-3},{"first":70,"second":229,"amount":-1},{"first":70,"second":197,"amount":-3},{"first":72,"second":65,"amount":0},{"first":72,"second":84,"amount":-1},{"first":72,"second":89,"amount":-1},{"first":72,"second":88,"amount":0},{"first":72,"second":1040,"amount":0},{"first":72,"second":1044,"amount":0},{"first":72,"second":1076,"amount":0},{"first":72,"second":1046,"amount":0},{"first":72,"second":1051,"amount":0},{"first":72,"second":1083,"amount":0},{"first":72,"second":1058,"amount":-1},{"first":72,"second":1061,"amount":0},{"first":72,"second":1063,"amount":-1},{"first":72,"second":1095,"amount":-1},{"first":72,"second":196,"amount":0},{"first":72,"second":933,"amount":-1},{"first":72,"second":913,"amount":0},{"first":72,"second":916,"amount":0},{"first":72,"second":923,"amount":0},{"first":72,"second":935,"amount":0},{"first":72,"second":197,"amount":0},{"first":74,"second":65,"amount":0},{"first":74,"second":1040,"amount":0},{"first":74,"second":196,"amount":0},{"first":74,"second":913,"amount":0},{"first":74,"second":916,"amount":0},{"first":74,"second":923,"amount":0},{"first":74,"second":197,"amount":0},{"first":75,"second":101,"amount":-1},{"first":75,"second":121,"amount":-1},{"first":75,"second":117,"amount":0},{"first":75,"second":111,"amount":-1},{"first":75,"second":112,"amount":0},{"first":75,"second":113,"amount":-1},{"first":75,"second":100,"amount":-1},{"first":75,"second":103,"amount":-1},{"first":75,"second":109,"amount":0},{"first":75,"second":119,"amount":-1},{"first":75,"second":99,"amount":-1},{"first":75,"second":118,"amount":-1},{"first":75,"second":110,"amount":0},{"first":75,"second":79,"amount":-1},{"first":75,"second":81,"amount":-1},{"first":75,"second":71,"amount":-1},{"first":75,"second":67,"amount":-1},{"first":75,"second":45,"amount":-1},{"first":75,"second":8211,"amount":-1},{"first":75,"second":1073,"amount":-1},{"first":75,"second":1075,"amount":0},{"first":75,"second":1077,"amount":-1},{"first":75,"second":1105,"amount":-1},{"first":75,"second":1080,"amount":0},{"first":75,"second":1081,"amount":0},{"first":75,"second":1082,"amount":0},{"first":75,"second":1084,"amount":0},{"first":75,"second":1085,"amount":0},{"first":75,"second":1054,"amount":-1},{"first":75,"second":1086,"amount":-1},{"first":75,"second":1087,"amount":0},{"first":75,"second":1088,"amount":0},{"first":75,"second":1057,"amount":-1},{"first":75,"second":1089,"amount":-1},{"first":75,"second":1090,"amount":-1},{"first":75,"second":1091,"amount":-1},{"first":75,"second":1092,"amount":-1},{"first":75,"second":1094,"amount":0},{"first":75,"second":1095,"amount":-2},{"first":75,"second":1096,"amount":0},{"first":75,"second":1097,"amount":0},{"first":75,"second":1100,"amount":0},{"first":75,"second":1102,"amount":0},{"first":75,"second":252,"amount":0},{"first":75,"second":246,"amount":-1},{"first":75,"second":214,"amount":-1},{"first":75,"second":241,"amount":0},{"first":75,"second":962,"amount":-1},{"first":75,"second":964,"amount":-2},{"first":75,"second":965,"amount":0},{"first":75,"second":959,"amount":-1},{"first":75,"second":945,"amount":-1},{"first":75,"second":963,"amount":-1},{"first":75,"second":947,"amount":-1},{"first":75,"second":951,"amount":0},{"first":75,"second":957,"amount":-1},{"first":75,"second":920,"amount":-1},{"first":75,"second":927,"amount":-1},{"first":75,"second":934,"amount":-1},{"first":75,"second":216,"amount":-1},{"first":76,"second":121,"amount":-3},{"first":76,"second":117,"amount":-1},{"first":76,"second":119,"amount":-2},{"first":76,"second":118,"amount":-3},{"first":76,"second":65,"amount":0},{"first":76,"second":84,"amount":-6},{"first":76,"second":89,"amount":-5},{"first":76,"second":85,"amount":-1},{"first":76,"second":79,"amount":-1},{"first":76,"second":81,"amount":-1},{"first":76,"second":71,"amount":-1},{"first":76,"second":87,"amount":-3},{"first":76,"second":67,"amount":-1},{"first":76,"second":86,"amount":-4},{"first":76,"second":34,"amount":-7},{"first":76,"second":39,"amount":-7},{"first":76,"second":1040,"amount":0},{"first":76,"second":1054,"amount":-1},{"first":76,"second":1057,"amount":-1},{"first":76,"second":1058,"amount":-6},{"first":76,"second":1091,"amount":-3},{"first":76,"second":252,"amount":-1},{"first":76,"second":220,"amount":-1},{"first":76,"second":214,"amount":-1},{"first":76,"second":196,"amount":0},{"first":76,"second":965,"amount":-1},{"first":76,"second":947,"amount":-3},{"first":76,"second":957,"amount":-3},{"first":76,"second":933,"amount":-5},{"first":76,"second":920,"amount":-1},{"first":76,"second":927,"amount":-1},{"first":76,"second":913,"amount":0},{"first":76,"second":916,"amount":0},{"first":76,"second":923,"amount":0},{"first":76,"second":197,"amount":0},{"first":76,"second":216,"amount":-1},{"first":77,"second":65,"amount":0},{"first":77,"second":84,"amount":-1},{"first":77,"second":89,"amount":-1},{"first":77,"second":88,"amount":0},{"first":77,"second":1040,"amount":0},{"first":77,"second":1044,"amount":0},{"first":77,"second":1076,"amount":0},{"first":77,"second":1046,"amount":0},{"first":77,"second":1051,"amount":0},{"first":77,"second":1083,"amount":0},{"first":77,"second":1058,"amount":-1},{"first":77,"second":1061,"amount":0},{"first":77,"second":1063,"amount":-1},{"first":77,"second":1095,"amount":-1},{"first":77,"second":196,"amount":0},{"first":77,"second":933,"amount":-1},{"first":77,"second":913,"amount":0},{"first":77,"second":916,"amount":0},{"first":77,"second":923,"amount":0},{"first":77,"second":935,"amount":0},{"first":77,"second":197,"amount":0},{"first":87,"second":97,"amount":-1},{"first":87,"second":101,"amount":-1},{"first":87,"second":114,"amount":0},{"first":87,"second":117,"amount":0},{"first":87,"second":111,"amount":-1},{"first":87,"second":113,"amount":-1},{"first":87,"second":100,"amount":-1},{"first":87,"second":103,"amount":-1},{"first":87,"second":99,"amount":-1},{"first":87,"second":65,"amount":-1},{"first":87,"second":84,"amount":0},{"first":87,"second":45,"amount":-1},{"first":87,"second":8211,"amount":-1},{"first":87,"second":44,"amount":-3},{"first":87,"second":46,"amount":-3},{"first":87,"second":125,"amount":0},{"first":87,"second":41,"amount":0},{"first":87,"second":93,"amount":0},{"first":87,"second":1040,"amount":-1},{"first":87,"second":1072,"amount":-1},{"first":87,"second":1077,"amount":-1},{"first":87,"second":1105,"amount":-1},{"first":87,"second":1086,"amount":-1},{"first":87,"second":1089,"amount":-1},{"first":87,"second":1058,"amount":0},{"first":87,"second":1092,"amount":-1},{"first":87,"second":252,"amount":0},{"first":87,"second":246,"amount":-1},{"first":87,"second":228,"amount":-1},{"first":87,"second":196,"amount":-1},{"first":87,"second":962,"amount":-1},{"first":87,"second":965,"amount":0},{"first":87,"second":959,"amount":-1},{"first":87,"second":945,"amount":-1},{"first":87,"second":963,"amount":-1},{"first":87,"second":913,"amount":-1},{"first":87,"second":916,"amount":-1},{"first":87,"second":923,"amount":-1},{"first":87,"second":229,"amount":-1},{"first":87,"second":197,"amount":-1},{"first":88,"second":101,"amount":-1},{"first":88,"second":121,"amount":-1},{"first":88,"second":117,"amount":0},{"first":88,"second":111,"amount":0},{"first":88,"second":113,"amount":-1},{"first":88,"second":100,"amount":-1},{"first":88,"second":103,"amount":-1},{"first":88,"second":99,"amount":-1},{"first":88,"second":118,"amount":-1},{"first":88,"second":79,"amount":-1},{"first":88,"second":81,"amount":-1},{"first":88,"second":71,"amount":-1},{"first":88,"second":67,"amount":-1},{"first":88,"second":86,"amount":0},{"first":88,"second":45,"amount":-1},{"first":88,"second":8211,"amount":-1},{"first":88,"second":1073,"amount":0},{"first":88,"second":1044,"amount":0},{"first":88,"second":1077,"amount":-1},{"first":88,"second":1105,"amount":-1},{"first":88,"second":1051,"amount":0},{"first":88,"second":1083,"amount":0},{"first":88,"second":1054,"amount":-1},{"first":88,"second":1086,"amount":0},{"first":88,"second":1057,"amount":-1},{"first":88,"second":1089,"amount":-1},{"first":88,"second":1090,"amount":-1},{"first":88,"second":1091,"amount":-1},{"first":88,"second":1092,"amount":-1},{"first":88,"second":1095,"amount":-1},{"first":88,"second":252,"amount":0},{"first":88,"second":246,"amount":0},{"first":88,"second":214,"amount":-1},{"first":88,"second":962,"amount":-1},{"first":88,"second":964,"amount":-1},{"first":88,"second":965,"amount":0},{"first":88,"second":952,"amount":0},{"first":88,"second":959,"amount":0},{"first":88,"second":945,"amount":-1},{"first":88,"second":963,"amount":-1},{"first":88,"second":948,"amount":0},{"first":88,"second":966,"amount":-1},{"first":88,"second":947,"amount":-1},{"first":88,"second":955,"amount":0},{"first":88,"second":968,"amount":-1},{"first":88,"second":969,"amount":0},{"first":88,"second":957,"amount":-1},{"first":88,"second":920,"amount":-1},{"first":88,"second":927,"amount":-1},{"first":88,"second":934,"amount":-1},{"first":88,"second":216,"amount":-1},{"first":67,"second":84,"amount":-1},{"first":67,"second":125,"amount":0},{"first":67,"second":41,"amount":-1},{"first":67,"second":93,"amount":0},{"first":67,"second":1058,"amount":-1},{"first":86,"second":97,"amount":-1},{"first":86,"second":101,"amount":-1},{"first":86,"second":114,"amount":-1},{"first":86,"second":121,"amount":0},{"first":86,"second":117,"amount":-1},{"first":86,"second":111,"amount":-1},{"first":86,"second":113,"amount":-1},{"first":86,"second":100,"amount":-1},{"first":86,"second":103,"amount":-1},{"first":86,"second":99,"amount":-1},{"first":86,"second":118,"amount":0},{"first":86,"second":65,"amount":-2},{"first":86,"second":79,"amount":0},{"first":86,"second":81,"amount":0},{"first":86,"second":71,"amount":0},{"first":86,"second":67,"amount":0},{"first":86,"second":45,"amount":-1},{"first":86,"second":8211,"amount":-1},{"first":86,"second":44,"amount":-5},{"first":86,"second":46,"amount":-5},{"first":86,"second":125,"amount":0},{"first":86,"second":41,"amount":0},{"first":86,"second":93,"amount":0},{"first":86,"second":1040,"amount":-2},{"first":86,"second":1072,"amount":-1},{"first":86,"second":1077,"amount":-1},{"first":86,"second":1105,"amount":-1},{"first":86,"second":1054,"amount":0},{"first":86,"second":1086,"amount":-1},{"first":86,"second":1057,"amount":0},{"first":86,"second":1089,"amount":-1},{"first":86,"second":1091,"amount":0},{"first":86,"second":1092,"amount":-1},{"first":86,"second":252,"amount":-1},{"first":86,"second":246,"amount":-1},{"first":86,"second":214,"amount":0},{"first":86,"second":228,"amount":-1},{"first":86,"second":196,"amount":-2},{"first":86,"second":962,"amount":-1},{"first":86,"second":965,"amount":-1},{"first":86,"second":959,"amount":-1},{"first":86,"second":945,"amount":-1},{"first":86,"second":963,"amount":-1},{"first":86,"second":947,"amount":0},{"first":86,"second":957,"amount":0},{"first":86,"second":920,"amount":0},{"first":86,"second":927,"amount":0},{"first":86,"second":913,"amount":-2},{"first":86,"second":916,"amount":-2},{"first":86,"second":923,"amount":-2},{"first":86,"second":229,"amount":-1},{"first":86,"second":197,"amount":-2},{"first":86,"second":216,"amount":0},{"first":66,"second":84,"amount":-1},{"first":66,"second":89,"amount":-1},{"first":66,"second":86,"amount":0},{"first":66,"second":1058,"amount":-1},{"first":66,"second":1059,"amount":0},{"first":66,"second":933,"amount":-1},{"first":78,"second":65,"amount":0},{"first":78,"second":84,"amount":-1},{"first":78,"second":89,"amount":-1},{"first":78,"second":88,"amount":0},{"first":78,"second":1040,"amount":0},{"first":78,"second":1044,"amount":0},{"first":78,"second":1076,"amount":0},{"first":78,"second":1046,"amount":0},{"first":78,"second":1051,"amount":0},{"first":78,"second":1083,"amount":0},{"first":78,"second":1058,"amount":-1},{"first":78,"second":1061,"amount":0},{"first":78,"second":1063,"amount":-1},{"first":78,"second":1095,"amount":-1},{"first":78,"second":196,"amount":0},{"first":78,"second":933,"amount":-1},{"first":78,"second":913,"amount":0},{"first":78,"second":916,"amount":0},{"first":78,"second":923,"amount":0},{"first":78,"second":935,"amount":0},{"first":78,"second":197,"amount":0},{"first":47,"second":47,"amount":-5},{"first":44,"second":34,"amount":-3},{"first":44,"second":39,"amount":-3},{"first":46,"second":34,"amount":-3},{"first":46,"second":39,"amount":-3},{"first":123,"second":85,"amount":0},{"first":123,"second":74,"amount":0},{"first":123,"second":220,"amount":0},{"first":40,"second":89,"amount":0},{"first":40,"second":87,"amount":0},{"first":40,"second":86,"amount":0},{"first":40,"second":933,"amount":0},{"first":91,"second":85,"amount":0},{"first":91,"second":74,"amount":0},{"first":91,"second":220,"amount":0},{"first":34,"second":97,"amount":-1},{"first":34,"second":101,"amount":-1},{"first":34,"second":111,"amount":-1},{"first":34,"second":112,"amount":0},{"first":34,"second":113,"amount":-1},{"first":34,"second":115,"amount":-2},{"first":34,"second":100,"amount":-1},{"first":34,"second":103,"amount":-1},{"first":34,"second":109,"amount":0},{"first":34,"second":119,"amount":0},{"first":34,"second":99,"amount":-1},{"first":34,"second":110,"amount":0},{"first":34,"second":65,"amount":-2},{"first":34,"second":34,"amount":-2},{"first":34,"second":39,"amount":-2},{"first":34,"second":1040,"amount":-2},{"first":34,"second":1072,"amount":-1},{"first":34,"second":1075,"amount":0},{"first":34,"second":1077,"amount":-1},{"first":34,"second":1105,"amount":-1},{"first":34,"second":1080,"amount":0},{"first":34,"second":1081,"amount":0},{"first":34,"second":1082,"amount":0},{"first":34,"second":1084,"amount":0},{"first":34,"second":1085,"amount":0},{"first":34,"second":1086,"amount":-1},{"first":34,"second":1087,"amount":0},{"first":34,"second":1088,"amount":0},{"first":34,"second":1089,"amount":-1},{"first":34,"second":1092,"amount":-1},{"first":34,"second":1094,"amount":0},{"first":34,"second":1096,"amount":0},{"first":34,"second":1097,"amount":0},{"first":34,"second":1100,"amount":0},{"first":34,"second":1102,"amount":0},{"first":34,"second":246,"amount":-1},{"first":34,"second":228,"amount":-1},{"first":34,"second":196,"amount":-2},{"first":34,"second":241,"amount":0},{"first":34,"second":962,"amount":-1},{"first":34,"second":959,"amount":-1},{"first":34,"second":945,"amount":-1},{"first":34,"second":963,"amount":-1},{"first":34,"second":951,"amount":0},{"first":34,"second":913,"amount":-2},{"first":34,"second":916,"amount":-2},{"first":34,"second":923,"amount":-2},{"first":34,"second":229,"amount":-1},{"first":34,"second":197,"amount":-2},{"first":39,"second":97,"amount":-1},{"first":39,"second":101,"amount":-1},{"first":39,"second":111,"amount":-1},{"first":39,"second":112,"amount":0},{"first":39,"second":113,"amount":-1},{"first":39,"second":115,"amount":-2},{"first":39,"second":100,"amount":-1},{"first":39,"second":103,"amount":-1},{"first":39,"second":109,"amount":0},{"first":39,"second":119,"amount":0},{"first":39,"second":99,"amount":-1},{"first":39,"second":110,"amount":0},{"first":39,"second":65,"amount":-2},{"first":39,"second":34,"amount":-2},{"first":39,"second":39,"amount":-2},{"first":39,"second":1040,"amount":-2},{"first":39,"second":1072,"amount":-1},{"first":39,"second":1075,"amount":0},{"first":39,"second":1077,"amount":-1},{"first":39,"second":1105,"amount":-1},{"first":39,"second":1080,"amount":0},{"first":39,"second":1081,"amount":0},{"first":39,"second":1082,"amount":0},{"first":39,"second":1084,"amount":0},{"first":39,"second":1085,"amount":0},{"first":39,"second":1086,"amount":-1},{"first":39,"second":1087,"amount":0},{"first":39,"second":1088,"amount":0},{"first":39,"second":1089,"amount":-1},{"first":39,"second":1092,"amount":-1},{"first":39,"second":1094,"amount":0},{"first":39,"second":1096,"amount":0},{"first":39,"second":1097,"amount":0},{"first":39,"second":1100,"amount":0},{"first":39,"second":1102,"amount":0},{"first":39,"second":246,"amount":-1},{"first":39,"second":228,"amount":-1},{"first":39,"second":196,"amount":-2},{"first":39,"second":241,"amount":0},{"first":39,"second":962,"amount":-1},{"first":39,"second":959,"amount":-1},{"first":39,"second":945,"amount":-1},{"first":39,"second":963,"amount":-1},{"first":39,"second":951,"amount":0},{"first":39,"second":913,"amount":-2},{"first":39,"second":916,"amount":-2},{"first":39,"second":923,"amount":-2},{"first":39,"second":229,"amount":-1},{"first":39,"second":197,"amount":-2},{"first":1040,"second":122,"amount":0},{"first":1040,"second":116,"amount":0},{"first":1040,"second":121,"amount":-1},{"first":1040,"second":117,"amount":0},{"first":1040,"second":111,"amount":0},{"first":1040,"second":119,"amount":-1},{"first":1040,"second":118,"amount":-1},{"first":1040,"second":84,"amount":-3},{"first":1040,"second":89,"amount":-2},{"first":1040,"second":85,"amount":0},{"first":1040,"second":79,"amount":0},{"first":1040,"second":81,"amount":0},{"first":1040,"second":71,"amount":0},{"first":1040,"second":87,"amount":-1},{"first":1040,"second":67,"amount":0},{"first":1040,"second":86,"amount":-2},{"first":1040,"second":63,"amount":-1},{"first":1040,"second":34,"amount":-2},{"first":1040,"second":39,"amount":-2},{"first":1040,"second":1044,"amount":0},{"first":1040,"second":1051,"amount":0},{"first":1040,"second":1083,"amount":0},{"first":1040,"second":1054,"amount":0},{"first":1040,"second":1086,"amount":0},{"first":1040,"second":1057,"amount":0},{"first":1040,"second":1058,"amount":-3},{"first":1040,"second":1090,"amount":-1},{"first":1040,"second":1091,"amount":-1},{"first":1040,"second":1063,"amount":-1},{"first":1040,"second":1095,"amount":-2},{"first":1040,"second":1068,"amount":-1},{"first":1040,"second":252,"amount":0},{"first":1040,"second":220,"amount":0},{"first":1040,"second":246,"amount":0},{"first":1040,"second":214,"amount":0},{"first":1040,"second":964,"amount":-1},{"first":1040,"second":965,"amount":0},{"first":1040,"second":959,"amount":0},{"first":1040,"second":947,"amount":-1},{"first":1040,"second":955,"amount":0},{"first":1040,"second":957,"amount":-1},{"first":1040,"second":933,"amount":-2},{"first":1040,"second":920,"amount":0},{"first":1040,"second":927,"amount":0},{"first":1040,"second":934,"amount":-1},{"first":1040,"second":936,"amount":-1},{"first":1040,"second":216,"amount":0},{"first":1072,"second":121,"amount":0},{"first":1072,"second":118,"amount":0},{"first":1072,"second":34,"amount":-1},{"first":1072,"second":39,"amount":-1},{"first":1072,"second":1090,"amount":0},{"first":1072,"second":1091,"amount":0},{"first":1072,"second":947,"amount":0},{"first":1072,"second":957,"amount":0},{"first":1041,"second":120,"amount":0},{"first":1041,"second":84,"amount":-1},{"first":1041,"second":89,"amount":-1},{"first":1041,"second":88,"amount":0},{"first":1041,"second":86,"amount":-1},{"first":1041,"second":1046,"amount":0},{"first":1041,"second":1078,"amount":0},{"first":1041,"second":1058,"amount":-1},{"first":1041,"second":1090,"amount":-1},{"first":1041,"second":1059,"amount":0},{"first":1041,"second":1061,"amount":0},{"first":1041,"second":1093,"amount":0},{"first":1041,"second":1063,"amount":0},{"first":1041,"second":1068,"amount":-1},{"first":1041,"second":933,"amount":-1},{"first":1041,"second":935,"amount":0},{"first":1073,"second":112,"amount":0},{"first":1073,"second":109,"amount":0},{"first":1073,"second":120,"amount":0},{"first":1073,"second":110,"amount":0},{"first":1073,"second":1075,"amount":0},{"first":1073,"second":1076,"amount":0},{"first":1073,"second":1078,"amount":0},{"first":1073,"second":1080,"amount":0},{"first":1073,"second":1081,"amount":0},{"first":1073,"second":1082,"amount":0},{"first":1073,"second":1084,"amount":0},{"first":1073,"second":1085,"amount":0},{"first":1073,"second":1087,"amount":0},{"first":1073,"second":1088,"amount":0},{"first":1073,"second":1090,"amount":0},{"first":1073,"second":1093,"amount":0},{"first":1073,"second":1094,"amount":0},{"first":1073,"second":1096,"amount":0},{"first":1073,"second":1097,"amount":0},{"first":1073,"second":1100,"amount":0},{"first":1073,"second":1102,"amount":0},{"first":1073,"second":241,"amount":0},{"first":1073,"second":951,"amount":0},{"first":1042,"second":84,"amount":-1},{"first":1042,"second":89,"amount":-1},{"first":1042,"second":86,"amount":0},{"first":1042,"second":1058,"amount":-1},{"first":1042,"second":1059,"amount":0},{"first":1042,"second":933,"amount":-1},{"first":1074,"second":121,"amount":0},{"first":1074,"second":118,"amount":0},{"first":1074,"second":34,"amount":0},{"first":1074,"second":39,"amount":0},{"first":1074,"second":1090,"amount":0},{"first":1074,"second":1091,"amount":0},{"first":1074,"second":947,"amount":0},{"first":1074,"second":957,"amount":0},{"first":1043,"second":97,"amount":-4},{"first":1043,"second":122,"amount":-3},{"first":1043,"second":101,"amount":-4},{"first":1043,"second":114,"amount":-3},{"first":1043,"second":121,"amount":-3},{"first":1043,"second":117,"amount":-4},{"first":1043,"second":111,"amount":-4},{"first":1043,"second":112,"amount":-4},{"first":1043,"second":113,"amount":-4},{"first":1043,"second":115,"amount":-4},{"first":1043,"second":100,"amount":-4},{"first":1043,"second":103,"amount":-4},{"first":1043,"second":109,"amount":-4},{"first":1043,"second":119,"amount":-2},{"first":1043,"second":120,"amount":-3},{"first":1043,"second":99,"amount":-4},{"first":1043,"second":118,"amount":-3},{"first":1043,"second":110,"amount":-4},{"first":1043,"second":65,"amount":-4},{"first":1043,"second":84,"amount":0},{"first":1043,"second":89,"amount":0},{"first":1043,"second":79,"amount":-1},{"first":1043,"second":81,"amount":-1},{"first":1043,"second":83,"amount":-1},{"first":1043,"second":71,"amount":-1},{"first":1043,"second":87,"amount":0},{"first":1043,"second":67,"amount":-1},{"first":1043,"second":86,"amount":0},{"first":1043,"second":45,"amount":-8},{"first":1043,"second":8211,"amount":-8},{"first":1043,"second":44,"amount":-8},{"first":1043,"second":46,"amount":-8},{"first":1043,"second":1040,"amount":-4},{"first":1043,"second":1072,"amount":-4},{"first":1043,"second":1073,"amount":-1},{"first":1043,"second":1074,"amount":-4},{"first":1043,"second":1075,"amount":-4},{"first":1043,"second":1044,"amount":-4},{"first":1043,"second":1076,"amount":-5},{"first":1043,"second":1077,"amount":-4},{"first":1043,"second":1105,"amount":-4},{"first":1043,"second":1078,"amount":-3},{"first":1043,"second":1079,"amount":-5},{"first":1043,"second":1080,"amount":-4},{"first":1043,"second":1081,"amount":-4},{"first":1043,"second":1082,"amount":-4},{"first":1043,"second":1051,"amount":-2},{"first":1043,"second":1083,"amount":-5},{"first":1043,"second":1084,"amount":-4},{"first":1043,"second":1085,"amount":-4},{"first":1043,"second":1054,"amount":-1},{"first":1043,"second":1086,"amount":-4},{"first":1043,"second":1087,"amount":-4},{"first":1043,"second":1088,"amount":-4},{"first":1043,"second":1057,"amount":-1},{"first":1043,"second":1089,"amount":-4},{"first":1043,"second":1058,"amount":0},{"first":1043,"second":1090,"amount":-3},{"first":1043,"second":1091,"amount":-3},{"first":1043,"second":1092,"amount":-4},{"first":1043,"second":1093,"amount":-3},{"first":1043,"second":1094,"amount":-4},{"first":1043,"second":1095,"amount":-5},{"first":1043,"second":1096,"amount":-4},{"first":1043,"second":1097,"amount":-4},{"first":1043,"second":1099,"amount":-5},{"first":1043,"second":1068,"amount":0},{"first":1043,"second":1100,"amount":-4},{"first":1043,"second":1101,"amount":-5},{"first":1043,"second":1102,"amount":-4},{"first":1043,"second":1103,"amount":-5},{"first":1043,"second":252,"amount":-4},{"first":1043,"second":246,"amount":-4},{"first":1043,"second":214,"amount":-1},{"first":1043,"second":228,"amount":-4},{"first":1043,"second":196,"amount":-4},{"first":1043,"second":241,"amount":-4},{"first":1043,"second":962,"amount":-4},{"first":1043,"second":949,"amount":-5},{"first":1043,"second":961,"amount":-6},{"first":1043,"second":964,"amount":-4},{"first":1043,"second":965,"amount":-4},{"first":1043,"second":953,"amount":-6},{"first":1043,"second":959,"amount":-4},{"first":1043,"second":960,"amount":-5},{"first":1043,"second":945,"amount":-4},{"first":1043,"second":963,"amount":-4},{"first":1043,"second":948,"amount":-2},{"first":1043,"second":966,"amount":-6},{"first":1043,"second":947,"amount":-3},{"first":1043,"second":951,"amount":-4},{"first":1043,"second":968,"amount":-5},{"first":1043,"second":969,"amount":-6},{"first":1043,"second":957,"amount":-3},{"first":1043,"second":933,"amount":0},{"first":1043,"second":920,"amount":-1},{"first":1043,"second":927,"amount":-1},{"first":1043,"second":913,"amount":-4},{"first":1043,"second":916,"amount":-4},{"first":1043,"second":934,"amount":-3},{"first":1043,"second":923,"amount":-4},{"first":1043,"second":229,"amount":-4},{"first":1043,"second":197,"amount":-4},{"first":1043,"second":230,"amount":-4},{"first":1043,"second":198,"amount":-7},{"first":1043,"second":248,"amount":-4},{"first":1043,"second":216,"amount":-1},{"first":1075,"second":101,"amount":0},{"first":1075,"second":111,"amount":0},{"first":1075,"second":113,"amount":0},{"first":1075,"second":100,"amount":0},{"first":1075,"second":103,"amount":0},{"first":1075,"second":99,"amount":0},{"first":1075,"second":1076,"amount":-1},{"first":1075,"second":1077,"amount":0},{"first":1075,"second":1105,"amount":0},{"first":1075,"second":1083,"amount":-1},{"first":1075,"second":1086,"amount":0},{"first":1075,"second":1089,"amount":0},{"first":1075,"second":1092,"amount":0},{"first":1075,"second":246,"amount":0},{"first":1075,"second":962,"amount":0},{"first":1075,"second":959,"amount":0},{"first":1075,"second":945,"amount":0},{"first":1075,"second":963,"amount":0},{"first":1044,"second":65,"amount":0},{"first":1044,"second":84,"amount":-1},{"first":1044,"second":89,"amount":-1},{"first":1044,"second":79,"amount":0},{"first":1044,"second":81,"amount":0},{"first":1044,"second":71,"amount":0},{"first":1044,"second":67,"amount":0},{"first":1044,"second":86,"amount":-1},{"first":1044,"second":1040,"amount":0},{"first":1044,"second":1044,"amount":0},{"first":1044,"second":1076,"amount":0},{"first":1044,"second":1051,"amount":0},{"first":1044,"second":1083,"amount":0},{"first":1044,"second":1054,"amount":0},{"first":1044,"second":1057,"amount":0},{"first":1044,"second":1058,"amount":-1},{"first":1044,"second":1063,"amount":-1},{"first":1044,"second":1095,"amount":-1},{"first":1044,"second":1068,"amount":-1},{"first":1044,"second":214,"amount":0},{"first":1044,"second":196,"amount":0},{"first":1044,"second":933,"amount":-1},{"first":1044,"second":920,"amount":0},{"first":1044,"second":927,"amount":0},{"first":1044,"second":913,"amount":0},{"first":1044,"second":916,"amount":0},{"first":1044,"second":923,"amount":0},{"first":1044,"second":197,"amount":0},{"first":1044,"second":216,"amount":0},{"first":1076,"second":1076,"amount":0},{"first":1076,"second":1090,"amount":0},{"first":1076,"second":1095,"amount":0},{"first":1076,"second":1098,"amount":-1},{"first":1045,"second":101,"amount":0},{"first":1045,"second":121,"amount":-1},{"first":1045,"second":117,"amount":0},{"first":1045,"second":111,"amount":0},{"first":1045,"second":113,"amount":0},{"first":1045,"second":100,"amount":0},{"first":1045,"second":102,"amount":0},{"first":1045,"second":103,"amount":0},{"first":1045,"second":119,"amount":0},{"first":1045,"second":99,"amount":0},{"first":1045,"second":118,"amount":-1},{"first":1045,"second":84,"amount":0},{"first":1045,"second":1077,"amount":0},{"first":1045,"second":1105,"amount":0},{"first":1045,"second":1086,"amount":0},{"first":1045,"second":1089,"amount":0},{"first":1045,"second":1058,"amount":0},{"first":1045,"second":1091,"amount":-1},{"first":1045,"second":1092,"amount":0},{"first":1045,"second":252,"amount":0},{"first":1045,"second":246,"amount":0},{"first":1045,"second":962,"amount":0},{"first":1045,"second":965,"amount":0},{"first":1045,"second":959,"amount":0},{"first":1045,"second":945,"amount":0},{"first":1045,"second":963,"amount":0},{"first":1045,"second":947,"amount":-1},{"first":1045,"second":957,"amount":-1},{"first":1077,"second":121,"amount":0},{"first":1077,"second":118,"amount":0},{"first":1077,"second":34,"amount":0},{"first":1077,"second":39,"amount":0},{"first":1077,"second":1090,"amount":0},{"first":1077,"second":1091,"amount":0},{"first":1077,"second":947,"amount":0},{"first":1077,"second":957,"amount":0},{"first":1025,"second":101,"amount":0},{"first":1025,"second":121,"amount":-1},{"first":1025,"second":117,"amount":0},{"first":1025,"second":111,"amount":0},{"first":1025,"second":113,"amount":0},{"first":1025,"second":100,"amount":0},{"first":1025,"second":102,"amount":0},{"first":1025,"second":103,"amount":0},{"first":1025,"second":119,"amount":0},{"first":1025,"second":99,"amount":0},{"first":1025,"second":118,"amount":-1},{"first":1025,"second":84,"amount":0},{"first":1025,"second":1077,"amount":0},{"first":1025,"second":1105,"amount":0},{"first":1025,"second":1086,"amount":0},{"first":1025,"second":1089,"amount":0},{"first":1025,"second":1058,"amount":0},{"first":1025,"second":1091,"amount":-1},{"first":1025,"second":1092,"amount":0},{"first":1025,"second":252,"amount":0},{"first":1025,"second":246,"amount":0},{"first":1025,"second":962,"amount":0},{"first":1025,"second":965,"amount":0},{"first":1025,"second":959,"amount":0},{"first":1025,"second":945,"amount":0},{"first":1025,"second":963,"amount":0},{"first":1025,"second":947,"amount":-1},{"first":1025,"second":957,"amount":-1},{"first":1105,"second":121,"amount":0},{"first":1105,"second":118,"amount":0},{"first":1105,"second":34,"amount":0},{"first":1105,"second":39,"amount":0},{"first":1105,"second":1090,"amount":0},{"first":1105,"second":1091,"amount":0},{"first":1105,"second":947,"amount":0},{"first":1105,"second":957,"amount":0},{"first":1046,"second":101,"amount":-1},{"first":1046,"second":121,"amount":-1},{"first":1046,"second":117,"amount":0},{"first":1046,"second":111,"amount":0},{"first":1046,"second":113,"amount":-1},{"first":1046,"second":100,"amount":-1},{"first":1046,"second":103,"amount":-1},{"first":1046,"second":99,"amount":-1},{"first":1046,"second":118,"amount":-1},{"first":1046,"second":79,"amount":-1},{"first":1046,"second":81,"amount":-1},{"first":1046,"second":71,"amount":-1},{"first":1046,"second":67,"amount":-1},{"first":1046,"second":86,"amount":0},{"first":1046,"second":45,"amount":-1},{"first":1046,"second":8211,"amount":-1},{"first":1046,"second":1073,"amount":0},{"first":1046,"second":1044,"amount":0},{"first":1046,"second":1077,"amount":-1},{"first":1046,"second":1105,"amount":-1},{"first":1046,"second":1051,"amount":0},{"first":1046,"second":1083,"amount":0},{"first":1046,"second":1054,"amount":-1},{"first":1046,"second":1086,"amount":0},{"first":1046,"second":1057,"amount":-1},{"first":1046,"second":1089,"amount":-1},{"first":1046,"second":1090,"amount":-1},{"first":1046,"second":1091,"amount":-1},{"first":1046,"second":1092,"amount":-1},{"first":1046,"second":1095,"amount":-1},{"first":1046,"second":252,"amount":0},{"first":1046,"second":246,"amount":0},{"first":1046,"second":214,"amount":-1},{"first":1046,"second":962,"amount":-1},{"first":1046,"second":964,"amount":-1},{"first":1046,"second":965,"amount":0},{"first":1046,"second":952,"amount":0},{"first":1046,"second":959,"amount":0},{"first":1046,"second":945,"amount":-1},{"first":1046,"second":963,"amount":-1},{"first":1046,"second":948,"amount":0},{"first":1046,"second":966,"amount":-1},{"first":1046,"second":947,"amount":-1},{"first":1046,"second":955,"amount":0},{"first":1046,"second":968,"amount":-1},{"first":1046,"second":969,"amount":0},{"first":1046,"second":957,"amount":-1},{"first":1046,"second":920,"amount":-1},{"first":1046,"second":927,"amount":-1},{"first":1046,"second":934,"amount":-1},{"first":1046,"second":216,"amount":-1},{"first":1078,"second":101,"amount":0},{"first":1078,"second":111,"amount":0},{"first":1078,"second":113,"amount":0},{"first":1078,"second":100,"amount":0},{"first":1078,"second":103,"amount":0},{"first":1078,"second":99,"amount":0},{"first":1078,"second":1077,"amount":0},{"first":1078,"second":1105,"amount":0},{"first":1078,"second":1086,"amount":0},{"first":1078,"second":1089,"amount":0},{"first":1078,"second":1092,"amount":0},{"first":1078,"second":246,"amount":0},{"first":1078,"second":962,"amount":0},{"first":1078,"second":959,"amount":0},{"first":1078,"second":945,"amount":0},{"first":1078,"second":963,"amount":0},{"first":1047,"second":84,"amount":0},{"first":1047,"second":89,"amount":0},{"first":1047,"second":88,"amount":0},{"first":1047,"second":86,"amount":0},{"first":1047,"second":55,"amount":0},{"first":1047,"second":1046,"amount":0},{"first":1047,"second":1051,"amount":0},{"first":1047,"second":1058,"amount":0},{"first":1047,"second":1059,"amount":0},{"first":1047,"second":1061,"amount":0},{"first":1047,"second":1068,"amount":0},{"first":1047,"second":933,"amount":0},{"first":1047,"second":935,"amount":0},{"first":1079,"second":34,"amount":0},{"first":1079,"second":39,"amount":0},{"first":1048,"second":65,"amount":0},{"first":1048,"second":84,"amount":-1},{"first":1048,"second":89,"amount":-1},{"first":1048,"second":88,"amount":0},{"first":1048,"second":1040,"amount":0},{"first":1048,"second":1044,"amount":0},{"first":1048,"second":1076,"amount":0},{"first":1048,"second":1046,"amount":0},{"first":1048,"second":1051,"amount":0},{"first":1048,"second":1083,"amount":0},{"first":1048,"second":1058,"amount":-1},{"first":1048,"second":1061,"amount":0},{"first":1048,"second":1063,"amount":-1},{"first":1048,"second":1095,"amount":-1},{"first":1048,"second":196,"amount":0},{"first":1048,"second":933,"amount":-1},{"first":1048,"second":913,"amount":0},{"first":1048,"second":916,"amount":0},{"first":1048,"second":923,"amount":0},{"first":1048,"second":935,"amount":0},{"first":1048,"second":197,"amount":0},{"first":1050,"second":101,"amount":-1},{"first":1050,"second":121,"amount":-1},{"first":1050,"second":117,"amount":0},{"first":1050,"second":111,"amount":-1},{"first":1050,"second":112,"amount":0},{"first":1050,"second":113,"amount":-1},{"first":1050,"second":100,"amount":-1},{"first":1050,"second":103,"amount":-1},{"first":1050,"second":109,"amount":0},{"first":1050,"second":119,"amount":-1},{"first":1050,"second":99,"amount":-1},{"first":1050,"second":118,"amount":-1},{"first":1050,"second":110,"amount":0},{"first":1050,"second":79,"amount":-1},{"first":1050,"second":81,"amount":-1},{"first":1050,"second":71,"amount":-1},{"first":1050,"second":67,"amount":-1},{"first":1050,"second":45,"amount":-1},{"first":1050,"second":8211,"amount":-1},{"first":1050,"second":1073,"amount":-1},{"first":1050,"second":1075,"amount":0},{"first":1050,"second":1077,"amount":-1},{"first":1050,"second":1105,"amount":-1},{"first":1050,"second":1080,"amount":0},{"first":1050,"second":1081,"amount":0},{"first":1050,"second":1082,"amount":0},{"first":1050,"second":1084,"amount":0},{"first":1050,"second":1085,"amount":0},{"first":1050,"second":1054,"amount":-1},{"first":1050,"second":1086,"amount":-1},{"first":1050,"second":1087,"amount":0},{"first":1050,"second":1088,"amount":0},{"first":1050,"second":1057,"amount":-1},{"first":1050,"second":1089,"amount":-1},{"first":1050,"second":1090,"amount":-1},{"first":1050,"second":1091,"amount":-1},{"first":1050,"second":1092,"amount":-1},{"first":1050,"second":1094,"amount":0},{"first":1050,"second":1095,"amount":-2},{"first":1050,"second":1096,"amount":0},{"first":1050,"second":1097,"amount":0},{"first":1050,"second":1100,"amount":0},{"first":1050,"second":1102,"amount":0},{"first":1050,"second":252,"amount":0},{"first":1050,"second":246,"amount":-1},{"first":1050,"second":214,"amount":-1},{"first":1050,"second":241,"amount":0},{"first":1050,"second":962,"amount":-1},{"first":1050,"second":964,"amount":-2},{"first":1050,"second":965,"amount":0},{"first":1050,"second":959,"amount":-1},{"first":1050,"second":945,"amount":-1},{"first":1050,"second":963,"amount":-1},{"first":1050,"second":947,"amount":-1},{"first":1050,"second":951,"amount":0},{"first":1050,"second":957,"amount":-1},{"first":1050,"second":920,"amount":-1},{"first":1050,"second":927,"amount":-1},{"first":1050,"second":934,"amount":-1},{"first":1050,"second":216,"amount":-1},{"first":1082,"second":101,"amount":0},{"first":1082,"second":111,"amount":0},{"first":1082,"second":113,"amount":0},{"first":1082,"second":100,"amount":0},{"first":1082,"second":103,"amount":0},{"first":1082,"second":99,"amount":0},{"first":1082,"second":1077,"amount":0},{"first":1082,"second":1105,"amount":0},{"first":1082,"second":1086,"amount":0},{"first":1082,"second":1089,"amount":0},{"first":1082,"second":1092,"amount":0},{"first":1082,"second":246,"amount":0},{"first":1082,"second":962,"amount":0},{"first":1082,"second":959,"amount":0},{"first":1082,"second":945,"amount":0},{"first":1082,"second":963,"amount":0},{"first":1051,"second":65,"amount":0},{"first":1051,"second":84,"amount":-1},{"first":1051,"second":89,"amount":-1},{"first":1051,"second":88,"amount":0},{"first":1051,"second":1040,"amount":0},{"first":1051,"second":1044,"amount":0},{"first":1051,"second":1076,"amount":0},{"first":1051,"second":1046,"amount":0},{"first":1051,"second":1051,"amount":0},{"first":1051,"second":1083,"amount":0},{"first":1051,"second":1058,"amount":-1},{"first":1051,"second":1061,"amount":0},{"first":1051,"second":1063,"amount":-1},{"first":1051,"second":1095,"amount":-1},{"first":1051,"second":196,"amount":0},{"first":1051,"second":933,"amount":-1},{"first":1051,"second":913,"amount":0},{"first":1051,"second":916,"amount":0},{"first":1051,"second":923,"amount":0},{"first":1051,"second":935,"amount":0},{"first":1051,"second":197,"amount":0},{"first":1052,"second":65,"amount":0},{"first":1052,"second":84,"amount":-1},{"first":1052,"second":89,"amount":-1},{"first":1052,"second":88,"amount":0},{"first":1052,"second":1040,"amount":0},{"first":1052,"second":1044,"amount":0},{"first":1052,"second":1076,"amount":0},{"first":1052,"second":1046,"amount":0},{"first":1052,"second":1051,"amount":0},{"first":1052,"second":1083,"amount":0},{"first":1052,"second":1058,"amount":-1},{"first":1052,"second":1061,"amount":0},{"first":1052,"second":1063,"amount":-1},{"first":1052,"second":1095,"amount":-1},{"first":1052,"second":196,"amount":0},{"first":1052,"second":933,"amount":-1},{"first":1052,"second":913,"amount":0},{"first":1052,"second":916,"amount":0},{"first":1052,"second":923,"amount":0},{"first":1052,"second":935,"amount":0},{"first":1052,"second":197,"amount":0},{"first":1053,"second":65,"amount":0},{"first":1053,"second":84,"amount":-1},{"first":1053,"second":89,"amount":-1},{"first":1053,"second":88,"amount":0},{"first":1053,"second":1040,"amount":0},{"first":1053,"second":1044,"amount":0},{"first":1053,"second":1076,"amount":0},{"first":1053,"second":1046,"amount":0},{"first":1053,"second":1051,"amount":0},{"first":1053,"second":1083,"amount":0},{"first":1053,"second":1058,"amount":-1},{"first":1053,"second":1061,"amount":0},{"first":1053,"second":1063,"amount":-1},{"first":1053,"second":1095,"amount":-1},{"first":1053,"second":196,"amount":0},{"first":1053,"second":933,"amount":-1},{"first":1053,"second":913,"amount":0},{"first":1053,"second":916,"amount":0},{"first":1053,"second":923,"amount":0},{"first":1053,"second":935,"amount":0},{"first":1053,"second":197,"amount":0},{"first":1054,"second":65,"amount":0},{"first":1054,"second":90,"amount":0},{"first":1054,"second":84,"amount":-1},{"first":1054,"second":89,"amount":-1},{"first":1054,"second":88,"amount":0},{"first":1054,"second":86,"amount":0},{"first":1054,"second":44,"amount":-2},{"first":1054,"second":46,"amount":-2},{"first":1054,"second":1040,"amount":0},{"first":1054,"second":1044,"amount":-1},{"first":1054,"second":1046,"amount":0},{"first":1054,"second":1051,"amount":-1},{"first":1054,"second":1058,"amount":-1},{"first":1054,"second":1061,"amount":0},{"first":1054,"second":1068,"amount":-1},{"first":1054,"second":196,"amount":0},{"first":1054,"second":955,"amount":0},{"first":1054,"second":933,"amount":-1},{"first":1054,"second":913,"amount":0},{"first":1054,"second":931,"amount":0},{"first":1054,"second":916,"amount":0},{"first":1054,"second":926,"amount":0},{"first":1054,"second":923,"amount":0},{"first":1054,"second":918,"amount":0},{"first":1054,"second":935,"amount":0},{"first":1054,"second":197,"amount":0},{"first":1054,"second":198,"amount":-1},{"first":1086,"second":122,"amount":0},{"first":1086,"second":121,"amount":0},{"first":1086,"second":120,"amount":0},{"first":1086,"second":118,"amount":0},{"first":1086,"second":34,"amount":-3},{"first":1086,"second":39,"amount":-3},{"first":1086,"second":1076,"amount":-1},{"first":1086,"second":1078,"amount":0},{"first":1086,"second":1083,"amount":0},{"first":1086,"second":1090,"amount":0},{"first":1086,"second":1091,"amount":0},{"first":1086,"second":1093,"amount":0},{"first":1086,"second":964,"amount":0},{"first":1086,"second":947,"amount":0},{"first":1086,"second":957,"amount":0},{"first":1056,"second":97,"amount":0},{"first":1056,"second":101,"amount":0},{"first":1056,"second":116,"amount":0},{"first":1056,"second":121,"amount":0},{"first":1056,"second":111,"amount":0},{"first":1056,"second":113,"amount":0},{"first":1056,"second":100,"amount":0},{"first":1056,"second":103,"amount":0},{"first":1056,"second":99,"amount":0},{"first":1056,"second":118,"amount":0},{"first":1056,"second":65,"amount":-3},{"first":1056,"second":90,"amount":-1},{"first":1056,"second":74,"amount":-4},{"first":1056,"second":88,"amount":-1},{"first":1056,"second":44,"amount":-7},{"first":1056,"second":46,"amount":-7},{"first":1056,"second":1040,"amount":-3},{"first":1056,"second":1072,"amount":0},{"first":1056,"second":1044,"amount":-2},{"first":1056,"second":1076,"amount":-1},{"first":1056,"second":1077,"amount":0},{"first":1056,"second":1105,"amount":0},{"first":1056,"second":1046,"amount":-1},{"first":1056,"second":1051,"amount":-1},{"first":1056,"second":1083,"amount":-1},{"first":1056,"second":1086,"amount":0},{"first":1056,"second":1089,"amount":0},{"first":1056,"second":1091,"amount":0},{"first":1056,"second":1092,"amount":0},{"first":1056,"second":1061,"amount":-1},{"first":1056,"second":246,"amount":0},{"first":1056,"second":228,"amount":0},{"first":1056,"second":196,"amount":-3},{"first":1056,"second":962,"amount":0},{"first":1056,"second":961,"amount":-1},{"first":1056,"second":959,"amount":0},{"first":1056,"second":945,"amount":0},{"first":1056,"second":963,"amount":0},{"first":1056,"second":948,"amount":0},{"first":1056,"second":947,"amount":0},{"first":1056,"second":955,"amount":-1},{"first":1056,"second":957,"amount":0},{"first":1056,"second":913,"amount":-3},{"first":1056,"second":916,"amount":-3},{"first":1056,"second":923,"amount":-3},{"first":1056,"second":918,"amount":-1},{"first":1056,"second":935,"amount":-1},{"first":1056,"second":229,"amount":0},{"first":1056,"second":197,"amount":-3},{"first":1056,"second":198,"amount":-2},{"first":1088,"second":122,"amount":0},{"first":1088,"second":121,"amount":0},{"first":1088,"second":120,"amount":0},{"first":1088,"second":118,"amount":0},{"first":1088,"second":34,"amount":-1},{"first":1088,"second":39,"amount":-1},{"first":1088,"second":1076,"amount":0},{"first":1088,"second":1078,"amount":0},{"first":1088,"second":1083,"amount":0},{"first":1088,"second":1090,"amount":-2},{"first":1088,"second":1091,"amount":0},{"first":1088,"second":1093,"amount":0},{"first":1088,"second":964,"amount":0},{"first":1088,"second":947,"amount":0},{"first":1088,"second":957,"amount":0},{"first":1057,"second":84,"amount":-1},{"first":1057,"second":125,"amount":0},{"first":1057,"second":41,"amount":-1},{"first":1057,"second":93,"amount":0},{"first":1057,"second":1058,"amount":-1},{"first":1089,"second":34,"amount":0},{"first":1089,"second":39,"amount":0},{"first":1058,"second":97,"amount":-2},{"first":1058,"second":122,"amount":-1},{"first":1058,"second":101,"amount":-2},{"first":1058,"second":114,"amount":-2},{"first":1058,"second":121,"amount":-1},{"first":1058,"second":117,"amount":-2},{"first":1058,"second":111,"amount":-2},{"first":1058,"second":112,"amount":-2},{"first":1058,"second":113,"amount":-2},{"first":1058,"second":115,"amount":-2},{"first":1058,"second":100,"amount":-2},{"first":1058,"second":103,"amount":-2},{"first":1058,"second":109,"amount":-2},{"first":1058,"second":119,"amount":-1},{"first":1058,"second":120,"amount":-2},{"first":1058,"second":99,"amount":-2},{"first":1058,"second":118,"amount":-1},{"first":1058,"second":110,"amount":-2},{"first":1058,"second":65,"amount":-2},{"first":1058,"second":84,"amount":0},{"first":1058,"second":89,"amount":0},{"first":1058,"second":79,"amount":-1},{"first":1058,"second":81,"amount":-1},{"first":1058,"second":83,"amount":0},{"first":1058,"second":71,"amount":-1},{"first":1058,"second":74,"amount":-5},{"first":1058,"second":87,"amount":0},{"first":1058,"second":67,"amount":-1},{"first":1058,"second":86,"amount":0},{"first":1058,"second":45,"amount":-5},{"first":1058,"second":8211,"amount":-5},{"first":1058,"second":44,"amount":-4},{"first":1058,"second":46,"amount":-4},{"first":1058,"second":1040,"amount":-2},{"first":1058,"second":1072,"amount":-2},{"first":1058,"second":1073,"amount":-1},{"first":1058,"second":1074,"amount":-2},{"first":1058,"second":1075,"amount":-2},{"first":1058,"second":1044,"amount":-2},{"first":1058,"second":1076,"amount":-3},{"first":1058,"second":1077,"amount":-2},{"first":1058,"second":1105,"amount":-2},{"first":1058,"second":1078,"amount":-2},{"first":1058,"second":1079,"amount":-3},{"first":1058,"second":1080,"amount":-2},{"first":1058,"second":1081,"amount":-2},{"first":1058,"second":1082,"amount":-2},{"first":1058,"second":1051,"amount":-1},{"first":1058,"second":1083,"amount":-3},{"first":1058,"second":1084,"amount":-2},{"first":1058,"second":1085,"amount":-2},{"first":1058,"second":1054,"amount":-1},{"first":1058,"second":1086,"amount":-2},{"first":1058,"second":1087,"amount":-2},{"first":1058,"second":1088,"amount":-2},{"first":1058,"second":1057,"amount":-1},{"first":1058,"second":1089,"amount":-2},{"first":1058,"second":1058,"amount":0},{"first":1058,"second":1090,"amount":-2},{"first":1058,"second":1091,"amount":-1},{"first":1058,"second":1092,"amount":-2},{"first":1058,"second":1093,"amount":-2},{"first":1058,"second":1094,"amount":-2},{"first":1058,"second":1095,"amount":-3},{"first":1058,"second":1096,"amount":-2},{"first":1058,"second":1097,"amount":-2},{"first":1058,"second":1099,"amount":-3},{"first":1058,"second":1068,"amount":0},{"first":1058,"second":1100,"amount":-2},{"first":1058,"second":1101,"amount":-3},{"first":1058,"second":1102,"amount":-2},{"first":1058,"second":1103,"amount":-3},{"first":1058,"second":252,"amount":-2},{"first":1058,"second":246,"amount":-2},{"first":1058,"second":214,"amount":-1},{"first":1058,"second":228,"amount":-2},{"first":1058,"second":196,"amount":-2},{"first":1058,"second":241,"amount":-2},{"first":1058,"second":962,"amount":-2},{"first":1058,"second":949,"amount":-3},{"first":1058,"second":961,"amount":-3},{"first":1058,"second":964,"amount":-2},{"first":1058,"second":965,"amount":-2},{"first":1058,"second":953,"amount":-3},{"first":1058,"second":959,"amount":-2},{"first":1058,"second":960,"amount":-2},{"first":1058,"second":945,"amount":-2},{"first":1058,"second":963,"amount":-2},{"first":1058,"second":948,"amount":-1},{"first":1058,"second":966,"amount":-3},{"first":1058,"second":947,"amount":-1},{"first":1058,"second":951,"amount":-2},{"first":1058,"second":968,"amount":-3},{"first":1058,"second":969,"amount":-3},{"first":1058,"second":957,"amount":-1},{"first":1058,"second":933,"amount":0},{"first":1058,"second":920,"amount":-1},{"first":1058,"second":927,"amount":-1},{"first":1058,"second":913,"amount":-2},{"first":1058,"second":916,"amount":-2},{"first":1058,"second":934,"amount":-2},{"first":1058,"second":923,"amount":-2},{"first":1058,"second":229,"amount":-2},{"first":1058,"second":197,"amount":-2},{"first":1058,"second":230,"amount":-2},{"first":1058,"second":198,"amount":-4},{"first":1058,"second":248,"amount":-2},{"first":1058,"second":216,"amount":-1},{"first":1090,"second":97,"amount":0},{"first":1090,"second":101,"amount":-2},{"first":1090,"second":121,"amount":0},{"first":1090,"second":111,"amount":-1},{"first":1090,"second":113,"amount":-2},{"first":1090,"second":100,"amount":-2},{"first":1090,"second":102,"amount":0},{"first":1090,"second":103,"amount":-2},{"first":1090,"second":99,"amount":-2},{"first":1090,"second":118,"amount":0},{"first":1090,"second":34,"amount":0},{"first":1090,"second":39,"amount":0},{"first":1090,"second":1072,"amount":0},{"first":1090,"second":1076,"amount":-2},{"first":1090,"second":1077,"amount":-2},{"first":1090,"second":1105,"amount":-2},{"first":1090,"second":1083,"amount":-2},{"first":1090,"second":1086,"amount":-1},{"first":1090,"second":1089,"amount":-2},{"first":1090,"second":1091,"amount":0},{"first":1090,"second":1092,"amount":-2},{"first":1090,"second":246,"amount":-1},{"first":1090,"second":228,"amount":0},{"first":1090,"second":962,"amount":-1},{"first":1090,"second":961,"amount":-2},{"first":1090,"second":959,"amount":-1},{"first":1090,"second":945,"amount":-2},{"first":1090,"second":963,"amount":-2},{"first":1090,"second":948,"amount":-2},{"first":1090,"second":966,"amount":-1},{"first":1090,"second":947,"amount":0},{"first":1090,"second":957,"amount":0},{"first":1090,"second":229,"amount":0},{"first":1059,"second":97,"amount":-2},{"first":1059,"second":101,"amount":-1},{"first":1059,"second":111,"amount":-1},{"first":1059,"second":112,"amount":-2},{"first":1059,"second":113,"amount":-1},{"first":1059,"second":115,"amount":-1},{"first":1059,"second":100,"amount":-1},{"first":1059,"second":103,"amount":-1},{"first":1059,"second":109,"amount":-2},{"first":1059,"second":99,"amount":-1},{"first":1059,"second":110,"amount":-2},{"first":1059,"second":65,"amount":-2},{"first":1059,"second":84,"amount":0},{"first":1059,"second":89,"amount":0},{"first":1059,"second":79,"amount":0},{"first":1059,"second":81,"amount":0},{"first":1059,"second":71,"amount":0},{"first":1059,"second":67,"amount":0},{"first":1059,"second":45,"amount":-2},{"first":1059,"second":8211,"amount":-2},{"first":1059,"second":44,"amount":-8},{"first":1059,"second":46,"amount":-8},{"first":1059,"second":1040,"amount":-2},{"first":1059,"second":1072,"amount":-2},{"first":1059,"second":1074,"amount":-1},{"first":1059,"second":1075,"amount":-2},{"first":1059,"second":1044,"amount":-2},{"first":1059,"second":1076,"amount":-2},{"first":1059,"second":1077,"amount":-1},{"first":1059,"second":1105,"amount":-1},{"first":1059,"second":1079,"amount":-1},{"first":1059,"second":1080,"amount":-2},{"first":1059,"second":1081,"amount":-2},{"first":1059,"second":1082,"amount":-2},{"first":1059,"second":1051,"amount":-1},{"first":1059,"second":1083,"amount":-1},{"first":1059,"second":1084,"amount":-2},{"first":1059,"second":1085,"amount":-2},{"first":1059,"second":1054,"amount":0},{"first":1059,"second":1086,"amount":-1},{"first":1059,"second":1087,"amount":-2},{"first":1059,"second":1088,"amount":-2},{"first":1059,"second":1057,"amount":0},{"first":1059,"second":1089,"amount":-1},{"first":1059,"second":1058,"amount":0},{"first":1059,"second":1092,"amount":-1},{"first":1059,"second":1094,"amount":-2},{"first":1059,"second":1095,"amount":0},{"first":1059,"second":1096,"amount":-2},{"first":1059,"second":1097,"amount":-2},{"first":1059,"second":1099,"amount":-1},{"first":1059,"second":1068,"amount":0},{"first":1059,"second":1100,"amount":-2},{"first":1059,"second":1102,"amount":-2},{"first":1059,"second":1103,"amount":-1},{"first":1059,"second":246,"amount":-1},{"first":1059,"second":214,"amount":0},{"first":1059,"second":228,"amount":-2},{"first":1059,"second":196,"amount":-2},{"first":1059,"second":241,"amount":-2},{"first":1059,"second":962,"amount":-1},{"first":1059,"second":959,"amount":-1},{"first":1059,"second":945,"amount":-1},{"first":1059,"second":963,"amount":-1},{"first":1059,"second":951,"amount":-2},{"first":1059,"second":933,"amount":0},{"first":1059,"second":920,"amount":0},{"first":1059,"second":927,"amount":0},{"first":1059,"second":913,"amount":-2},{"first":1059,"second":916,"amount":-2},{"first":1059,"second":923,"amount":-2},{"first":1059,"second":229,"amount":-2},{"first":1059,"second":197,"amount":-2},{"first":1059,"second":216,"amount":0},{"first":1091,"second":97,"amount":0},{"first":1091,"second":101,"amount":0},{"first":1091,"second":111,"amount":0},{"first":1091,"second":113,"amount":0},{"first":1091,"second":100,"amount":0},{"first":1091,"second":102,"amount":0},{"first":1091,"second":103,"amount":0},{"first":1091,"second":99,"amount":0},{"first":1091,"second":44,"amount":-2},{"first":1091,"second":46,"amount":-2},{"first":1091,"second":34,"amount":0},{"first":1091,"second":39,"amount":0},{"first":1091,"second":1072,"amount":0},{"first":1091,"second":1076,"amount":-1},{"first":1091,"second":1077,"amount":0},{"first":1091,"second":1105,"amount":0},{"first":1091,"second":1083,"amount":-1},{"first":1091,"second":1086,"amount":0},{"first":1091,"second":1089,"amount":0},{"first":1091,"second":1092,"amount":0},{"first":1091,"second":246,"amount":0},{"first":1091,"second":228,"amount":0},{"first":1091,"second":962,"amount":0},{"first":1091,"second":961,"amount":0},{"first":1091,"second":964,"amount":0},{"first":1091,"second":959,"amount":0},{"first":1091,"second":960,"amount":0},{"first":1091,"second":945,"amount":0},{"first":1091,"second":963,"amount":0},{"first":1091,"second":948,"amount":0},{"first":1091,"second":229,"amount":0},{"first":1092,"second":122,"amount":0},{"first":1092,"second":121,"amount":0},{"first":1092,"second":120,"amount":0},{"first":1092,"second":118,"amount":0},{"first":1092,"second":34,"amount":-1},{"first":1092,"second":39,"amount":-1},{"first":1092,"second":1076,"amount":0},{"first":1092,"second":1078,"amount":0},{"first":1092,"second":1083,"amount":0},{"first":1092,"second":1090,"amount":-2},{"first":1092,"second":1091,"amount":0},{"first":1092,"second":1093,"amount":0},{"first":1092,"second":964,"amount":0},{"first":1092,"second":947,"amount":0},{"first":1092,"second":957,"amount":0},{"first":1061,"second":101,"amount":-1},{"first":1061,"second":121,"amount":-1},{"first":1061,"second":117,"amount":0},{"first":1061,"second":111,"amount":0},{"first":1061,"second":113,"amount":-1},{"first":1061,"second":100,"amount":-1},{"first":1061,"second":103,"amount":-1},{"first":1061,"second":99,"amount":-1},{"first":1061,"second":118,"amount":-1},{"first":1061,"second":79,"amount":-1},{"first":1061,"second":81,"amount":-1},{"first":1061,"second":71,"amount":-1},{"first":1061,"second":67,"amount":-1},{"first":1061,"second":86,"amount":0},{"first":1061,"second":45,"amount":-1},{"first":1061,"second":8211,"amount":-1},{"first":1061,"second":1073,"amount":0},{"first":1061,"second":1044,"amount":0},{"first":1061,"second":1077,"amount":-1},{"first":1061,"second":1105,"amount":-1},{"first":1061,"second":1051,"amount":0},{"first":1061,"second":1083,"amount":0},{"first":1061,"second":1054,"amount":-1},{"first":1061,"second":1086,"amount":0},{"first":1061,"second":1057,"amount":-1},{"first":1061,"second":1089,"amount":-1},{"first":1061,"second":1090,"amount":-1},{"first":1061,"second":1091,"amount":-1},{"first":1061,"second":1092,"amount":-1},{"first":1061,"second":1095,"amount":-1},{"first":1061,"second":252,"amount":0},{"first":1061,"second":246,"amount":0},{"first":1061,"second":214,"amount":-1},{"first":1061,"second":962,"amount":-1},{"first":1061,"second":964,"amount":-1},{"first":1061,"second":965,"amount":0},{"first":1061,"second":952,"amount":0},{"first":1061,"second":959,"amount":0},{"first":1061,"second":945,"amount":-1},{"first":1061,"second":963,"amount":-1},{"first":1061,"second":948,"amount":0},{"first":1061,"second":966,"amount":-1},{"first":1061,"second":947,"amount":-1},{"first":1061,"second":955,"amount":0},{"first":1061,"second":968,"amount":-1},{"first":1061,"second":969,"amount":0},{"first":1061,"second":957,"amount":-1},{"first":1061,"second":920,"amount":-1},{"first":1061,"second":927,"amount":-1},{"first":1061,"second":934,"amount":-1},{"first":1061,"second":216,"amount":-1},{"first":1093,"second":101,"amount":0},{"first":1093,"second":111,"amount":0},{"first":1093,"second":113,"amount":0},{"first":1093,"second":100,"amount":0},{"first":1093,"second":103,"amount":0},{"first":1093,"second":99,"amount":0},{"first":1093,"second":1077,"amount":0},{"first":1093,"second":1105,"amount":0},{"first":1093,"second":1086,"amount":0},{"first":1093,"second":1089,"amount":0},{"first":1093,"second":1092,"amount":0},{"first":1093,"second":246,"amount":0},{"first":1093,"second":962,"amount":0},{"first":1093,"second":959,"amount":0},{"first":1093,"second":945,"amount":0},{"first":1093,"second":963,"amount":0},{"first":1062,"second":65,"amount":0},{"first":1062,"second":84,"amount":-1},{"first":1062,"second":89,"amount":-1},{"first":1062,"second":88,"amount":0},{"first":1062,"second":1040,"amount":0},{"first":1062,"second":1044,"amount":0},{"first":1062,"second":1076,"amount":0},{"first":1062,"second":1046,"amount":0},{"first":1062,"second":1051,"amount":0},{"first":1062,"second":1083,"amount":0},{"first":1062,"second":1058,"amount":-1},{"first":1062,"second":1061,"amount":0},{"first":1062,"second":1063,"amount":-1},{"first":1062,"second":1095,"amount":-1},{"first":1062,"second":196,"amount":0},{"first":1062,"second":933,"amount":-1},{"first":1062,"second":913,"amount":0},{"first":1062,"second":916,"amount":0},{"first":1062,"second":923,"amount":0},{"first":1062,"second":935,"amount":0},{"first":1062,"second":197,"amount":0},{"first":1094,"second":1076,"amount":0},{"first":1094,"second":1083,"amount":0},{"first":1094,"second":1090,"amount":0},{"first":1094,"second":1095,"amount":0},{"first":1094,"second":1103,"amount":0},{"first":1063,"second":65,"amount":0},{"first":1063,"second":84,"amount":-1},{"first":1063,"second":89,"amount":-1},{"first":1063,"second":88,"amount":0},{"first":1063,"second":1040,"amount":0},{"first":1063,"second":1044,"amount":0},{"first":1063,"second":1076,"amount":0},{"first":1063,"second":1046,"amount":0},{"first":1063,"second":1051,"amount":0},{"first":1063,"second":1083,"amount":0},{"first":1063,"second":1058,"amount":-1},{"first":1063,"second":1061,"amount":0},{"first":1063,"second":1063,"amount":-1},{"first":1063,"second":1095,"amount":-1},{"first":1063,"second":196,"amount":0},{"first":1063,"second":933,"amount":-1},{"first":1063,"second":913,"amount":0},{"first":1063,"second":916,"amount":0},{"first":1063,"second":923,"amount":0},{"first":1063,"second":935,"amount":0},{"first":1063,"second":197,"amount":0},{"first":1064,"second":65,"amount":0},{"first":1064,"second":84,"amount":-1},{"first":1064,"second":89,"amount":-1},{"first":1064,"second":88,"amount":0},{"first":1064,"second":1040,"amount":0},{"first":1064,"second":1044,"amount":0},{"first":1064,"second":1076,"amount":0},{"first":1064,"second":1046,"amount":0},{"first":1064,"second":1051,"amount":0},{"first":1064,"second":1083,"amount":0},{"first":1064,"second":1058,"amount":-1},{"first":1064,"second":1061,"amount":0},{"first":1064,"second":1063,"amount":-1},{"first":1064,"second":1095,"amount":-1},{"first":1064,"second":196,"amount":0},{"first":1064,"second":933,"amount":-1},{"first":1064,"second":913,"amount":0},{"first":1064,"second":916,"amount":0},{"first":1064,"second":923,"amount":0},{"first":1064,"second":935,"amount":0},{"first":1064,"second":197,"amount":0},{"first":1065,"second":65,"amount":0},{"first":1065,"second":84,"amount":-1},{"first":1065,"second":89,"amount":-1},{"first":1065,"second":88,"amount":0},{"first":1065,"second":86,"amount":-1},{"first":1065,"second":1040,"amount":0},{"first":1065,"second":1044,"amount":0},{"first":1065,"second":1076,"amount":0},{"first":1065,"second":1046,"amount":0},{"first":1065,"second":1051,"amount":0},{"first":1065,"second":1083,"amount":0},{"first":1065,"second":1058,"amount":-1},{"first":1065,"second":1090,"amount":-1},{"first":1065,"second":1059,"amount":0},{"first":1065,"second":1061,"amount":0},{"first":1065,"second":1063,"amount":-1},{"first":1065,"second":1095,"amount":0},{"first":1065,"second":1068,"amount":-1},{"first":1065,"second":1069,"amount":0},{"first":1065,"second":196,"amount":0},{"first":1065,"second":933,"amount":-1},{"first":1065,"second":913,"amount":0},{"first":1065,"second":916,"amount":0},{"first":1065,"second":923,"amount":0},{"first":1065,"second":935,"amount":0},{"first":1065,"second":197,"amount":0},{"first":1097,"second":101,"amount":0},{"first":1097,"second":113,"amount":0},{"first":1097,"second":100,"amount":0},{"first":1097,"second":103,"amount":0},{"first":1097,"second":99,"amount":0},{"first":1097,"second":1076,"amount":1},{"first":1097,"second":1077,"amount":0},{"first":1097,"second":1105,"amount":0},{"first":1097,"second":1083,"amount":0},{"first":1097,"second":1089,"amount":0},{"first":1097,"second":1090,"amount":-1},{"first":1097,"second":1092,"amount":0},{"first":1097,"second":1095,"amount":0},{"first":1097,"second":962,"amount":0},{"first":1097,"second":945,"amount":0},{"first":1097,"second":963,"amount":0},{"first":1066,"second":120,"amount":-1},{"first":1066,"second":84,"amount":-5},{"first":1066,"second":89,"amount":-2},{"first":1066,"second":88,"amount":0},{"first":1066,"second":86,"amount":-1},{"first":1066,"second":34,"amount":-1},{"first":1066,"second":39,"amount":-1},{"first":1066,"second":1046,"amount":0},{"first":1066,"second":1078,"amount":-1},{"first":1066,"second":1051,"amount":0},{"first":1066,"second":1058,"amount":-5},{"first":1066,"second":1090,"amount":-1},{"first":1066,"second":1059,"amount":0},{"first":1066,"second":1061,"amount":0},{"first":1066,"second":1093,"amount":-1},{"first":1066,"second":1063,"amount":-1},{"first":1066,"second":1068,"amount":-1},{"first":1066,"second":933,"amount":-2},{"first":1066,"second":935,"amount":0},{"first":1098,"second":121,"amount":-1},{"first":1098,"second":120,"amount":0},{"first":1098,"second":118,"amount":-1},{"first":1098,"second":34,"amount":-3},{"first":1098,"second":39,"amount":-3},{"first":1098,"second":1078,"amount":0},{"first":1098,"second":1090,"amount":-1},{"first":1098,"second":1091,"amount":-1},{"first":1098,"second":1093,"amount":0},{"first":1098,"second":1095,"amount":-1},{"first":1098,"second":947,"amount":-1},{"first":1098,"second":957,"amount":-1},{"first":1067,"second":65,"amount":0},{"first":1067,"second":84,"amount":-1},{"first":1067,"second":89,"amount":-1},{"first":1067,"second":88,"amount":0},{"first":1067,"second":1040,"amount":0},{"first":1067,"second":1044,"amount":0},{"first":1067,"second":1076,"amount":0},{"first":1067,"second":1046,"amount":0},{"first":1067,"second":1051,"amount":0},{"first":1067,"second":1083,"amount":0},{"first":1067,"second":1058,"amount":-1},{"first":1067,"second":1061,"amount":0},{"first":1067,"second":1063,"amount":-1},{"first":1067,"second":1095,"amount":-1},{"first":1067,"second":196,"amount":0},{"first":1067,"second":933,"amount":-1},{"first":1067,"second":913,"amount":0},{"first":1067,"second":916,"amount":0},{"first":1067,"second":923,"amount":0},{"first":1067,"second":935,"amount":0},{"first":1067,"second":197,"amount":0},{"first":1068,"second":120,"amount":-1},{"first":1068,"second":84,"amount":-5},{"first":1068,"second":89,"amount":-2},{"first":1068,"second":88,"amount":0},{"first":1068,"second":86,"amount":-1},{"first":1068,"second":34,"amount":-1},{"first":1068,"second":39,"amount":-1},{"first":1068,"second":1046,"amount":0},{"first":1068,"second":1078,"amount":-1},{"first":1068,"second":1051,"amount":0},{"first":1068,"second":1058,"amount":-5},{"first":1068,"second":1090,"amount":-1},{"first":1068,"second":1059,"amount":0},{"first":1068,"second":1061,"amount":0},{"first":1068,"second":1093,"amount":-1},{"first":1068,"second":1063,"amount":-1},{"first":1068,"second":1068,"amount":-1},{"first":1068,"second":933,"amount":-2},{"first":1068,"second":935,"amount":0},{"first":1100,"second":121,"amount":-1},{"first":1100,"second":120,"amount":0},{"first":1100,"second":118,"amount":-1},{"first":1100,"second":34,"amount":-3},{"first":1100,"second":39,"amount":-3},{"first":1100,"second":1078,"amount":0},{"first":1100,"second":1090,"amount":-1},{"first":1100,"second":1091,"amount":-1},{"first":1100,"second":1093,"amount":0},{"first":1100,"second":1095,"amount":-1},{"first":1100,"second":947,"amount":-1},{"first":1100,"second":957,"amount":-1},{"first":1069,"second":84,"amount":-1},{"first":1069,"second":89,"amount":-1},{"first":1069,"second":88,"amount":-1},{"first":1069,"second":1044,"amount":-1},{"first":1069,"second":1046,"amount":-1},{"first":1069,"second":1051,"amount":-1},{"first":1069,"second":1083,"amount":0},{"first":1069,"second":1058,"amount":-1},{"first":1069,"second":1059,"amount":0},{"first":1069,"second":1061,"amount":-1},{"first":1069,"second":933,"amount":-1},{"first":1069,"second":935,"amount":-1},{"first":1101,"second":122,"amount":0},{"first":1101,"second":121,"amount":0},{"first":1101,"second":120,"amount":0},{"first":1101,"second":118,"amount":0},{"first":1101,"second":34,"amount":-1},{"first":1101,"second":39,"amount":-1},{"first":1101,"second":1076,"amount":0},{"first":1101,"second":1078,"amount":0},{"first":1101,"second":1083,"amount":0},{"first":1101,"second":1090,"amount":-2},{"first":1101,"second":1091,"amount":0},{"first":1101,"second":1093,"amount":0},{"first":1101,"second":964,"amount":0},{"first":1101,"second":947,"amount":0},{"first":1101,"second":957,"amount":0},{"first":1070,"second":84,"amount":-1},{"first":1070,"second":88,"amount":-1},{"first":1070,"second":1044,"amount":-1},{"first":1070,"second":1076,"amount":-1},{"first":1070,"second":1046,"amount":-1},{"first":1070,"second":1051,"amount":-1},{"first":1070,"second":1083,"amount":0},{"first":1070,"second":1058,"amount":-1},{"first":1070,"second":1059,"amount":0},{"first":1070,"second":1061,"amount":-1},{"first":1070,"second":935,"amount":-1},{"first":1102,"second":121,"amount":0},{"first":1102,"second":120,"amount":0},{"first":1102,"second":118,"amount":0},{"first":1102,"second":1076,"amount":0},{"first":1102,"second":1078,"amount":0},{"first":1102,"second":1083,"amount":0},{"first":1102,"second":1091,"amount":0},{"first":1102,"second":1093,"amount":0},{"first":1102,"second":947,"amount":0},{"first":1102,"second":957,"amount":0},{"first":1071,"second":84,"amount":0},{"first":1071,"second":89,"amount":0},{"first":1071,"second":1058,"amount":0},{"first":1071,"second":933,"amount":0},{"first":220,"second":65,"amount":0},{"first":220,"second":1040,"amount":0},{"first":220,"second":196,"amount":0},{"first":220,"second":913,"amount":0},{"first":220,"second":916,"amount":0},{"first":220,"second":923,"amount":0},{"first":220,"second":197,"amount":0},{"first":246,"second":122,"amount":0},{"first":246,"second":121,"amount":0},{"first":246,"second":120,"amount":0},{"first":246,"second":118,"amount":0},{"first":246,"second":34,"amount":-3},{"first":246,"second":39,"amount":-3},{"first":246,"second":1076,"amount":-1},{"first":246,"second":1078,"amount":0},{"first":246,"second":1083,"amount":0},{"first":246,"second":1090,"amount":0},{"first":246,"second":1091,"amount":0},{"first":246,"second":1093,"amount":0},{"first":246,"second":964,"amount":0},{"first":246,"second":947,"amount":0},{"first":246,"second":957,"amount":0},{"first":214,"second":65,"amount":0},{"first":214,"second":90,"amount":0},{"first":214,"second":84,"amount":-1},{"first":214,"second":89,"amount":-1},{"first":214,"second":88,"amount":0},{"first":214,"second":86,"amount":0},{"first":214,"second":44,"amount":-2},{"first":214,"second":46,"amount":-2},{"first":214,"second":1040,"amount":0},{"first":214,"second":1044,"amount":-1},{"first":214,"second":1046,"amount":0},{"first":214,"second":1051,"amount":-1},{"first":214,"second":1058,"amount":-1},{"first":214,"second":1061,"amount":0},{"first":214,"second":1068,"amount":-1},{"first":214,"second":196,"amount":0},{"first":214,"second":955,"amount":0},{"first":214,"second":933,"amount":-1},{"first":214,"second":913,"amount":0},{"first":214,"second":931,"amount":0},{"first":214,"second":916,"amount":0},{"first":214,"second":926,"amount":0},{"first":214,"second":923,"amount":0},{"first":214,"second":918,"amount":0},{"first":214,"second":935,"amount":0},{"first":214,"second":197,"amount":0},{"first":214,"second":198,"amount":-1},{"first":228,"second":121,"amount":0},{"first":228,"second":118,"amount":0},{"first":228,"second":34,"amount":-1},{"first":228,"second":39,"amount":-1},{"first":228,"second":1090,"amount":0},{"first":228,"second":1091,"amount":0},{"first":228,"second":947,"amount":0},{"first":228,"second":957,"amount":0},{"first":196,"second":122,"amount":0},{"first":196,"second":116,"amount":0},{"first":196,"second":121,"amount":-1},{"first":196,"second":117,"amount":0},{"first":196,"second":111,"amount":0},{"first":196,"second":119,"amount":-1},{"first":196,"second":118,"amount":-1},{"first":196,"second":84,"amount":-3},{"first":196,"second":89,"amount":-2},{"first":196,"second":85,"amount":0},{"first":196,"second":79,"amount":0},{"first":196,"second":81,"amount":0},{"first":196,"second":71,"amount":0},{"first":196,"second":87,"amount":-1},{"first":196,"second":67,"amount":0},{"first":196,"second":86,"amount":-2},{"first":196,"second":63,"amount":-1},{"first":196,"second":34,"amount":-2},{"first":196,"second":39,"amount":-2},{"first":196,"second":1044,"amount":0},{"first":196,"second":1051,"amount":0},{"first":196,"second":1083,"amount":0},{"first":196,"second":1054,"amount":0},{"first":196,"second":1086,"amount":0},{"first":196,"second":1057,"amount":0},{"first":196,"second":1058,"amount":-3},{"first":196,"second":1090,"amount":-1},{"first":196,"second":1091,"amount":-1},{"first":196,"second":1063,"amount":-1},{"first":196,"second":1095,"amount":-2},{"first":196,"second":1068,"amount":-1},{"first":196,"second":252,"amount":0},{"first":196,"second":220,"amount":0},{"first":196,"second":246,"amount":0},{"first":196,"second":214,"amount":0},{"first":196,"second":964,"amount":-1},{"first":196,"second":965,"amount":0},{"first":196,"second":959,"amount":0},{"first":196,"second":947,"amount":-1},{"first":196,"second":955,"amount":0},{"first":196,"second":957,"amount":-1},{"first":196,"second":933,"amount":-2},{"first":196,"second":920,"amount":0},{"first":196,"second":927,"amount":0},{"first":196,"second":934,"amount":-1},{"first":196,"second":936,"amount":-1},{"first":196,"second":216,"amount":0},{"first":241,"second":34,"amount":-2},{"first":241,"second":39,"amount":-2},{"first":241,"second":1090,"amount":-1},{"first":209,"second":65,"amount":0},{"first":209,"second":84,"amount":-1},{"first":209,"second":89,"amount":-1},{"first":209,"second":88,"amount":0},{"first":209,"second":1040,"amount":0},{"first":209,"second":1044,"amount":0},{"first":209,"second":1076,"amount":0},{"first":209,"second":1046,"amount":0},{"first":209,"second":1051,"amount":0},{"first":209,"second":1083,"amount":0},{"first":209,"second":1058,"amount":-1},{"first":209,"second":1061,"amount":0},{"first":209,"second":1063,"amount":-1},{"first":209,"second":1095,"amount":-1},{"first":209,"second":196,"amount":0},{"first":209,"second":933,"amount":-1},{"first":209,"second":913,"amount":0},{"first":209,"second":916,"amount":0},{"first":209,"second":923,"amount":0},{"first":209,"second":935,"amount":0},{"first":209,"second":197,"amount":0},{"first":962,"second":1090,"amount":-1},{"first":961,"second":122,"amount":0},{"first":961,"second":121,"amount":0},{"first":961,"second":120,"amount":0},{"first":961,"second":118,"amount":0},{"first":961,"second":34,"amount":-1},{"first":961,"second":39,"amount":-1},{"first":961,"second":1076,"amount":0},{"first":961,"second":1078,"amount":0},{"first":961,"second":1083,"amount":0},{"first":961,"second":1090,"amount":-2},{"first":961,"second":1091,"amount":0},{"first":961,"second":1093,"amount":0},{"first":961,"second":964,"amount":0},{"first":961,"second":947,"amount":0},{"first":961,"second":957,"amount":0},{"first":964,"second":101,"amount":0},{"first":964,"second":121,"amount":0},{"first":964,"second":111,"amount":0},{"first":964,"second":113,"amount":0},{"first":964,"second":100,"amount":0},{"first":964,"second":102,"amount":0},{"first":964,"second":103,"amount":0},{"first":964,"second":99,"amount":0},{"first":964,"second":118,"amount":0},{"first":964,"second":34,"amount":0},{"first":964,"second":39,"amount":0},{"first":964,"second":1077,"amount":0},{"first":964,"second":1105,"amount":0},{"first":964,"second":1086,"amount":0},{"first":964,"second":1089,"amount":0},{"first":964,"second":1091,"amount":0},{"first":964,"second":1092,"amount":0},{"first":964,"second":246,"amount":0},{"first":964,"second":962,"amount":0},{"first":964,"second":964,"amount":0},{"first":964,"second":959,"amount":0},{"first":964,"second":960,"amount":0},{"first":964,"second":945,"amount":0},{"first":964,"second":963,"amount":0},{"first":964,"second":948,"amount":0},{"first":964,"second":947,"amount":0},{"first":964,"second":957,"amount":0},{"first":965,"second":1090,"amount":-1},{"first":953,"second":101,"amount":0},{"first":953,"second":121,"amount":-1},{"first":953,"second":117,"amount":0},{"first":953,"second":113,"amount":0},{"first":953,"second":100,"amount":0},{"first":953,"second":103,"amount":0},{"first":953,"second":99,"amount":0},{"first":953,"second":118,"amount":-1},{"first":953,"second":34,"amount":-1},{"first":953,"second":39,"amount":-1},{"first":953,"second":1077,"amount":0},{"first":953,"second":1105,"amount":0},{"first":953,"second":1089,"amount":0},{"first":953,"second":1091,"amount":-1},{"first":953,"second":1092,"amount":0},{"first":953,"second":252,"amount":0},{"first":953,"second":962,"amount":0},{"first":953,"second":964,"amount":-1},{"first":953,"second":965,"amount":0},{"first":953,"second":952,"amount":0},{"first":953,"second":960,"amount":0},{"first":953,"second":945,"amount":0},{"first":953,"second":963,"amount":0},{"first":953,"second":966,"amount":-1},{"first":953,"second":947,"amount":-1},{"first":953,"second":955,"amount":0},{"first":953,"second":957,"amount":-1},{"first":959,"second":122,"amount":0},{"first":959,"second":121,"amount":0},{"first":959,"second":120,"amount":0},{"first":959,"second":118,"amount":0},{"first":959,"second":34,"amount":-3},{"first":959,"second":39,"amount":-3},{"first":959,"second":1076,"amount":-1},{"first":959,"second":1078,"amount":0},{"first":959,"second":1083,"amount":0},{"first":959,"second":1090,"amount":0},{"first":959,"second":1091,"amount":0},{"first":959,"second":1093,"amount":0},{"first":959,"second":964,"amount":0},{"first":959,"second":947,"amount":0},{"first":959,"second":957,"amount":0},{"first":945,"second":955,"amount":0},{"first":963,"second":964,"amount":0},{"first":948,"second":1090,"amount":-1},{"first":948,"second":964,"amount":0},{"first":966,"second":122,"amount":0},{"first":966,"second":120,"amount":0},{"first":966,"second":1078,"amount":0},{"first":966,"second":1090,"amount":-2},{"first":966,"second":1093,"amount":0},{"first":947,"second":97,"amount":0},{"first":947,"second":101,"amount":0},{"first":947,"second":111,"amount":0},{"first":947,"second":113,"amount":0},{"first":947,"second":100,"amount":0},{"first":947,"second":102,"amount":0},{"first":947,"second":103,"amount":0},{"first":947,"second":99,"amount":0},{"first":947,"second":44,"amount":-2},{"first":947,"second":46,"amount":-2},{"first":947,"second":34,"amount":0},{"first":947,"second":39,"amount":0},{"first":947,"second":1072,"amount":0},{"first":947,"second":1076,"amount":-1},{"first":947,"second":1077,"amount":0},{"first":947,"second":1105,"amount":0},{"first":947,"second":1083,"amount":-1},{"first":947,"second":1086,"amount":0},{"first":947,"second":1089,"amount":0},{"first":947,"second":1092,"amount":0},{"first":947,"second":246,"amount":0},{"first":947,"second":228,"amount":0},{"first":947,"second":962,"amount":0},{"first":947,"second":961,"amount":0},{"first":947,"second":964,"amount":0},{"first":947,"second":959,"amount":0},{"first":947,"second":960,"amount":0},{"first":947,"second":945,"amount":0},{"first":947,"second":963,"amount":0},{"first":947,"second":948,"amount":0},{"first":947,"second":229,"amount":0},{"first":951,"second":34,"amount":-2},{"first":951,"second":39,"amount":-2},{"first":951,"second":1090,"amount":-1},{"first":958,"second":101,"amount":-1},{"first":958,"second":113,"amount":-1},{"first":958,"second":100,"amount":-1},{"first":958,"second":103,"amount":-1},{"first":958,"second":99,"amount":-1},{"first":958,"second":1077,"amount":-1},{"first":958,"second":1105,"amount":-1},{"first":958,"second":1089,"amount":-1},{"first":958,"second":1092,"amount":-1},{"first":958,"second":962,"amount":-1},{"first":958,"second":945,"amount":-1},{"first":958,"second":963,"amount":-1},{"first":958,"second":955,"amount":0},{"first":955,"second":121,"amount":-1},{"first":955,"second":117,"amount":0},{"first":955,"second":102,"amount":0},{"first":955,"second":118,"amount":-1},{"first":955,"second":34,"amount":-2},{"first":955,"second":39,"amount":-2},{"first":955,"second":1091,"amount":-1},{"first":955,"second":252,"amount":0},{"first":955,"second":964,"amount":-5},{"first":955,"second":965,"amount":0},{"first":955,"second":952,"amount":0},{"first":955,"second":960,"amount":0},{"first":955,"second":947,"amount":-1},{"first":955,"second":955,"amount":0},{"first":955,"second":957,"amount":-1},{"first":950,"second":101,"amount":-1},{"first":950,"second":121,"amount":-1},{"first":950,"second":117,"amount":-1},{"first":950,"second":111,"amount":-1},{"first":950,"second":112,"amount":0},{"first":950,"second":113,"amount":-1},{"first":950,"second":100,"amount":-1},{"first":950,"second":103,"amount":-1},{"first":950,"second":109,"amount":0},{"first":950,"second":99,"amount":-1},{"first":950,"second":118,"amount":-1},{"first":950,"second":110,"amount":0},{"first":950,"second":1075,"amount":0},{"first":950,"second":1077,"amount":-1},{"first":950,"second":1105,"amount":-1},{"first":950,"second":1080,"amount":0},{"first":950,"second":1081,"amount":0},{"first":950,"second":1082,"amount":0},{"first":950,"second":1084,"amount":0},{"first":950,"second":1085,"amount":0},{"first":950,"second":1086,"amount":-1},{"first":950,"second":1087,"amount":0},{"first":950,"second":1088,"amount":0},{"first":950,"second":1089,"amount":-1},{"first":950,"second":1091,"amount":-1},{"first":950,"second":1092,"amount":-1},{"first":950,"second":1094,"amount":0},{"first":950,"second":1096,"amount":0},{"first":950,"second":1097,"amount":0},{"first":950,"second":1100,"amount":0},{"first":950,"second":1102,"amount":0},{"first":950,"second":252,"amount":-1},{"first":950,"second":246,"amount":-1},{"first":950,"second":241,"amount":0},{"first":950,"second":962,"amount":-1},{"first":950,"second":949,"amount":-1},{"first":950,"second":964,"amount":-1},{"first":950,"second":965,"amount":-1},{"first":950,"second":952,"amount":0},{"first":950,"second":953,"amount":0},{"first":950,"second":959,"amount":-1},{"first":950,"second":960,"amount":-1},{"first":950,"second":945,"amount":-1},{"first":950,"second":963,"amount":-1},{"first":950,"second":948,"amount":0},{"first":950,"second":966,"amount":-1},{"first":950,"second":947,"amount":-1},{"first":950,"second":951,"amount":0},{"first":950,"second":958,"amount":0},{"first":950,"second":968,"amount":-1},{"first":950,"second":969,"amount":-1},{"first":950,"second":957,"amount":-1},{"first":968,"second":122,"amount":0},{"first":968,"second":120,"amount":0},{"first":968,"second":1078,"amount":0},{"first":968,"second":1093,"amount":0},{"first":969,"second":122,"amount":0},{"first":969,"second":121,"amount":0},{"first":969,"second":120,"amount":0},{"first":969,"second":118,"amount":0},{"first":969,"second":1078,"amount":0},{"first":969,"second":1091,"amount":0},{"first":969,"second":1093,"amount":0},{"first":969,"second":947,"amount":0},{"first":969,"second":957,"amount":0},{"first":957,"second":97,"amount":0},{"first":957,"second":101,"amount":0},{"first":957,"second":111,"amount":0},{"first":957,"second":113,"amount":0},{"first":957,"second":100,"amount":0},{"first":957,"second":102,"amount":0},{"first":957,"second":103,"amount":0},{"first":957,"second":99,"amount":0},{"first":957,"second":44,"amount":-2},{"first":957,"second":46,"amount":-2},{"first":957,"second":34,"amount":0},{"first":957,"second":39,"amount":0},{"first":957,"second":1072,"amount":0},{"first":957,"second":1076,"amount":-1},{"first":957,"second":1077,"amount":0},{"first":957,"second":1105,"amount":0},{"first":957,"second":1083,"amount":-1},{"first":957,"second":1086,"amount":0},{"first":957,"second":1089,"amount":0},{"first":957,"second":1092,"amount":0},{"first":957,"second":246,"amount":0},{"first":957,"second":228,"amount":0},{"first":957,"second":962,"amount":0},{"first":957,"second":961,"amount":0},{"first":957,"second":964,"amount":0},{"first":957,"second":959,"amount":0},{"first":957,"second":960,"amount":0},{"first":957,"second":945,"amount":0},{"first":957,"second":963,"amount":0},{"first":957,"second":948,"amount":0},{"first":957,"second":229,"amount":0},{"first":917,"second":101,"amount":0},{"first":917,"second":121,"amount":-1},{"first":917,"second":117,"amount":0},{"first":917,"second":111,"amount":0},{"first":917,"second":113,"amount":0},{"first":917,"second":100,"amount":0},{"first":917,"second":102,"amount":0},{"first":917,"second":103,"amount":0},{"first":917,"second":119,"amount":0},{"first":917,"second":99,"amount":0},{"first":917,"second":118,"amount":-1},{"first":917,"second":84,"amount":0},{"first":917,"second":1077,"amount":0},{"first":917,"second":1105,"amount":0},{"first":917,"second":1086,"amount":0},{"first":917,"second":1089,"amount":0},{"first":917,"second":1058,"amount":0},{"first":917,"second":1091,"amount":-1},{"first":917,"second":1092,"amount":0},{"first":917,"second":252,"amount":0},{"first":917,"second":246,"amount":0},{"first":917,"second":962,"amount":0},{"first":917,"second":965,"amount":0},{"first":917,"second":959,"amount":0},{"first":917,"second":945,"amount":0},{"first":917,"second":963,"amount":0},{"first":917,"second":947,"amount":-1},{"first":917,"second":957,"amount":-1},{"first":929,"second":97,"amount":0},{"first":929,"second":101,"amount":0},{"first":929,"second":116,"amount":0},{"first":929,"second":121,"amount":0},{"first":929,"second":111,"amount":0},{"first":929,"second":113,"amount":0},{"first":929,"second":100,"amount":0},{"first":929,"second":103,"amount":0},{"first":929,"second":99,"amount":0},{"first":929,"second":118,"amount":0},{"first":929,"second":65,"amount":-3},{"first":929,"second":90,"amount":-1},{"first":929,"second":74,"amount":-4},{"first":929,"second":88,"amount":-1},{"first":929,"second":44,"amount":-7},{"first":929,"second":46,"amount":-7},{"first":929,"second":1040,"amount":-3},{"first":929,"second":1072,"amount":0},{"first":929,"second":1044,"amount":-2},{"first":929,"second":1076,"amount":-1},{"first":929,"second":1077,"amount":0},{"first":929,"second":1105,"amount":0},{"first":929,"second":1046,"amount":-1},{"first":929,"second":1051,"amount":-1},{"first":929,"second":1083,"amount":-1},{"first":929,"second":1086,"amount":0},{"first":929,"second":1089,"amount":0},{"first":929,"second":1091,"amount":0},{"first":929,"second":1092,"amount":0},{"first":929,"second":1061,"amount":-1},{"first":929,"second":246,"amount":0},{"first":929,"second":228,"amount":0},{"first":929,"second":196,"amount":-3},{"first":929,"second":962,"amount":0},{"first":929,"second":961,"amount":-1},{"first":929,"second":959,"amount":0},{"first":929,"second":945,"amount":0},{"first":929,"second":963,"amount":0},{"first":929,"second":948,"amount":0},{"first":929,"second":947,"amount":0},{"first":929,"second":955,"amount":-1},{"first":929,"second":957,"amount":0},{"first":929,"second":913,"amount":-3},{"first":929,"second":916,"amount":-3},{"first":929,"second":923,"amount":-3},{"first":929,"second":918,"amount":-1},{"first":929,"second":935,"amount":-1},{"first":929,"second":229,"amount":0},{"first":929,"second":197,"amount":-3},{"first":929,"second":198,"amount":-2},{"first":932,"second":97,"amount":-2},{"first":932,"second":122,"amount":-1},{"first":932,"second":101,"amount":-2},{"first":932,"second":114,"amount":-2},{"first":932,"second":121,"amount":-1},{"first":932,"second":117,"amount":-2},{"first":932,"second":111,"amount":-2},{"first":932,"second":112,"amount":-2},{"first":932,"second":113,"amount":-2},{"first":932,"second":115,"amount":-2},{"first":932,"second":100,"amount":-2},{"first":932,"second":103,"amount":-2},{"first":932,"second":109,"amount":-2},{"first":932,"second":119,"amount":-1},{"first":932,"second":120,"amount":-2},{"first":932,"second":99,"amount":-2},{"first":932,"second":118,"amount":-1},{"first":932,"second":110,"amount":-2},{"first":932,"second":65,"amount":-2},{"first":932,"second":84,"amount":0},{"first":932,"second":89,"amount":0},{"first":932,"second":79,"amount":-1},{"first":932,"second":81,"amount":-1},{"first":932,"second":83,"amount":0},{"first":932,"second":71,"amount":-1},{"first":932,"second":74,"amount":-5},{"first":932,"second":87,"amount":0},{"first":932,"second":67,"amount":-1},{"first":932,"second":86,"amount":0},{"first":932,"second":45,"amount":-5},{"first":932,"second":8211,"amount":-5},{"first":932,"second":44,"amount":-4},{"first":932,"second":46,"amount":-4},{"first":932,"second":1040,"amount":-2},{"first":932,"second":1072,"amount":-2},{"first":932,"second":1073,"amount":-1},{"first":932,"second":1074,"amount":-2},{"first":932,"second":1075,"amount":-2},{"first":932,"second":1044,"amount":-2},{"first":932,"second":1076,"amount":-3},{"first":932,"second":1077,"amount":-2},{"first":932,"second":1105,"amount":-2},{"first":932,"second":1078,"amount":-2},{"first":932,"second":1079,"amount":-3},{"first":932,"second":1080,"amount":-2},{"first":932,"second":1081,"amount":-2},{"first":932,"second":1082,"amount":-2},{"first":932,"second":1051,"amount":-1},{"first":932,"second":1083,"amount":-3},{"first":932,"second":1084,"amount":-2},{"first":932,"second":1085,"amount":-2},{"first":932,"second":1054,"amount":-1},{"first":932,"second":1086,"amount":-2},{"first":932,"second":1087,"amount":-2},{"first":932,"second":1088,"amount":-2},{"first":932,"second":1057,"amount":-1},{"first":932,"second":1089,"amount":-2},{"first":932,"second":1058,"amount":0},{"first":932,"second":1090,"amount":-2},{"first":932,"second":1091,"amount":-1},{"first":932,"second":1092,"amount":-2},{"first":932,"second":1093,"amount":-2},{"first":932,"second":1094,"amount":-2},{"first":932,"second":1095,"amount":-3},{"first":932,"second":1096,"amount":-2},{"first":932,"second":1097,"amount":-2},{"first":932,"second":1099,"amount":-3},{"first":932,"second":1068,"amount":0},{"first":932,"second":1100,"amount":-2},{"first":932,"second":1101,"amount":-3},{"first":932,"second":1102,"amount":-2},{"first":932,"second":1103,"amount":-3},{"first":932,"second":252,"amount":-2},{"first":932,"second":246,"amount":-2},{"first":932,"second":214,"amount":-1},{"first":932,"second":228,"amount":-2},{"first":932,"second":196,"amount":-2},{"first":932,"second":241,"amount":-2},{"first":932,"second":962,"amount":-2},{"first":932,"second":949,"amount":-3},{"first":932,"second":961,"amount":-3},{"first":932,"second":964,"amount":-2},{"first":932,"second":965,"amount":-2},{"first":932,"second":953,"amount":-3},{"first":932,"second":959,"amount":-2},{"first":932,"second":960,"amount":-2},{"first":932,"second":945,"amount":-2},{"first":932,"second":963,"amount":-2},{"first":932,"second":948,"amount":-1},{"first":932,"second":966,"amount":-3},{"first":932,"second":947,"amount":-1},{"first":932,"second":951,"amount":-2},{"first":932,"second":968,"amount":-3},{"first":932,"second":969,"amount":-3},{"first":932,"second":957,"amount":-1},{"first":932,"second":933,"amount":0},{"first":932,"second":920,"amount":-1},{"first":932,"second":927,"amount":-1},{"first":932,"second":913,"amount":-2},{"first":932,"second":916,"amount":-2},{"first":932,"second":934,"amount":-2},{"first":932,"second":923,"amount":-2},{"first":932,"second":229,"amount":-2},{"first":932,"second":197,"amount":-2},{"first":932,"second":230,"amount":-2},{"first":932,"second":198,"amount":-4},{"first":932,"second":248,"amount":-2},{"first":932,"second":216,"amount":-1},{"first":933,"second":97,"amount":-1},{"first":933,"second":122,"amount":-1},{"first":933,"second":101,"amount":-1},{"first":933,"second":114,"amount":-1},{"first":933,"second":116,"amount":0},{"first":933,"second":121,"amount":0},{"first":933,"second":117,"amount":-1},{"first":933,"second":111,"amount":-1},{"first":933,"second":112,"amount":-1},{"first":933,"second":113,"amount":-1},{"first":933,"second":115,"amount":-1},{"first":933,"second":100,"amount":-1},{"first":933,"second":102,"amount":0},{"first":933,"second":103,"amount":-1},{"first":933,"second":109,"amount":-1},{"first":933,"second":120,"amount":0},{"first":933,"second":99,"amount":-1},{"first":933,"second":118,"amount":0},{"first":933,"second":110,"amount":-1},{"first":933,"second":65,"amount":-2},{"first":933,"second":84,"amount":0},{"first":933,"second":89,"amount":0},{"first":933,"second":85,"amount":-2},{"first":933,"second":79,"amount":-1},{"first":933,"second":81,"amount":-1},{"first":933,"second":83,"amount":0},{"first":933,"second":71,"amount":-1},{"first":933,"second":74,"amount":-2},{"first":933,"second":87,"amount":0},{"first":933,"second":88,"amount":0},{"first":933,"second":67,"amount":-1},{"first":933,"second":86,"amount":0},{"first":933,"second":42,"amount":-1},{"first":933,"second":45,"amount":-1},{"first":933,"second":8211,"amount":-1},{"first":933,"second":44,"amount":-4},{"first":933,"second":46,"amount":-4},{"first":933,"second":125,"amount":0},{"first":933,"second":41,"amount":0},{"first":933,"second":93,"amount":0},{"first":933,"second":38,"amount":-1},{"first":933,"second":1040,"amount":-2},{"first":933,"second":1072,"amount":-1},{"first":933,"second":1075,"amount":-1},{"first":933,"second":1077,"amount":-1},{"first":933,"second":1105,"amount":-1},{"first":933,"second":1046,"amount":0},{"first":933,"second":1078,"amount":0},{"first":933,"second":1080,"amount":-1},{"first":933,"second":1081,"amount":-1},{"first":933,"second":1082,"amount":-1},{"first":933,"second":1084,"amount":-1},{"first":933,"second":1085,"amount":-1},{"first":933,"second":1054,"amount":-1},{"first":933,"second":1086,"amount":-1},{"first":933,"second":1087,"amount":-1},{"first":933,"second":1088,"amount":-1},{"first":933,"second":1057,"amount":-1},{"first":933,"second":1089,"amount":-1},{"first":933,"second":1058,"amount":0},{"first":933,"second":1091,"amount":0},{"first":933,"second":1092,"amount":-1},{"first":933,"second":1061,"amount":0},{"first":933,"second":1093,"amount":0},{"first":933,"second":1094,"amount":-1},{"first":933,"second":1096,"amount":-1},{"first":933,"second":1097,"amount":-1},{"first":933,"second":1100,"amount":-1},{"first":933,"second":1102,"amount":-1},{"first":933,"second":252,"amount":-1},{"first":933,"second":220,"amount":-2},{"first":933,"second":246,"amount":-1},{"first":933,"second":214,"amount":-1},{"first":933,"second":228,"amount":-1},{"first":933,"second":196,"amount":-2},{"first":933,"second":241,"amount":-1},{"first":933,"second":962,"amount":-1},{"first":933,"second":949,"amount":-1},{"first":933,"second":961,"amount":-1},{"first":933,"second":964,"amount":0},{"first":933,"second":965,"amount":-1},{"first":933,"second":952,"amount":0},{"first":933,"second":953,"amount":-1},{"first":933,"second":959,"amount":-1},{"first":933,"second":960,"amount":0},{"first":933,"second":945,"amount":-1},{"first":933,"second":963,"amount":-1},{"first":933,"second":948,"amount":0},{"first":933,"second":966,"amount":-1},{"first":933,"second":947,"amount":0},{"first":933,"second":951,"amount":-1},{"first":933,"second":950,"amount":0},{"first":933,"second":968,"amount":-1},{"first":933,"second":969,"amount":-1},{"first":933,"second":946,"amount":0},{"first":933,"second":957,"amount":0},{"first":933,"second":933,"amount":0},{"first":933,"second":920,"amount":-1},{"first":933,"second":927,"amount":-1},{"first":933,"second":913,"amount":-2},{"first":933,"second":916,"amount":-2},{"first":933,"second":934,"amount":-1},{"first":933,"second":923,"amount":-2},{"first":933,"second":935,"amount":0},{"first":933,"second":229,"amount":-1},{"first":933,"second":197,"amount":-2},{"first":933,"second":230,"amount":-1},{"first":933,"second":198,"amount":-2},{"first":933,"second":248,"amount":-1},{"first":933,"second":216,"amount":-1},{"first":920,"second":65,"amount":0},{"first":920,"second":90,"amount":0},{"first":920,"second":84,"amount":-1},{"first":920,"second":89,"amount":-1},{"first":920,"second":88,"amount":0},{"first":920,"second":86,"amount":0},{"first":920,"second":44,"amount":-2},{"first":920,"second":46,"amount":-2},{"first":920,"second":1040,"amount":0},{"first":920,"second":1044,"amount":-1},{"first":920,"second":1046,"amount":0},{"first":920,"second":1051,"amount":-1},{"first":920,"second":1058,"amount":-1},{"first":920,"second":1061,"amount":0},{"first":920,"second":1068,"amount":-1},{"first":920,"second":196,"amount":0},{"first":920,"second":955,"amount":0},{"first":920,"second":933,"amount":-1},{"first":920,"second":913,"amount":0},{"first":920,"second":931,"amount":0},{"first":920,"second":916,"amount":0},{"first":920,"second":926,"amount":0},{"first":920,"second":923,"amount":0},{"first":920,"second":918,"amount":0},{"first":920,"second":935,"amount":0},{"first":920,"second":197,"amount":0},{"first":920,"second":198,"amount":-1},{"first":921,"second":65,"amount":0},{"first":921,"second":84,"amount":-1},{"first":921,"second":89,"amount":-1},{"first":921,"second":88,"amount":0},{"first":921,"second":1040,"amount":0},{"first":921,"second":1044,"amount":0},{"first":921,"second":1076,"amount":0},{"first":921,"second":1046,"amount":0},{"first":921,"second":1051,"amount":0},{"first":921,"second":1083,"amount":0},{"first":921,"second":1058,"amount":-1},{"first":921,"second":1061,"amount":0},{"first":921,"second":1063,"amount":-1},{"first":921,"second":1095,"amount":-1},{"first":921,"second":196,"amount":0},{"first":921,"second":933,"amount":-1},{"first":921,"second":913,"amount":0},{"first":921,"second":916,"amount":0},{"first":921,"second":923,"amount":0},{"first":921,"second":935,"amount":0},{"first":921,"second":197,"amount":0},{"first":927,"second":65,"amount":0},{"first":927,"second":90,"amount":0},{"first":927,"second":84,"amount":-1},{"first":927,"second":89,"amount":-1},{"first":927,"second":88,"amount":0},{"first":927,"second":86,"amount":0},{"first":927,"second":44,"amount":-2},{"first":927,"second":46,"amount":-2},{"first":927,"second":1040,"amount":0},{"first":927,"second":1044,"amount":-1},{"first":927,"second":1046,"amount":0},{"first":927,"second":1051,"amount":-1},{"first":927,"second":1058,"amount":-1},{"first":927,"second":1061,"amount":0},{"first":927,"second":1068,"amount":-1},{"first":927,"second":196,"amount":0},{"first":927,"second":955,"amount":0},{"first":927,"second":933,"amount":-1},{"first":927,"second":913,"amount":0},{"first":927,"second":931,"amount":0},{"first":927,"second":916,"amount":0},{"first":927,"second":926,"amount":0},{"first":927,"second":923,"amount":0},{"first":927,"second":918,"amount":0},{"first":927,"second":935,"amount":0},{"first":927,"second":197,"amount":0},{"first":927,"second":198,"amount":-1},{"first":913,"second":122,"amount":0},{"first":913,"second":116,"amount":0},{"first":913,"second":121,"amount":-1},{"first":913,"second":117,"amount":0},{"first":913,"second":111,"amount":0},{"first":913,"second":119,"amount":-1},{"first":913,"second":118,"amount":-1},{"first":913,"second":84,"amount":-3},{"first":913,"second":89,"amount":-2},{"first":913,"second":85,"amount":0},{"first":913,"second":79,"amount":0},{"first":913,"second":81,"amount":0},{"first":913,"second":71,"amount":0},{"first":913,"second":87,"amount":-1},{"first":913,"second":67,"amount":0},{"first":913,"second":86,"amount":-2},{"first":913,"second":63,"amount":-1},{"first":913,"second":34,"amount":-2},{"first":913,"second":39,"amount":-2},{"first":913,"second":1044,"amount":0},{"first":913,"second":1051,"amount":0},{"first":913,"second":1083,"amount":0},{"first":913,"second":1054,"amount":0},{"first":913,"second":1086,"amount":0},{"first":913,"second":1057,"amount":0},{"first":913,"second":1058,"amount":-3},{"first":913,"second":1090,"amount":-1},{"first":913,"second":1091,"amount":-1},{"first":913,"second":1063,"amount":-1},{"first":913,"second":1095,"amount":-2},{"first":913,"second":1068,"amount":-1},{"first":913,"second":252,"amount":0},{"first":913,"second":220,"amount":0},{"first":913,"second":246,"amount":0},{"first":913,"second":214,"amount":0},{"first":913,"second":964,"amount":-1},{"first":913,"second":965,"amount":0},{"first":913,"second":959,"amount":0},{"first":913,"second":947,"amount":-1},{"first":913,"second":955,"amount":0},{"first":913,"second":957,"amount":-1},{"first":913,"second":933,"amount":-2},{"first":913,"second":920,"amount":0},{"first":913,"second":927,"amount":0},{"first":913,"second":934,"amount":-1},{"first":913,"second":936,"amount":-1},{"first":913,"second":216,"amount":0},{"first":931,"second":79,"amount":-1},{"first":931,"second":81,"amount":-1},{"first":931,"second":71,"amount":-1},{"first":931,"second":67,"amount":-1},{"first":931,"second":1054,"amount":-1},{"first":931,"second":1057,"amount":-1},{"first":931,"second":214,"amount":-1},{"first":931,"second":955,"amount":0},{"first":931,"second":920,"amount":-1},{"first":931,"second":927,"amount":-1},{"first":931,"second":934,"amount":-1},{"first":931,"second":216,"amount":-1},{"first":916,"second":122,"amount":0},{"first":916,"second":116,"amount":0},{"first":916,"second":121,"amount":-1},{"first":916,"second":117,"amount":0},{"first":916,"second":111,"amount":0},{"first":916,"second":119,"amount":-1},{"first":916,"second":118,"amount":-1},{"first":916,"second":84,"amount":-3},{"first":916,"second":89,"amount":-2},{"first":916,"second":85,"amount":0},{"first":916,"second":79,"amount":0},{"first":916,"second":81,"amount":0},{"first":916,"second":71,"amount":0},{"first":916,"second":87,"amount":-1},{"first":916,"second":67,"amount":0},{"first":916,"second":86,"amount":-2},{"first":916,"second":63,"amount":-1},{"first":916,"second":34,"amount":-2},{"first":916,"second":39,"amount":-2},{"first":916,"second":1044,"amount":0},{"first":916,"second":1051,"amount":0},{"first":916,"second":1083,"amount":0},{"first":916,"second":1054,"amount":0},{"first":916,"second":1086,"amount":0},{"first":916,"second":1057,"amount":0},{"first":916,"second":1058,"amount":-3},{"first":916,"second":1090,"amount":-1},{"first":916,"second":1091,"amount":-1},{"first":916,"second":1063,"amount":-1},{"first":916,"second":1095,"amount":-2},{"first":916,"second":1068,"amount":-1},{"first":916,"second":252,"amount":0},{"first":916,"second":220,"amount":0},{"first":916,"second":246,"amount":0},{"first":916,"second":214,"amount":0},{"first":916,"second":964,"amount":-1},{"first":916,"second":965,"amount":0},{"first":916,"second":959,"amount":0},{"first":916,"second":947,"amount":-1},{"first":916,"second":955,"amount":0},{"first":916,"second":957,"amount":-1},{"first":916,"second":933,"amount":-2},{"first":916,"second":920,"amount":0},{"first":916,"second":927,"amount":0},{"first":916,"second":934,"amount":-1},{"first":916,"second":936,"amount":-1},{"first":916,"second":216,"amount":0},{"first":934,"second":65,"amount":-1},{"first":934,"second":89,"amount":-1},{"first":934,"second":88,"amount":-1},{"first":934,"second":1040,"amount":-1},{"first":934,"second":1046,"amount":-1},{"first":934,"second":1061,"amount":-1},{"first":934,"second":196,"amount":-1},{"first":934,"second":955,"amount":-1},{"first":934,"second":933,"amount":-1},{"first":934,"second":913,"amount":-1},{"first":934,"second":916,"amount":-1},{"first":934,"second":923,"amount":-1},{"first":934,"second":935,"amount":-1},{"first":934,"second":197,"amount":-1},{"first":915,"second":97,"amount":-4},{"first":915,"second":122,"amount":-3},{"first":915,"second":101,"amount":-4},{"first":915,"second":114,"amount":-3},{"first":915,"second":121,"amount":-3},{"first":915,"second":117,"amount":-4},{"first":915,"second":111,"amount":-4},{"first":915,"second":112,"amount":-4},{"first":915,"second":113,"amount":-4},{"first":915,"second":115,"amount":-4},{"first":915,"second":100,"amount":-4},{"first":915,"second":103,"amount":-4},{"first":915,"second":109,"amount":-4},{"first":915,"second":119,"amount":-2},{"first":915,"second":120,"amount":-3},{"first":915,"second":99,"amount":-4},{"first":915,"second":118,"amount":-3},{"first":915,"second":110,"amount":-4},{"first":915,"second":65,"amount":-4},{"first":915,"second":84,"amount":0},{"first":915,"second":89,"amount":0},{"first":915,"second":79,"amount":-1},{"first":915,"second":81,"amount":-1},{"first":915,"second":83,"amount":-1},{"first":915,"second":71,"amount":-1},{"first":915,"second":87,"amount":0},{"first":915,"second":67,"amount":-1},{"first":915,"second":86,"amount":0},{"first":915,"second":45,"amount":-8},{"first":915,"second":8211,"amount":-8},{"first":915,"second":44,"amount":-8},{"first":915,"second":46,"amount":-8},{"first":915,"second":1040,"amount":-4},{"first":915,"second":1072,"amount":-4},{"first":915,"second":1073,"amount":-1},{"first":915,"second":1074,"amount":-4},{"first":915,"second":1075,"amount":-4},{"first":915,"second":1044,"amount":-4},{"first":915,"second":1076,"amount":-5},{"first":915,"second":1077,"amount":-4},{"first":915,"second":1105,"amount":-4},{"first":915,"second":1078,"amount":-3},{"first":915,"second":1079,"amount":-5},{"first":915,"second":1080,"amount":-4},{"first":915,"second":1081,"amount":-4},{"first":915,"second":1082,"amount":-4},{"first":915,"second":1051,"amount":-2},{"first":915,"second":1083,"amount":-5},{"first":915,"second":1084,"amount":-4},{"first":915,"second":1085,"amount":-4},{"first":915,"second":1054,"amount":-1},{"first":915,"second":1086,"amount":-4},{"first":915,"second":1087,"amount":-4},{"first":915,"second":1088,"amount":-4},{"first":915,"second":1057,"amount":-1},{"first":915,"second":1089,"amount":-4},{"first":915,"second":1058,"amount":0},{"first":915,"second":1090,"amount":-3},{"first":915,"second":1091,"amount":-3},{"first":915,"second":1092,"amount":-4},{"first":915,"second":1093,"amount":-3},{"first":915,"second":1094,"amount":-4},{"first":915,"second":1095,"amount":-5},{"first":915,"second":1096,"amount":-4},{"first":915,"second":1097,"amount":-4},{"first":915,"second":1099,"amount":-5},{"first":915,"second":1068,"amount":0},{"first":915,"second":1100,"amount":-4},{"first":915,"second":1101,"amount":-5},{"first":915,"second":1102,"amount":-4},{"first":915,"second":1103,"amount":-5},{"first":915,"second":252,"amount":-4},{"first":915,"second":246,"amount":-4},{"first":915,"second":214,"amount":-1},{"first":915,"second":228,"amount":-4},{"first":915,"second":196,"amount":-4},{"first":915,"second":241,"amount":-4},{"first":915,"second":962,"amount":-4},{"first":915,"second":949,"amount":-5},{"first":915,"second":961,"amount":-6},{"first":915,"second":964,"amount":-4},{"first":915,"second":965,"amount":-4},{"first":915,"second":953,"amount":-6},{"first":915,"second":959,"amount":-4},{"first":915,"second":960,"amount":-5},{"first":915,"second":945,"amount":-4},{"first":915,"second":963,"amount":-4},{"first":915,"second":948,"amount":-2},{"first":915,"second":966,"amount":-6},{"first":915,"second":947,"amount":-3},{"first":915,"second":951,"amount":-4},{"first":915,"second":968,"amount":-5},{"first":915,"second":969,"amount":-6},{"first":915,"second":957,"amount":-3},{"first":915,"second":933,"amount":0},{"first":915,"second":920,"amount":-1},{"first":915,"second":927,"amount":-1},{"first":915,"second":913,"amount":-4},{"first":915,"second":916,"amount":-4},{"first":915,"second":934,"amount":-3},{"first":915,"second":923,"amount":-4},{"first":915,"second":229,"amount":-4},{"first":915,"second":197,"amount":-4},{"first":915,"second":230,"amount":-4},{"first":915,"second":198,"amount":-7},{"first":915,"second":248,"amount":-4},{"first":915,"second":216,"amount":-1},{"first":919,"second":65,"amount":0},{"first":919,"second":84,"amount":-1},{"first":919,"second":89,"amount":-1},{"first":919,"second":88,"amount":0},{"first":919,"second":1040,"amount":0},{"first":919,"second":1044,"amount":0},{"first":919,"second":1076,"amount":0},{"first":919,"second":1046,"amount":0},{"first":919,"second":1051,"amount":0},{"first":919,"second":1083,"amount":0},{"first":919,"second":1058,"amount":-1},{"first":919,"second":1061,"amount":0},{"first":919,"second":1063,"amount":-1},{"first":919,"second":1095,"amount":-1},{"first":919,"second":196,"amount":0},{"first":919,"second":933,"amount":-1},{"first":919,"second":913,"amount":0},{"first":919,"second":916,"amount":0},{"first":919,"second":923,"amount":0},{"first":919,"second":935,"amount":0},{"first":919,"second":197,"amount":0},{"first":926,"second":79,"amount":0},{"first":926,"second":81,"amount":0},{"first":926,"second":71,"amount":0},{"first":926,"second":67,"amount":0},{"first":926,"second":1054,"amount":0},{"first":926,"second":1057,"amount":0},{"first":926,"second":214,"amount":0},{"first":926,"second":955,"amount":0},{"first":926,"second":920,"amount":0},{"first":926,"second":927,"amount":0},{"first":926,"second":216,"amount":0},{"first":922,"second":101,"amount":-1},{"first":922,"second":121,"amount":-1},{"first":922,"second":117,"amount":0},{"first":922,"second":111,"amount":-1},{"first":922,"second":112,"amount":0},{"first":922,"second":113,"amount":-1},{"first":922,"second":100,"amount":-1},{"first":922,"second":103,"amount":-1},{"first":922,"second":109,"amount":0},{"first":922,"second":119,"amount":-1},{"first":922,"second":99,"amount":-1},{"first":922,"second":118,"amount":-1},{"first":922,"second":110,"amount":0},{"first":922,"second":79,"amount":-1},{"first":922,"second":81,"amount":-1},{"first":922,"second":71,"amount":-1},{"first":922,"second":67,"amount":-1},{"first":922,"second":45,"amount":-1},{"first":922,"second":8211,"amount":-1},{"first":922,"second":1073,"amount":-1},{"first":922,"second":1075,"amount":0},{"first":922,"second":1077,"amount":-1},{"first":922,"second":1105,"amount":-1},{"first":922,"second":1080,"amount":0},{"first":922,"second":1081,"amount":0},{"first":922,"second":1082,"amount":0},{"first":922,"second":1084,"amount":0},{"first":922,"second":1085,"amount":0},{"first":922,"second":1054,"amount":-1},{"first":922,"second":1086,"amount":-1},{"first":922,"second":1087,"amount":0},{"first":922,"second":1088,"amount":0},{"first":922,"second":1057,"amount":-1},{"first":922,"second":1089,"amount":-1},{"first":922,"second":1090,"amount":-1},{"first":922,"second":1091,"amount":-1},{"first":922,"second":1092,"amount":-1},{"first":922,"second":1094,"amount":0},{"first":922,"second":1095,"amount":-2},{"first":922,"second":1096,"amount":0},{"first":922,"second":1097,"amount":0},{"first":922,"second":1100,"amount":0},{"first":922,"second":1102,"amount":0},{"first":922,"second":252,"amount":0},{"first":922,"second":246,"amount":-1},{"first":922,"second":214,"amount":-1},{"first":922,"second":241,"amount":0},{"first":922,"second":962,"amount":-1},{"first":922,"second":964,"amount":-2},{"first":922,"second":965,"amount":0},{"first":922,"second":959,"amount":-1},{"first":922,"second":945,"amount":-1},{"first":922,"second":963,"amount":-1},{"first":922,"second":947,"amount":-1},{"first":922,"second":951,"amount":0},{"first":922,"second":957,"amount":-1},{"first":922,"second":920,"amount":-1},{"first":922,"second":927,"amount":-1},{"first":922,"second":934,"amount":-1},{"first":922,"second":216,"amount":-1},{"first":923,"second":122,"amount":0},{"first":923,"second":116,"amount":0},{"first":923,"second":121,"amount":-1},{"first":923,"second":117,"amount":0},{"first":923,"second":111,"amount":0},{"first":923,"second":119,"amount":-1},{"first":923,"second":118,"amount":-1},{"first":923,"second":84,"amount":-3},{"first":923,"second":89,"amount":-2},{"first":923,"second":85,"amount":0},{"first":923,"second":79,"amount":0},{"first":923,"second":81,"amount":0},{"first":923,"second":71,"amount":0},{"first":923,"second":87,"amount":-1},{"first":923,"second":67,"amount":0},{"first":923,"second":86,"amount":-2},{"first":923,"second":63,"amount":-1},{"first":923,"second":34,"amount":-2},{"first":923,"second":39,"amount":-2},{"first":923,"second":1044,"amount":0},{"first":923,"second":1051,"amount":0},{"first":923,"second":1083,"amount":0},{"first":923,"second":1054,"amount":0},{"first":923,"second":1086,"amount":0},{"first":923,"second":1057,"amount":0},{"first":923,"second":1058,"amount":-3},{"first":923,"second":1090,"amount":-1},{"first":923,"second":1091,"amount":-1},{"first":923,"second":1063,"amount":-1},{"first":923,"second":1095,"amount":-2},{"first":923,"second":1068,"amount":-1},{"first":923,"second":252,"amount":0},{"first":923,"second":220,"amount":0},{"first":923,"second":246,"amount":0},{"first":923,"second":214,"amount":0},{"first":923,"second":964,"amount":-1},{"first":923,"second":965,"amount":0},{"first":923,"second":959,"amount":0},{"first":923,"second":947,"amount":-1},{"first":923,"second":955,"amount":0},{"first":923,"second":957,"amount":-1},{"first":923,"second":933,"amount":-2},{"first":923,"second":920,"amount":0},{"first":923,"second":927,"amount":0},{"first":923,"second":934,"amount":-1},{"first":923,"second":936,"amount":-1},{"first":923,"second":216,"amount":0},{"first":918,"second":101,"amount":0},{"first":918,"second":121,"amount":-1},{"first":918,"second":117,"amount":0},{"first":918,"second":111,"amount":0},{"first":918,"second":113,"amount":0},{"first":918,"second":100,"amount":0},{"first":918,"second":103,"amount":0},{"first":918,"second":119,"amount":-1},{"first":918,"second":99,"amount":0},{"first":918,"second":118,"amount":-1},{"first":918,"second":65,"amount":0},{"first":918,"second":79,"amount":-1},{"first":918,"second":81,"amount":-1},{"first":918,"second":71,"amount":-1},{"first":918,"second":67,"amount":-1},{"first":918,"second":1040,"amount":0},{"first":918,"second":1077,"amount":0},{"first":918,"second":1105,"amount":0},{"first":918,"second":1054,"amount":-1},{"first":918,"second":1086,"amount":0},{"first":918,"second":1057,"amount":-1},{"first":918,"second":1089,"amount":0},{"first":918,"second":1091,"amount":-1},{"first":918,"second":1092,"amount":0},{"first":918,"second":252,"amount":0},{"first":918,"second":246,"amount":0},{"first":918,"second":214,"amount":-1},{"first":918,"second":196,"amount":0},{"first":918,"second":962,"amount":0},{"first":918,"second":965,"amount":0},{"first":918,"second":959,"amount":0},{"first":918,"second":945,"amount":0},{"first":918,"second":963,"amount":0},{"first":918,"second":947,"amount":-1},{"first":918,"second":968,"amount":-1},{"first":918,"second":957,"amount":-1},{"first":918,"second":920,"amount":-1},{"first":918,"second":927,"amount":-1},{"first":918,"second":913,"amount":0},{"first":918,"second":916,"amount":0},{"first":918,"second":934,"amount":-1},{"first":918,"second":923,"amount":0},{"first":918,"second":197,"amount":0},{"first":918,"second":216,"amount":-1},{"first":935,"second":101,"amount":-1},{"first":935,"second":121,"amount":-1},{"first":935,"second":117,"amount":0},{"first":935,"second":111,"amount":0},{"first":935,"second":113,"amount":-1},{"first":935,"second":100,"amount":-1},{"first":935,"second":103,"amount":-1},{"first":935,"second":99,"amount":-1},{"first":935,"second":118,"amount":-1},{"first":935,"second":79,"amount":-1},{"first":935,"second":81,"amount":-1},{"first":935,"second":71,"amount":-1},{"first":935,"second":67,"amount":-1},{"first":935,"second":86,"amount":0},{"first":935,"second":45,"amount":-1},{"first":935,"second":8211,"amount":-1},{"first":935,"second":1073,"amount":0},{"first":935,"second":1044,"amount":0},{"first":935,"second":1077,"amount":-1},{"first":935,"second":1105,"amount":-1},{"first":935,"second":1051,"amount":0},{"first":935,"second":1083,"amount":0},{"first":935,"second":1054,"amount":-1},{"first":935,"second":1086,"amount":0},{"first":935,"second":1057,"amount":-1},{"first":935,"second":1089,"amount":-1},{"first":935,"second":1090,"amount":-1},{"first":935,"second":1091,"amount":-1},{"first":935,"second":1092,"amount":-1},{"first":935,"second":1095,"amount":-1},{"first":935,"second":252,"amount":0},{"first":935,"second":246,"amount":0},{"first":935,"second":214,"amount":-1},{"first":935,"second":962,"amount":-1},{"first":935,"second":964,"amount":-1},{"first":935,"second":965,"amount":0},{"first":935,"second":952,"amount":0},{"first":935,"second":959,"amount":0},{"first":935,"second":945,"amount":-1},{"first":935,"second":963,"amount":-1},{"first":935,"second":948,"amount":0},{"first":935,"second":966,"amount":-1},{"first":935,"second":947,"amount":-1},{"first":935,"second":955,"amount":0},{"first":935,"second":968,"amount":-1},{"first":935,"second":969,"amount":0},{"first":935,"second":957,"amount":-1},{"first":935,"second":920,"amount":-1},{"first":935,"second":927,"amount":-1},{"first":935,"second":934,"amount":-1},{"first":935,"second":216,"amount":-1},{"first":936,"second":65,"amount":-1},{"first":936,"second":44,"amount":-5},{"first":936,"second":46,"amount":-5},{"first":936,"second":1040,"amount":-1},{"first":936,"second":196,"amount":-1},{"first":936,"second":961,"amount":0},{"first":936,"second":913,"amount":-1},{"first":936,"second":916,"amount":-1},{"first":936,"second":923,"amount":-1},{"first":936,"second":197,"amount":-1},{"first":914,"second":84,"amount":-1},{"first":914,"second":89,"amount":-1},{"first":914,"second":86,"amount":0},{"first":914,"second":1058,"amount":-1},{"first":914,"second":1059,"amount":0},{"first":914,"second":933,"amount":-1},{"first":925,"second":65,"amount":0},{"first":925,"second":84,"amount":-1},{"first":925,"second":89,"amount":-1},{"first":925,"second":88,"amount":0},{"first":925,"second":1040,"amount":0},{"first":925,"second":1044,"amount":0},{"first":925,"second":1076,"amount":0},{"first":925,"second":1046,"amount":0},{"first":925,"second":1051,"amount":0},{"first":925,"second":1083,"amount":0},{"first":925,"second":1058,"amount":-1},{"first":925,"second":1061,"amount":0},{"first":925,"second":1063,"amount":-1},{"first":925,"second":1095,"amount":-1},{"first":925,"second":196,"amount":0},{"first":925,"second":933,"amount":-1},{"first":925,"second":913,"amount":0},{"first":925,"second":916,"amount":0},{"first":925,"second":923,"amount":0},{"first":925,"second":935,"amount":0},{"first":925,"second":197,"amount":0},{"first":924,"second":65,"amount":0},{"first":924,"second":84,"amount":-1},{"first":924,"second":89,"amount":-1},{"first":924,"second":88,"amount":0},{"first":924,"second":1040,"amount":0},{"first":924,"second":1044,"amount":0},{"first":924,"second":1076,"amount":0},{"first":924,"second":1046,"amount":0},{"first":924,"second":1051,"amount":0},{"first":924,"second":1083,"amount":0},{"first":924,"second":1058,"amount":-1},{"first":924,"second":1061,"amount":0},{"first":924,"second":1063,"amount":-1},{"first":924,"second":1095,"amount":-1},{"first":924,"second":196,"amount":0},{"first":924,"second":933,"amount":-1},{"first":924,"second":913,"amount":0},{"first":924,"second":916,"amount":0},{"first":924,"second":923,"amount":0},{"first":924,"second":935,"amount":0},{"first":924,"second":197,"amount":0},{"first":229,"second":121,"amount":0},{"first":229,"second":118,"amount":0},{"first":229,"second":34,"amount":-1},{"first":229,"second":39,"amount":-1},{"first":229,"second":1090,"amount":0},{"first":229,"second":1091,"amount":0},{"first":229,"second":947,"amount":0},{"first":229,"second":957,"amount":0},{"first":197,"second":122,"amount":0},{"first":197,"second":116,"amount":0},{"first":197,"second":121,"amount":-1},{"first":197,"second":117,"amount":0},{"first":197,"second":111,"amount":0},{"first":197,"second":119,"amount":-1},{"first":197,"second":118,"amount":-1},{"first":197,"second":84,"amount":-3},{"first":197,"second":89,"amount":-2},{"first":197,"second":85,"amount":0},{"first":197,"second":79,"amount":0},{"first":197,"second":81,"amount":0},{"first":197,"second":71,"amount":0},{"first":197,"second":87,"amount":-1},{"first":197,"second":67,"amount":0},{"first":197,"second":86,"amount":-2},{"first":197,"second":63,"amount":-1},{"first":197,"second":34,"amount":-2},{"first":197,"second":39,"amount":-2},{"first":197,"second":1044,"amount":0},{"first":197,"second":1051,"amount":0},{"first":197,"second":1083,"amount":0},{"first":197,"second":1054,"amount":0},{"first":197,"second":1086,"amount":0},{"first":197,"second":1057,"amount":0},{"first":197,"second":1058,"amount":-3},{"first":197,"second":1090,"amount":-1},{"first":197,"second":1091,"amount":-1},{"first":197,"second":1063,"amount":-1},{"first":197,"second":1095,"amount":-2},{"first":197,"second":1068,"amount":-1},{"first":197,"second":252,"amount":0},{"first":197,"second":220,"amount":0},{"first":197,"second":246,"amount":0},{"first":197,"second":214,"amount":0},{"first":197,"second":964,"amount":-1},{"first":197,"second":965,"amount":0},{"first":197,"second":959,"amount":0},{"first":197,"second":947,"amount":-1},{"first":197,"second":955,"amount":0},{"first":197,"second":957,"amount":-1},{"first":197,"second":933,"amount":-2},{"first":197,"second":920,"amount":0},{"first":197,"second":927,"amount":0},{"first":197,"second":934,"amount":-1},{"first":197,"second":936,"amount":-1},{"first":197,"second":216,"amount":0}]}');
+module.exports = JSON.parse('{"pages":["Roboto-Regular.png"],"chars":[{"id":40,"index":12,"char":"(","width":15,"height":47,"xoffset":1,"yoffset":0,"xadvance":14,"chnl":15,"x":0,"y":0,"page":0},{"id":41,"index":13,"char":")","width":15,"height":47,"xoffset":-1,"yoffset":0,"xadvance":15,"chnl":15,"x":0,"y":48,"page":0},{"id":91,"index":63,"char":"[","width":12,"height":45,"xoffset":1,"yoffset":0,"xadvance":11,"chnl":15,"x":0,"y":96,"page":0},{"id":93,"index":65,"char":"]","width":12,"height":45,"xoffset":-2,"yoffset":0,"xadvance":11,"chnl":15,"x":0,"y":142,"page":0},{"id":123,"index":95,"char":"{","width":16,"height":44,"xoffset":-1,"yoffset":1,"xadvance":14,"chnl":15,"x":0,"y":188,"page":0},{"id":125,"index":97,"char":"}","width":16,"height":44,"xoffset":-2,"yoffset":1,"xadvance":14,"chnl":15,"x":13,"y":96,"page":0},{"id":1092,"index":247,"char":"\u0444","width":30,"height":44,"xoffset":0,"yoffset":3,"xadvance":30,"chnl":15,"x":13,"y":141,"page":0},{"id":197,"index":644,"char":"\xc5","width":30,"height":44,"xoffset":-1,"yoffset":-6,"xadvance":27,"chnl":15,"x":16,"y":0,"page":0},{"id":106,"index":78,"char":"j","width":12,"height":43,"xoffset":-3,"yoffset":4,"xadvance":10,"chnl":15,"x":16,"y":45,"page":0},{"id":36,"index":8,"char":"$","width":23,"height":43,"xoffset":0,"yoffset":-1,"xadvance":24,"chnl":15,"x":29,"y":45,"page":0},{"id":64,"index":36,"char":"@","width":37,"height":43,"xoffset":0,"yoffset":5,"xadvance":38,"chnl":15,"x":47,"y":0,"page":0},{"id":198,"index":129,"char":"\xc6","width":43,"height":34,"xoffset":-2,"yoffset":4,"xadvance":39,"chnl":15,"x":30,"y":89,"page":0},{"id":958,"index":197,"char":"\u03BE","width":21,"height":42,"xoffset":0,"yoffset":4,"xadvance":21,"chnl":15,"x":53,"y":44,"page":0},{"id":950,"index":192,"char":"\u03B6","width":22,"height":42,"xoffset":0,"yoffset":4,"xadvance":22,"chnl":15,"x":0,"y":233,"page":0},{"id":946,"index":188,"char":"\u03B2","width":23,"height":42,"xoffset":1,"yoffset":4,"xadvance":25,"chnl":15,"x":17,"y":186,"page":0},{"id":1044,"index":217,"char":"\u0414","width":33,"height":41,"xoffset":-1,"yoffset":4,"xadvance":32,"chnl":15,"x":0,"y":276,"page":0},{"id":1025,"index":941,"char":"\u0401","width":23,"height":41,"xoffset":1,"yoffset":-3,"xadvance":24,"chnl":15,"x":23,"y":229,"page":0},{"id":1046,"index":218,"char":"\u0416","width":41,"height":34,"xoffset":-1,"yoffset":4,"xadvance":38,"chnl":15,"x":41,"y":186,"page":0},{"id":1049,"index":954,"char":"\u0419","width":27,"height":41,"xoffset":2,"yoffset":-3,"xadvance":30,"chnl":15,"x":44,"y":124,"page":0},{"id":1062,"index":224,"char":"\u0426","width":30,"height":41,"xoffset":2,"yoffset":4,"xadvance":31,"chnl":15,"x":72,"y":124,"page":0},{"id":1065,"index":227,"char":"\u0429","width":39,"height":41,"xoffset":2,"yoffset":4,"xadvance":41,"chnl":15,"x":75,"y":44,"page":0},{"id":220,"index":664,"char":"\xdc","width":26,"height":41,"xoffset":1,"yoffset":-3,"xadvance":27,"chnl":15,"x":85,"y":0,"page":0},{"id":214,"index":660,"char":"\xd6","width":28,"height":41,"xoffset":0,"yoffset":-3,"xadvance":29,"chnl":15,"x":112,"y":0,"page":0},{"id":196,"index":643,"char":"\xc4","width":30,"height":41,"xoffset":-1,"yoffset":-3,"xadvance":27,"chnl":15,"x":0,"y":318,"page":0},{"id":209,"index":655,"char":"\xd1","width":27,"height":41,"xoffset":1,"yoffset":-3,"xadvance":30,"chnl":15,"x":0,"y":360,"page":0},{"id":81,"index":53,"char":"Q","width":28,"height":39,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":0,"y":402,"page":0},{"id":87,"index":59,"char":"W","width":39,"height":34,"xoffset":-1,"yoffset":4,"xadvance":37,"chnl":15,"x":74,"y":87,"page":0},{"id":124,"index":96,"char":"|","width":7,"height":39,"xoffset":2,"yoffset":4,"xadvance":10,"chnl":15,"x":28,"y":360,"page":0},{"id":229,"index":671,"char":"\xe5","width":22,"height":38,"xoffset":0,"yoffset":1,"xadvance":23,"chnl":15,"x":31,"y":318,"page":0},{"id":216,"index":131,"char":"\xd8","width":28,"height":37,"xoffset":0,"yoffset":3,"xadvance":29,"chnl":15,"x":34,"y":271,"page":0},{"id":100,"index":72,"char":"d","width":23,"height":36,"xoffset":0,"yoffset":3,"xadvance":24,"chnl":15,"x":47,"y":221,"page":0},{"id":102,"index":74,"char":"f","width":17,"height":36,"xoffset":-1,"yoffset":2,"xadvance":15,"chnl":15,"x":0,"y":442,"page":0},{"id":104,"index":76,"char":"h","width":21,"height":36,"xoffset":1,"yoffset":3,"xadvance":23,"chnl":15,"x":18,"y":442,"page":0},{"id":107,"index":79,"char":"k","width":22,"height":36,"xoffset":1,"yoffset":3,"xadvance":21,"chnl":15,"x":29,"y":400,"page":0},{"id":108,"index":80,"char":"l","width":8,"height":36,"xoffset":1,"yoffset":3,"xadvance":10,"chnl":15,"x":36,"y":357,"page":0},{"id":98,"index":70,"char":"b","width":23,"height":36,"xoffset":1,"yoffset":3,"xadvance":24,"chnl":15,"x":45,"y":357,"page":0},{"id":47,"index":19,"char":"/","width":20,"height":36,"xoffset":-2,"yoffset":4,"xadvance":17,"chnl":15,"x":54,"y":309,"page":0},{"id":92,"index":64,"char":"\\\\","width":20,"height":36,"xoffset":-1,"yoffset":4,"xadvance":17,"chnl":15,"x":63,"y":258,"page":0},{"id":1073,"index":234,"char":"\u0431","width":24,"height":36,"xoffset":0,"yoffset":2,"xadvance":23,"chnl":15,"x":71,"y":221,"page":0},{"id":1060,"index":223,"char":"\u0424","width":33,"height":36,"xoffset":0,"yoffset":3,"xadvance":32,"chnl":15,"x":83,"y":166,"page":0},{"id":1064,"index":226,"char":"\u0428","width":36,"height":34,"xoffset":2,"yoffset":4,"xadvance":40,"chnl":15,"x":103,"y":122,"page":0},{"id":1070,"index":232,"char":"\u042E","width":36,"height":35,"xoffset":2,"yoffset":4,"xadvance":38,"chnl":15,"x":114,"y":86,"page":0},{"id":948,"index":190,"char":"\u03B4","width":24,"height":36,"xoffset":0,"yoffset":2,"xadvance":24,"chnl":15,"x":115,"y":42,"page":0},{"id":966,"index":204,"char":"\u03C6","width":30,"height":36,"xoffset":0,"yoffset":12,"xadvance":30,"chnl":15,"x":140,"y":42,"page":0},{"id":968,"index":205,"char":"\u03C8","width":30,"height":36,"xoffset":0,"yoffset":12,"xadvance":29,"chnl":15,"x":141,"y":0,"page":0},{"id":230,"index":134,"char":"\xe6","width":36,"height":27,"xoffset":0,"yoffset":11,"xadvance":35,"chnl":15,"x":0,"y":479,"page":0},{"id":121,"index":93,"char":"y","width":23,"height":35,"xoffset":-2,"yoffset":12,"xadvance":20,"chnl":15,"x":40,"y":437,"page":0},{"id":112,"index":84,"char":"p","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":40,"y":473,"page":0},{"id":113,"index":85,"char":"q","width":23,"height":35,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":52,"y":394,"page":0},{"id":103,"index":75,"char":"g","width":23,"height":35,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":69,"y":346,"page":0},{"id":109,"index":81,"char":"m","width":35,"height":27,"xoffset":1,"yoffset":11,"xadvance":37,"chnl":15,"x":75,"y":295,"page":0},{"id":79,"index":51,"char":"O","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":84,"y":258,"page":0},{"id":83,"index":55,"char":"S","width":26,"height":35,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":96,"y":203,"page":0},{"id":71,"index":43,"char":"G","width":27,"height":35,"xoffset":1,"yoffset":4,"xadvance":29,"chnl":15,"x":117,"y":157,"page":0},{"id":67,"index":39,"char":"C","width":27,"height":35,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":64,"y":430,"page":0},{"id":56,"index":28,"char":"8","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":64,"y":466,"page":0},{"id":51,"index":23,"char":"3","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":88,"y":466,"page":0},{"id":48,"index":20,"char":"0","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":76,"y":382,"page":0},{"id":37,"index":9,"char":"%","width":31,"height":35,"xoffset":0,"yoffset":4,"xadvance":31,"chnl":15,"x":92,"y":418,"page":0},{"id":8364,"index":413,"char":"\u20AC","width":24,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":93,"y":323,"page":0},{"id":38,"index":10,"char":"&","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":112,"y":454,"page":0},{"id":1105,"index":971,"char":"\u0451","width":23,"height":35,"xoffset":0,"yoffset":4,"xadvance":22,"chnl":15,"x":100,"y":359,"page":0},{"id":1078,"index":238,"char":"\u0436","width":35,"height":26,"xoffset":-2,"yoffset":12,"xadvance":32,"chnl":15,"x":111,"y":294,"page":0},{"id":1047,"index":219,"char":"\u0417","width":26,"height":35,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":118,"y":321,"page":0},{"id":1054,"index":957,"char":"\u041E","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":113,"y":239,"page":0},{"id":1088,"index":967,"char":"\u0440","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":123,"y":193,"page":0},{"id":1057,"index":960,"char":"\u0421","width":27,"height":35,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":142,"y":229,"page":0},{"id":1091,"index":969,"char":"\u0443","width":23,"height":35,"xoffset":-2,"yoffset":12,"xadvance":20,"chnl":15,"x":145,"y":122,"page":0},{"id":1097,"index":251,"char":"\u0449","width":35,"height":33,"xoffset":1,"yoffset":12,"xadvance":35,"chnl":15,"x":145,"y":158,"page":0},{"id":1069,"index":231,"char":"\u042D","width":27,"height":35,"xoffset":1,"yoffset":4,"xadvance":28,"chnl":15,"x":147,"y":192,"page":0},{"id":252,"index":691,"char":"\xfc","width":21,"height":35,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":151,"y":79,"page":0},{"id":246,"index":687,"char":"\xf6","width":24,"height":35,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":171,"y":37,"page":0},{"id":228,"index":670,"char":"\xe4","width":22,"height":35,"xoffset":0,"yoffset":4,"xadvance":23,"chnl":15,"x":172,"y":0,"page":0},{"id":241,"index":682,"char":"\xf1","width":21,"height":35,"xoffset":1,"yoffset":3,"xadvance":23,"chnl":15,"x":195,"y":0,"page":0},{"id":961,"index":199,"char":"\u03C1","width":23,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":169,"y":115,"page":0},{"id":952,"index":194,"char":"\u03B8","width":23,"height":35,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":173,"y":73,"page":0},{"id":947,"index":189,"char":"\u03B3","width":23,"height":35,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":196,"y":36,"page":0},{"id":951,"index":193,"char":"\u03B7","width":22,"height":35,"xoffset":1,"yoffset":11,"xadvance":24,"chnl":15,"x":217,"y":0,"page":0},{"id":955,"index":196,"char":"\u03BB","width":25,"height":35,"xoffset":-1,"yoffset":3,"xadvance":23,"chnl":15,"x":124,"y":357,"page":0},{"id":967,"index":935,"char":"\u03C7","width":26,"height":35,"xoffset":0,"yoffset":12,"xadvance":21,"chnl":15,"x":145,"y":321,"page":0},{"id":956,"index":933,"char":"\u03BC","width":21,"height":35,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":147,"y":265,"page":0},{"id":920,"index":179,"char":"\u0398","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":169,"y":265,"page":0},{"id":927,"index":919,"char":"\u039F","width":28,"height":35,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":170,"y":228,"page":0},{"id":105,"index":77,"char":"i","width":8,"height":34,"xoffset":1,"yoffset":4,"xadvance":10,"chnl":15,"x":175,"y":192,"page":0},{"id":119,"index":91,"char":"w","width":34,"height":26,"xoffset":-1,"yoffset":12,"xadvance":32,"chnl":15,"x":181,"y":151,"page":0},{"id":65,"index":37,"char":"A","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":193,"y":109,"page":0},{"id":90,"index":62,"char":"Z","width":26,"height":34,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":197,"y":72,"page":0},{"id":69,"index":41,"char":"E","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":220,"y":36,"page":0},{"id":82,"index":54,"char":"R","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":240,"y":0,"page":0},{"id":84,"index":56,"char":"T","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":184,"y":178,"page":0},{"id":89,"index":61,"char":"Y","width":29,"height":34,"xoffset":-2,"yoffset":4,"xadvance":25,"chnl":15,"x":124,"y":393,"page":0},{"id":85,"index":57,"char":"U","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":27,"chnl":15,"x":150,"y":357,"page":0},{"id":73,"index":45,"char":"I","width":8,"height":34,"xoffset":2,"yoffset":4,"xadvance":11,"chnl":15,"x":172,"y":301,"page":0},{"id":80,"index":52,"char":"P","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":141,"y":428,"page":0},{"id":68,"index":40,"char":"D","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":28,"chnl":15,"x":154,"y":392,"page":0},{"id":70,"index":42,"char":"F","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":141,"y":463,"page":0},{"id":72,"index":44,"char":"H","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":164,"y":463,"page":0},{"id":74,"index":46,"char":"J","width":23,"height":34,"xoffset":-1,"yoffset":4,"xadvance":23,"chnl":15,"x":167,"y":427,"page":0},{"id":75,"index":47,"char":"K","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":177,"y":336,"page":0},{"id":76,"index":48,"char":"L","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":23,"chnl":15,"x":181,"y":301,"page":0},{"id":77,"index":49,"char":"M","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":198,"y":264,"page":0},{"id":88,"index":60,"char":"X","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":204,"y":299,"page":0},{"id":86,"index":58,"char":"V","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":199,"y":213,"page":0},{"id":66,"index":38,"char":"B","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":212,"y":178,"page":0},{"id":78,"index":50,"char":"N","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":230,"y":213,"page":0},{"id":55,"index":27,"char":"7","width":24,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":181,"y":371,"page":0},{"id":57,"index":29,"char":"9","width":23,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":205,"y":334,"page":0},{"id":52,"index":24,"char":"4","width":26,"height":34,"xoffset":-1,"yoffset":4,"xadvance":24,"chnl":15,"x":191,"y":406,"page":0},{"id":53,"index":25,"char":"5","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":206,"y":369,"page":0},{"id":54,"index":26,"char":"6","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":229,"y":334,"page":0},{"id":49,"index":21,"char":"1","width":15,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":192,"y":441,"page":0},{"id":50,"index":22,"char":"2","width":24,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":192,"y":476,"page":0},{"id":33,"index":5,"char":"!","width":8,"height":34,"xoffset":1,"yoffset":4,"xadvance":11,"chnl":15,"x":208,"y":441,"page":0},{"id":63,"index":35,"char":"?","width":21,"height":34,"xoffset":0,"yoffset":4,"xadvance":20,"chnl":15,"x":217,"y":441,"page":0},{"id":163,"index":101,"char":"\xa3","width":25,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":218,"y":404,"page":0},{"id":35,"index":7,"char":"#","width":27,"height":34,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":230,"y":369,"page":0},{"id":1040,"index":950,"char":"\u0410","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":217,"y":476,"page":0},{"id":1041,"index":216,"char":"\u0411","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":239,"y":439,"page":0},{"id":1042,"index":951,"char":"\u0412","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":244,"y":404,"page":0},{"id":1043,"index":952,"char":"\u0413","width":22,"height":34,"xoffset":2,"yoffset":4,"xadvance":23,"chnl":15,"x":248,"y":474,"page":0},{"id":1045,"index":953,"char":"\u0415","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":265,"y":439,"page":0},{"id":1048,"index":220,"char":"\u0418","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":271,"y":474,"page":0},{"id":1081,"index":965,"char":"\u0439","width":22,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":233,"y":248,"page":0},{"id":1050,"index":947,"char":"\u041A","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":27,"chnl":15,"x":233,"y":283,"page":0},{"id":1051,"index":221,"char":"\u041B","width":29,"height":34,"xoffset":-1,"yoffset":4,"xadvance":30,"chnl":15,"x":256,"y":248,"page":0},{"id":1052,"index":955,"char":"\u041C","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":253,"y":318,"page":0},{"id":1053,"index":956,"char":"\u041D","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":261,"y":283,"page":0},{"id":1055,"index":958,"char":"\u041F","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":258,"y":353,"page":0},{"id":1056,"index":959,"char":"\u0420","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":269,"y":388,"page":0},{"id":1058,"index":961,"char":"\u0422","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":286,"y":353,"page":0},{"id":1059,"index":222,"char":"\u0423","width":28,"height":34,"xoffset":0,"yoffset":4,"xadvance":26,"chnl":15,"x":288,"y":318,"page":0},{"id":1061,"index":962,"char":"\u0425","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":289,"y":423,"page":0},{"id":1063,"index":225,"char":"\u0427","width":26,"height":34,"xoffset":1,"yoffset":4,"xadvance":29,"chnl":15,"x":295,"y":388,"page":0},{"id":1066,"index":228,"char":"\u042A","width":34,"height":34,"xoffset":-2,"yoffset":4,"xadvance":32,"chnl":15,"x":314,"y":353,"page":0},{"id":1067,"index":229,"char":"\u042B","width":33,"height":34,"xoffset":2,"yoffset":4,"xadvance":36,"chnl":15,"x":299,"y":458,"page":0},{"id":1068,"index":230,"char":"\u042C","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":318,"y":423,"page":0},{"id":1071,"index":233,"char":"\u042F","width":25,"height":34,"xoffset":0,"yoffset":4,"xadvance":27,"chnl":15,"x":322,"y":388,"page":0},{"id":962,"index":200,"char":"\u03C2","width":22,"height":34,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":333,"y":458,"page":0},{"id":969,"index":206,"char":"\u03C9","width":34,"height":27,"xoffset":1,"yoffset":12,"xadvance":35,"chnl":15,"x":216,"y":144,"page":0},{"id":917,"index":912,"char":"\u0395","width":23,"height":34,"xoffset":1,"yoffset":4,"xadvance":24,"chnl":15,"x":344,"y":423,"page":0},{"id":929,"index":920,"char":"\u03A1","width":25,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":348,"y":388,"page":0},{"id":932,"index":921,"char":"\u03A4","width":27,"height":34,"xoffset":-1,"yoffset":4,"xadvance":25,"chnl":15,"x":237,"y":172,"page":0},{"id":933,"index":922,"char":"\u03A5","width":29,"height":34,"xoffset":-2,"yoffset":4,"xadvance":25,"chnl":15,"x":258,"y":207,"page":0},{"id":921,"index":915,"char":"\u0399","width":8,"height":34,"xoffset":2,"yoffset":4,"xadvance":11,"chnl":15,"x":286,"y":242,"page":0},{"id":928,"index":182,"char":"\u03A0","width":27,"height":34,"xoffset":2,"yoffset":4,"xadvance":30,"chnl":15,"x":289,"y":277,"page":0},{"id":913,"index":910,"char":"\u0391","width":30,"height":34,"xoffset":-1,"yoffset":4,"xadvance":27,"chnl":15,"x":356,"y":458,"page":0},{"id":931,"index":183,"char":"\u03A3","width":25,"height":34,"xoffset":-1,"yoffset":4,"xadvance":24,"chnl":15,"x":368,"y":423,"page":0},{"id":916,"index":178,"char":"\u0394","width":32,"height":34,"xoffset":-1,"yoffset":4,"xadvance":30,"chnl":15,"x":387,"y":458,"page":0},{"id":934,"index":184,"char":"\u03A6","width":31,"height":34,"xoffset":0,"yoffset":4,"xadvance":30,"chnl":15,"x":224,"y":71,"page":0},{"id":915,"index":177,"char":"\u0393","width":22,"height":34,"xoffset":2,"yoffset":4,"xadvance":23,"chnl":15,"x":244,"y":35,"page":0},{"id":919,"index":914,"char":"\u0397","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":224,"y":106,"page":0},{"id":926,"index":181,"char":"\u039E","width":23,"height":34,"xoffset":0,"yoffset":4,"xadvance":24,"chnl":15,"x":252,"y":106,"page":0},{"id":922,"index":916,"char":"\u039A","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":256,"y":70,"page":0},{"id":923,"index":180,"char":"\u039B","width":29,"height":34,"xoffset":-1,"yoffset":4,"xadvance":28,"chnl":15,"x":265,"y":141,"page":0},{"id":918,"index":913,"char":"\u0396","width":26,"height":34,"xoffset":0,"yoffset":4,"xadvance":25,"chnl":15,"x":276,"y":105,"page":0},{"id":935,"index":923,"char":"\u03A7","width":28,"height":34,"xoffset":-1,"yoffset":4,"xadvance":26,"chnl":15,"x":288,"y":176,"page":0},{"id":936,"index":185,"char":"\u03A8","width":29,"height":34,"xoffset":0,"yoffset":4,"xadvance":29,"chnl":15,"x":295,"y":140,"page":0},{"id":937,"index":186,"char":"\u03A9","width":27,"height":34,"xoffset":0,"yoffset":4,"xadvance":28,"chnl":15,"x":295,"y":211,"page":0},{"id":914,"index":911,"char":"\u0392","width":24,"height":34,"xoffset":1,"yoffset":4,"xadvance":26,"chnl":15,"x":317,"y":175,"page":0},{"id":925,"index":918,"char":"\u039D","width":27,"height":34,"xoffset":1,"yoffset":4,"xadvance":30,"chnl":15,"x":267,"y":0,"page":0},{"id":924,"index":917,"char":"\u039C","width":34,"height":34,"xoffset":1,"yoffset":4,"xadvance":37,"chnl":15,"x":267,"y":35,"page":0},{"id":1076,"index":237,"char":"\u0434","width":27,"height":33,"xoffset":-1,"yoffset":12,"xadvance":25,"chnl":15,"x":284,"y":70,"page":0},{"id":1094,"index":248,"char":"\u0446","width":24,"height":33,"xoffset":1,"yoffset":12,"xadvance":25,"chnl":15,"x":295,"y":0,"page":0},{"id":1102,"index":256,"char":"\u044E","width":33,"height":27,"xoffset":1,"yoffset":11,"xadvance":34,"chnl":15,"x":295,"y":246,"page":0},{"id":116,"index":88,"char":"t","width":16,"height":32,"xoffset":-2,"yoffset":6,"xadvance":14,"chnl":15,"x":303,"y":104,"page":0},{"id":59,"index":31,"char":";","width":10,"height":32,"xoffset":-1,"yoffset":12,"xadvance":9,"chnl":15,"x":302,"y":34,"page":0},{"id":1096,"index":250,"char":"\u0448","width":32,"height":26,"xoffset":1,"yoffset":12,"xadvance":34,"chnl":15,"x":323,"y":210,"page":0},{"id":248,"index":137,"char":"\xf8","width":24,"height":32,"xoffset":0,"yoffset":9,"xadvance":24,"chnl":15,"x":312,"y":67,"page":0},{"id":1099,"index":253,"char":"\u044B","width":30,"height":26,"xoffset":1,"yoffset":12,"xadvance":33,"chnl":15,"x":313,"y":34,"page":0},{"id":1084,"index":243,"char":"\u043C","width":29,"height":26,"xoffset":1,"yoffset":12,"xadvance":31,"chnl":15,"x":320,"y":0,"page":0},{"id":1098,"index":252,"char":"\u044A","width":28,"height":26,"xoffset":-1,"yoffset":12,"xadvance":26,"chnl":15,"x":320,"y":100,"page":0},{"id":960,"index":198,"char":"\u03C0","width":28,"height":26,"xoffset":-1,"yoffset":12,"xadvance":25,"chnl":15,"x":337,"y":61,"page":0},{"id":97,"index":69,"char":"a","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":265,"y":176,"page":0},{"id":101,"index":73,"char":"e","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":344,"y":27,"page":0},{"id":114,"index":86,"char":"r","width":15,"height":27,"xoffset":1,"yoffset":11,"xadvance":14,"chnl":15,"x":325,"y":127,"page":0},{"id":117,"index":89,"char":"u","width":21,"height":27,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":341,"y":127,"page":0},{"id":111,"index":83,"char":"o","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":349,"y":88,"page":0},{"id":115,"index":87,"char":"s","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":366,"y":55,"page":0},{"id":99,"index":71,"char":"c","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":342,"y":155,"page":0},{"id":110,"index":82,"char":"n","width":21,"height":27,"xoffset":1,"yoffset":11,"xadvance":23,"chnl":15,"x":363,"y":116,"page":0},{"id":58,"index":30,"char":":","width":9,"height":27,"xoffset":1,"yoffset":12,"xadvance":10,"chnl":15,"x":251,"y":141,"page":0},{"id":126,"index":98,"char":"~","width":27,"height":12,"xoffset":1,"yoffset":18,"xadvance":29,"chnl":15,"x":112,"y":490,"page":0},{"id":1072,"index":963,"char":"\u0430","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":374,"y":83,"page":0},{"id":1077,"index":964,"char":"\u0435","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":368,"y":0,"page":0},{"id":1079,"index":239,"char":"\u0437","width":21,"height":27,"xoffset":0,"yoffset":11,"xadvance":21,"chnl":15,"x":389,"y":28,"page":0},{"id":1086,"index":966,"char":"\u043E","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":392,"y":0,"page":0},{"id":1089,"index":968,"char":"\u0441","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":22,"chnl":15,"x":317,"y":274,"page":0},{"id":1101,"index":255,"char":"\u044D","width":22,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":329,"y":237,"page":0},{"id":949,"index":191,"char":"\u03B5","width":23,"height":27,"xoffset":0,"yoffset":11,"xadvance":23,"chnl":15,"x":317,"y":302,"page":0},{"id":964,"index":202,"char":"\u03C4","width":23,"height":27,"xoffset":0,"yoffset":12,"xadvance":22,"chnl":15,"x":341,"y":265,"page":0},{"id":965,"index":203,"char":"\u03C5","width":22,"height":27,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":352,"y":237,"page":0},{"id":959,"index":932,"char":"\u03BF","width":24,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":356,"y":183,"page":0},{"id":945,"index":187,"char":"\u03B1","width":25,"height":27,"xoffset":0,"yoffset":11,"xadvance":24,"chnl":15,"x":366,"y":144,"page":0},{"id":963,"index":201,"char":"\u03C3","width":26,"height":27,"xoffset":0,"yoffset":12,"xadvance":24,"chnl":15,"x":385,"y":111,"page":0},{"id":122,"index":94,"char":"z","width":22,"height":26,"xoffset":0,"yoffset":12,"xadvance":21,"chnl":15,"x":389,"y":56,"page":0},{"id":120,"index":92,"char":"x","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":397,"y":83,"page":0},{"id":118,"index":90,"char":"v","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":411,"y":28,"page":0},{"id":43,"index":15,"char":"+","width":24,"height":26,"xoffset":0,"yoffset":9,"xadvance":24,"chnl":15,"x":417,"y":0,"page":0},{"id":1074,"index":235,"char":"\u0432","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":412,"y":55,"page":0},{"id":1075,"index":236,"char":"\u0433","width":18,"height":26,"xoffset":1,"yoffset":12,"xadvance":18,"chnl":15,"x":368,"y":28,"page":0},{"id":1080,"index":240,"char":"\u0438","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":435,"y":27,"page":0},{"id":1082,"index":241,"char":"\u043A","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":442,"y":0,"page":0},{"id":1083,"index":242,"char":"\u043B","width":24,"height":26,"xoffset":-1,"yoffset":12,"xadvance":24,"chnl":15,"x":466,"y":0,"page":0},{"id":1085,"index":244,"char":"\u043D","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":458,"y":27,"page":0},{"id":1087,"index":245,"char":"\u043F","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":24,"chnl":15,"x":481,"y":27,"page":0},{"id":1090,"index":246,"char":"\u0442","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":341,"y":293,"page":0},{"id":1093,"index":970,"char":"\u0445","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":21,"chnl":15,"x":341,"y":320,"page":0},{"id":1095,"index":249,"char":"\u0447","width":22,"height":26,"xoffset":0,"yoffset":12,"xadvance":23,"chnl":15,"x":349,"y":347,"page":0},{"id":1100,"index":254,"char":"\u044C","width":22,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":436,"y":54,"page":0},{"id":1103,"index":257,"char":"\u044F","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":23,"chnl":15,"x":459,"y":54,"page":0},{"id":953,"index":195,"char":"\u03B9","width":12,"height":26,"xoffset":2,"yoffset":12,"xadvance":14,"chnl":15,"x":350,"y":0,"page":0},{"id":954,"index":931,"char":"\u03BA","width":23,"height":26,"xoffset":1,"yoffset":12,"xadvance":23,"chnl":15,"x":483,"y":54,"page":0},{"id":957,"index":934,"char":"\u03BD","width":23,"height":26,"xoffset":-1,"yoffset":12,"xadvance":20,"chnl":15,"x":436,"y":81,"page":0},{"id":8211,"index":385,"char":"\u2013","width":25,"height":7,"xoffset":1,"yoffset":18,"xadvance":28,"chnl":15,"x":64,"y":503,"page":0},{"id":95,"index":67,"char":"_","width":23,"height":7,"xoffset":-2,"yoffset":34,"xadvance":19,"chnl":15,"x":100,"y":395,"page":0},{"id":42,"index":14,"char":"*","width":21,"height":21,"xoffset":-1,"yoffset":4,"xadvance":18,"chnl":15,"x":491,"y":0,"page":0},{"id":61,"index":33,"char":"=","width":21,"height":16,"xoffset":1,"yoffset":14,"xadvance":23,"chnl":15,"x":113,"y":275,"page":0},{"id":176,"index":113,"char":"\xb0","width":14,"height":15,"xoffset":1,"yoffset":4,"xadvance":16,"chnl":15,"x":199,"y":248,"page":0},{"id":45,"index":17,"char":"-","width":14,"height":7,"xoffset":-1,"yoffset":20,"xadvance":12,"chnl":15,"x":54,"y":346,"page":0},{"id":44,"index":16,"char":",","width":10,"height":14,"xoffset":-1,"yoffset":30,"xadvance":8,"chnl":15,"x":184,"y":213,"page":0},{"id":34,"index":6,"char":"\\"","width":12,"height":14,"xoffset":1,"yoffset":3,"xadvance":13,"chnl":15,"x":83,"y":203,"page":0},{"id":39,"index":11,"char":"\'","width":7,"height":14,"xoffset":0,"yoffset":3,"xadvance":7,"chnl":15,"x":140,"y":498,"page":0},{"id":46,"index":18,"char":".","width":9,"height":9,"xoffset":1,"yoffset":30,"xadvance":11,"chnl":15,"x":123,"y":229,"page":0}],"info":{"face":"Roboto-Regular","size":42,"bold":0,"italic":0,"charset":["a","z","e","r","t","y","u","i","o","p","q","s","d","f","g","h","j","k","l","m","w","x","c","v","b","n","A","Z","E","R","T","Y","U","I","O","P","Q","S","D","F","G","H","J","K","L","M","W","X","C","V","B","N","/","\\\\","*","-","\u2013","+","7","8","9","4","5","6","1","2","3","0",",",";",":","!","?",".","%","$","\xa3","\u20AC","=","{","}","(",")","[","]","&","~","\\"","\'","#","_","|","\xb0","@","\u0410","\u0430","\u0411","\u0431","\u0412","\u0432","\u0413","\u0433","\u0414","\u0434","\u0415","\u0435","\u0401","\u0451","\u0416","\u0436","\u0417","\u0437","\u0418","\u0438","\u0419","\u0439","\u041A","\u043A","\u041B","\u043B","\u041C","\u043C","\u041D","\u043D","\u041E","\u043E","\u041F","\u043F","\u0420","\u0440","\u0421","\u0441","\u0422","\u0442","\u0423","\u0443","\u0424","\u0444","\u0425","\u0445","\u0426","\u0446","\u0427","\u0447","\u0428","\u0448","\u0429","\u0449","\u042A","\u044A","\u042B","\u044B","\u042C","\u044C","\u042D","\u044D","\u042E","\u044E","\u042F","\u044F","\xfc","\xdc","\xf6","\xd6","\xe4","\xc4","\xf1","\xd1","\u03C2","\u03B5","\u03C1","\u03C4","\u03C5","\u03B8","\u03B9","\u03BF","\u03C0","\u03B1","\u03C3","\u03B4","\u03C6","\u03B3","\u03B7","\u03BE","\u03BA","\u03BB","\u03B6","\u03C7","\u03C8","\u03C9","\u03B2","\u03BD","\u03BC","\u0395","\u03A1","\u03A4","\u03A5","\u0398","\u0399","\u039F","\u03A0","\u0391","\u03A3","\u0394","\u03A6","\u0393","\u0397","\u039E","\u039A","\u039B","\u0396","\u03A7","\u03A8","\u03A9","\u0392","\u039D","\u039C","\xe5","\xc5","\xe6","\xc6","\xf8","\xd8"],"unicode":1,"stretchH":100,"smooth":1,"aa":1,"padding":[2,2,2,2],"spacing":[0,0]},"common":{"lineHeight":44,"base":34,"scaleW":512,"scaleH":512,"pages":1,"packed":0,"alphaChnl":0,"redChnl":0,"greenChnl":0,"blueChnl":0},"distanceField":{"fieldType":"msdf","distanceRange":4},"kernings":[{"first":97,"second":121,"amount":0},{"first":97,"second":118,"amount":0},{"first":97,"second":34,"amount":-1},{"first":97,"second":39,"amount":-1},{"first":97,"second":1090,"amount":0},{"first":97,"second":1091,"amount":0},{"first":97,"second":947,"amount":0},{"first":97,"second":957,"amount":0},{"first":122,"second":101,"amount":0},{"first":122,"second":111,"amount":0},{"first":122,"second":113,"amount":0},{"first":122,"second":100,"amount":0},{"first":122,"second":103,"amount":0},{"first":122,"second":99,"amount":0},{"first":122,"second":1077,"amount":0},{"first":122,"second":1105,"amount":0},{"first":122,"second":1086,"amount":0},{"first":122,"second":1089,"amount":0},{"first":122,"second":1092,"amount":0},{"first":122,"second":246,"amount":0},{"first":122,"second":962,"amount":0},{"first":122,"second":959,"amount":0},{"first":122,"second":945,"amount":0},{"first":122,"second":963,"amount":0},{"first":101,"second":121,"amount":0},{"first":101,"second":118,"amount":0},{"first":101,"second":34,"amount":0},{"first":101,"second":39,"amount":0},{"first":101,"second":1090,"amount":0},{"first":101,"second":1091,"amount":0},{"first":101,"second":947,"amount":0},{"first":101,"second":957,"amount":0},{"first":114,"second":97,"amount":-1},{"first":114,"second":101,"amount":0},{"first":114,"second":116,"amount":1},{"first":114,"second":121,"amount":0},{"first":114,"second":111,"amount":0},{"first":114,"second":113,"amount":0},{"first":114,"second":100,"amount":0},{"first":114,"second":102,"amount":0},{"first":114,"second":103,"amount":0},{"first":114,"second":119,"amount":0},{"first":114,"second":99,"amount":0},{"first":114,"second":118,"amount":0},{"first":114,"second":44,"amount":-3},{"first":114,"second":46,"amount":-3},{"first":114,"second":34,"amount":0},{"first":114,"second":39,"amount":0},{"first":114,"second":1072,"amount":-1},{"first":114,"second":1077,"amount":0},{"first":114,"second":1105,"amount":0},{"first":114,"second":1086,"amount":0},{"first":114,"second":1089,"amount":0},{"first":114,"second":1091,"amount":0},{"first":114,"second":1092,"amount":0},{"first":114,"second":246,"amount":0},{"first":114,"second":228,"amount":-1},{"first":114,"second":962,"amount":0},{"first":114,"second":959,"amount":0},{"first":114,"second":945,"amount":0},{"first":114,"second":963,"amount":0},{"first":114,"second":947,"amount":0},{"first":114,"second":957,"amount":0},{"first":114,"second":229,"amount":-1},{"first":116,"second":111,"amount":0},{"first":116,"second":1086,"amount":0},{"first":116,"second":246,"amount":0},{"first":116,"second":959,"amount":0},{"first":121,"second":97,"amount":0},{"first":121,"second":101,"amount":0},{"first":121,"second":111,"amount":0},{"first":121,"second":113,"amount":0},{"first":121,"second":100,"amount":0},{"first":121,"second":102,"amount":0},{"first":121,"second":103,"amount":0},{"first":121,"second":99,"amount":0},{"first":121,"second":44,"amount":-2},{"first":121,"second":46,"amount":-2},{"first":121,"second":34,"amount":0},{"first":121,"second":39,"amount":0},{"first":121,"second":1072,"amount":0},{"first":121,"second":1076,"amount":-1},{"first":121,"second":1077,"amount":0},{"first":121,"second":1105,"amount":0},{"first":121,"second":1083,"amount":-1},{"first":121,"second":1086,"amount":0},{"first":121,"second":1089,"amount":0},{"first":121,"second":1092,"amount":0},{"first":121,"second":246,"amount":0},{"first":121,"second":228,"amount":0},{"first":121,"second":962,"amount":0},{"first":121,"second":961,"amount":0},{"first":121,"second":964,"amount":0},{"first":121,"second":959,"amount":0},{"first":121,"second":960,"amount":0},{"first":121,"second":945,"amount":0},{"first":121,"second":963,"amount":0},{"first":121,"second":948,"amount":0},{"first":121,"second":229,"amount":0},{"first":111,"second":122,"amount":0},{"first":111,"second":121,"amount":0},{"first":111,"second":120,"amount":0},{"first":111,"second":118,"amount":0},{"first":111,"second":34,"amount":-3},{"first":111,"second":39,"amount":-3},{"first":111,"second":1076,"amount":-1},{"first":111,"second":1078,"amount":0},{"first":111,"second":1083,"amount":0},{"first":111,"second":1090,"amount":0},{"first":111,"second":1091,"amount":0},{"first":111,"second":1093,"amount":0},{"first":111,"second":964,"amount":0},{"first":111,"second":947,"amount":0},{"first":111,"second":957,"amount":0},{"first":112,"second":122,"amount":0},{"first":112,"second":121,"amount":0},{"first":112,"second":120,"amount":0},{"first":112,"second":118,"amount":0},{"first":112,"second":34,"amount":-1},{"first":112,"second":39,"amount":-1},{"first":112,"second":1076,"amount":0},{"first":112,"second":1078,"amount":0},{"first":112,"second":1083,"amount":0},{"first":112,"second":1090,"amount":-2},{"first":112,"second":1091,"amount":0},{"first":112,"second":1093,"amount":0},{"first":112,"second":964,"amount":0},{"first":112,"second":947,"amount":0},{"first":112,"second":957,"amount":0},{"first":102,"second":101,"amount":0},{"first":102,"second":113,"amount":0},{"first":102,"second":100,"amount":0},{"first":102,"second":103,"amount":0},{"first":102,"second":99,"amount":0},{"first":102,"second":125,"amount":0},{"first":102,"second":41,"amount":0},{"first":102,"second":93,"amount":0},{"first":102,"second":34,"amount":0},{"first":102,"second":39,"amount":0},{"first":102,"second":1077,"amount":0},{"first":102,"second":1105,"amount":0},{"first":102,"second":1089,"amount":0},{"first":102,"second":1092,"amount":0},{"first":102,"second":962,"amount":0},{"first":102,"second":945,"amount":0},{"first":102,"second":963,"amount":0},{"first":104,"second":34,"amount":-2},{"first":104,"second":39,"amount":-2},{"first":104,"second":1090,"amount":-1},{"first":107,"second":101,"amount":0},{"first":107,"second":113,"amount":0},{"first":107,"second":100,"amount":0},{"first":107,"second":103,"amount":0},{"first":107,"second":99,"amount":0},{"first":107,"second":1077,"amount":0},{"first":107,"second":1105,"amount":0},{"first":107,"second":1089,"amount":0},{"first":107,"second":1092,"amount":0},{"first":107,"second":962,"amount":0},{"first":107,"second":945,"amount":0},{"first":107,"second":963,"amount":0},{"first":109,"second":34,"amount":-2},{"first":109,"second":39,"amount":-2},{"first":109,"second":1090,"amount":-1},{"first":119,"second":44,"amount":-3},{"first":119,"second":46,"amount":-3},{"first":120,"second":101,"amount":0},{"first":120,"second":111,"amount":0},{"first":120,"second":113,"amount":0},{"first":120,"second":100,"amount":0},{"first":120,"second":103,"amount":0},{"first":120,"second":99,"amount":0},{"first":120,"second":1077,"amount":0},{"first":120,"second":1105,"amount":0},{"first":120,"second":1086,"amount":0},{"first":120,"second":1089,"amount":0},{"first":120,"second":1092,"amount":0},{"first":120,"second":246,"amount":0},{"first":120,"second":962,"amount":0},{"first":120,"second":959,"amount":0},{"first":120,"second":945,"amount":0},{"first":120,"second":963,"amount":0},{"first":99,"second":34,"amount":0},{"first":99,"second":39,"amount":0},{"first":118,"second":97,"amount":0},{"first":118,"second":101,"amount":0},{"first":118,"second":111,"amount":0},{"first":118,"second":113,"amount":0},{"first":118,"second":100,"amount":0},{"first":118,"second":102,"amount":0},{"first":118,"second":103,"amount":0},{"first":118,"second":99,"amount":0},{"first":118,"second":44,"amount":-2},{"first":118,"second":46,"amount":-2},{"first":118,"second":34,"amount":0},{"first":118,"second":39,"amount":0},{"first":118,"second":1072,"amount":0},{"first":118,"second":1076,"amount":-1},{"first":118,"second":1077,"amount":0},{"first":118,"second":1105,"amount":0},{"first":118,"second":1083,"amount":-1},{"first":118,"second":1086,"amount":0},{"first":118,"second":1089,"amount":0},{"first":118,"second":1092,"amount":0},{"first":118,"second":246,"amount":0},{"first":118,"second":228,"amount":0},{"first":118,"second":962,"amount":0},{"first":118,"second":961,"amount":0},{"first":118,"second":964,"amount":0},{"first":118,"second":959,"amount":0},{"first":118,"second":960,"amount":0},{"first":118,"second":945,"amount":0},{"first":118,"second":963,"amount":0},{"first":118,"second":948,"amount":0},{"first":118,"second":229,"amount":0},{"first":98,"second":122,"amount":0},{"first":98,"second":121,"amount":0},{"first":98,"second":120,"amount":0},{"first":98,"second":118,"amount":0},{"first":98,"second":34,"amount":-1},{"first":98,"second":39,"amount":-1},{"first":98,"second":1076,"amount":0},{"first":98,"second":1078,"amount":0},{"first":98,"second":1083,"amount":0},{"first":98,"second":1090,"amount":-2},{"first":98,"second":1091,"amount":0},{"first":98,"second":1093,"amount":0},{"first":98,"second":964,"amount":0},{"first":98,"second":947,"amount":0},{"first":98,"second":957,"amount":0},{"first":110,"second":34,"amount":-2},{"first":110,"second":39,"amount":-2},{"first":110,"second":1090,"amount":-1},{"first":65,"second":122,"amount":0},{"first":65,"second":116,"amount":0},{"first":65,"second":121,"amount":-1},{"first":65,"second":117,"amount":0},{"first":65,"second":111,"amount":0},{"first":65,"second":119,"amount":-1},{"first":65,"second":118,"amount":-1},{"first":65,"second":84,"amount":-3},{"first":65,"second":89,"amount":-2},{"first":65,"second":85,"amount":0},{"first":65,"second":79,"amount":0},{"first":65,"second":81,"amount":0},{"first":65,"second":71,"amount":0},{"first":65,"second":87,"amount":-1},{"first":65,"second":67,"amount":0},{"first":65,"second":86,"amount":-2},{"first":65,"second":63,"amount":-1},{"first":65,"second":34,"amount":-2},{"first":65,"second":39,"amount":-2},{"first":65,"second":1044,"amount":0},{"first":65,"second":1051,"amount":0},{"first":65,"second":1083,"amount":0},{"first":65,"second":1054,"amount":0},{"first":65,"second":1086,"amount":0},{"first":65,"second":1057,"amount":0},{"first":65,"second":1058,"amount":-3},{"first":65,"second":1090,"amount":-1},{"first":65,"second":1091,"amount":-1},{"first":65,"second":1063,"amount":-1},{"first":65,"second":1095,"amount":-2},{"first":65,"second":1068,"amount":-1},{"first":65,"second":252,"amount":0},{"first":65,"second":220,"amount":0},{"first":65,"second":246,"amount":0},{"first":65,"second":214,"amount":0},{"first":65,"second":964,"amount":-1},{"first":65,"second":965,"amount":0},{"first":65,"second":959,"amount":0},{"first":65,"second":947,"amount":-1},{"first":65,"second":955,"amount":0},{"first":65,"second":957,"amount":-1},{"first":65,"second":933,"amount":-2},{"first":65,"second":920,"amount":0},{"first":65,"second":927,"amount":0},{"first":65,"second":934,"amount":-1},{"first":65,"second":936,"amount":-1},{"first":65,"second":216,"amount":0},{"first":90,"second":101,"amount":0},{"first":90,"second":121,"amount":-1},{"first":90,"second":117,"amount":0},{"first":90,"second":111,"amount":0},{"first":90,"second":113,"amount":0},{"first":90,"second":100,"amount":0},{"first":90,"second":103,"amount":0},{"first":90,"second":119,"amount":-1},{"first":90,"second":99,"amount":0},{"first":90,"second":118,"amount":-1},{"first":90,"second":65,"amount":0},{"first":90,"second":79,"amount":-1},{"first":90,"second":81,"amount":-1},{"first":90,"second":71,"amount":-1},{"first":90,"second":67,"amount":-1},{"first":90,"second":1040,"amount":0},{"first":90,"second":1077,"amount":0},{"first":90,"second":1105,"amount":0},{"first":90,"second":1054,"amount":-1},{"first":90,"second":1086,"amount":0},{"first":90,"second":1057,"amount":-1},{"first":90,"second":1089,"amount":0},{"first":90,"second":1091,"amount":-1},{"first":90,"second":1092,"amount":0},{"first":90,"second":252,"amount":0},{"first":90,"second":246,"amount":0},{"first":90,"second":214,"amount":-1},{"first":90,"second":196,"amount":0},{"first":90,"second":962,"amount":0},{"first":90,"second":965,"amount":0},{"first":90,"second":959,"amount":0},{"first":90,"second":945,"amount":0},{"first":90,"second":963,"amount":0},{"first":90,"second":947,"amount":-1},{"first":90,"second":968,"amount":-1},{"first":90,"second":957,"amount":-1},{"first":90,"second":920,"amount":-1},{"first":90,"second":927,"amount":-1},{"first":90,"second":913,"amount":0},{"first":90,"second":916,"amount":0},{"first":90,"second":934,"amount":-1},{"first":90,"second":923,"amount":0},{"first":90,"second":197,"amount":0},{"first":90,"second":216,"amount":-1},{"first":69,"second":101,"amount":0},{"first":69,"second":121,"amount":-1},{"first":69,"second":117,"amount":0},{"first":69,"second":111,"amount":0},{"first":69,"second":113,"amount":0},{"first":69,"second":100,"amount":0},{"first":69,"second":102,"amount":0},{"first":69,"second":103,"amount":0},{"first":69,"second":119,"amount":0},{"first":69,"second":99,"amount":0},{"first":69,"second":118,"amount":-1},{"first":69,"second":84,"amount":0},{"first":69,"second":1077,"amount":0},{"first":69,"second":1105,"amount":0},{"first":69,"second":1086,"amount":0},{"first":69,"second":1089,"amount":0},{"first":69,"second":1058,"amount":0},{"first":69,"second":1091,"amount":-1},{"first":69,"second":1092,"amount":0},{"first":69,"second":252,"amount":0},{"first":69,"second":246,"amount":0},{"first":69,"second":962,"amount":0},{"first":69,"second":965,"amount":0},{"first":69,"second":959,"amount":0},{"first":69,"second":945,"amount":0},{"first":69,"second":963,"amount":0},{"first":69,"second":947,"amount":-1},{"first":69,"second":957,"amount":-1},{"first":82,"second":84,"amount":-2},{"first":82,"second":89,"amount":-1},{"first":82,"second":86,"amount":0},{"first":82,"second":1058,"amount":-2},{"first":82,"second":933,"amount":-1},{"first":84,"second":97,"amount":-2},{"first":84,"second":122,"amount":-1},{"first":84,"second":101,"amount":-2},{"first":84,"second":114,"amount":-2},{"first":84,"second":121,"amount":-1},{"first":84,"second":117,"amount":-2},{"first":84,"second":111,"amount":-2},{"first":84,"second":112,"amount":-2},{"first":84,"second":113,"amount":-2},{"first":84,"second":115,"amount":-2},{"first":84,"second":100,"amount":-2},{"first":84,"second":103,"amount":-2},{"first":84,"second":109,"amount":-2},{"first":84,"second":119,"amount":-1},{"first":84,"second":120,"amount":-2},{"first":84,"second":99,"amount":-2},{"first":84,"second":118,"amount":-1},{"first":84,"second":110,"amount":-2},{"first":84,"second":65,"amount":-2},{"first":84,"second":84,"amount":0},{"first":84,"second":89,"amount":0},{"first":84,"second":79,"amount":-1},{"first":84,"second":81,"amount":-1},{"first":84,"second":83,"amount":0},{"first":84,"second":71,"amount":-1},{"first":84,"second":74,"amount":-5},{"first":84,"second":87,"amount":0},{"first":84,"second":67,"amount":-1},{"first":84,"second":86,"amount":0},{"first":84,"second":45,"amount":-5},{"first":84,"second":8211,"amount":-5},{"first":84,"second":44,"amount":-4},{"first":84,"second":46,"amount":-4},{"first":84,"second":1040,"amount":-2},{"first":84,"second":1072,"amount":-2},{"first":84,"second":1073,"amount":-1},{"first":84,"second":1074,"amount":-2},{"first":84,"second":1075,"amount":-2},{"first":84,"second":1044,"amount":-2},{"first":84,"second":1076,"amount":-3},{"first":84,"second":1077,"amount":-2},{"first":84,"second":1105,"amount":-2},{"first":84,"second":1078,"amount":-2},{"first":84,"second":1079,"amount":-3},{"first":84,"second":1080,"amount":-2},{"first":84,"second":1081,"amount":-2},{"first":84,"second":1082,"amount":-2},{"first":84,"second":1051,"amount":-1},{"first":84,"second":1083,"amount":-3},{"first":84,"second":1084,"amount":-2},{"first":84,"second":1085,"amount":-2},{"first":84,"second":1054,"amount":-1},{"first":84,"second":1086,"amount":-2},{"first":84,"second":1087,"amount":-2},{"first":84,"second":1088,"amount":-2},{"first":84,"second":1057,"amount":-1},{"first":84,"second":1089,"amount":-2},{"first":84,"second":1058,"amount":0},{"first":84,"second":1090,"amount":-2},{"first":84,"second":1091,"amount":-1},{"first":84,"second":1092,"amount":-2},{"first":84,"second":1093,"amount":-2},{"first":84,"second":1094,"amount":-2},{"first":84,"second":1095,"amount":-3},{"first":84,"second":1096,"amount":-2},{"first":84,"second":1097,"amount":-2},{"first":84,"second":1099,"amount":-3},{"first":84,"second":1068,"amount":0},{"first":84,"second":1100,"amount":-2},{"first":84,"second":1101,"amount":-3},{"first":84,"second":1102,"amount":-2},{"first":84,"second":1103,"amount":-3},{"first":84,"second":252,"amount":-2},{"first":84,"second":246,"amount":-2},{"first":84,"second":214,"amount":-1},{"first":84,"second":228,"amount":-2},{"first":84,"second":196,"amount":-2},{"first":84,"second":241,"amount":-2},{"first":84,"second":962,"amount":-2},{"first":84,"second":949,"amount":-3},{"first":84,"second":961,"amount":-3},{"first":84,"second":964,"amount":-2},{"first":84,"second":965,"amount":-2},{"first":84,"second":953,"amount":-3},{"first":84,"second":959,"amount":-2},{"first":84,"second":960,"amount":-2},{"first":84,"second":945,"amount":-2},{"first":84,"second":963,"amount":-2},{"first":84,"second":948,"amount":-1},{"first":84,"second":966,"amount":-3},{"first":84,"second":947,"amount":-1},{"first":84,"second":951,"amount":-2},{"first":84,"second":968,"amount":-3},{"first":84,"second":969,"amount":-3},{"first":84,"second":957,"amount":-1},{"first":84,"second":933,"amount":0},{"first":84,"second":920,"amount":-1},{"first":84,"second":927,"amount":-1},{"first":84,"second":913,"amount":-2},{"first":84,"second":916,"amount":-2},{"first":84,"second":934,"amount":-2},{"first":84,"second":923,"amount":-2},{"first":84,"second":229,"amount":-2},{"first":84,"second":197,"amount":-2},{"first":84,"second":230,"amount":-2},{"first":84,"second":198,"amount":-4},{"first":84,"second":248,"amount":-2},{"first":84,"second":216,"amount":-1},{"first":89,"second":97,"amount":-1},{"first":89,"second":122,"amount":-1},{"first":89,"second":101,"amount":-1},{"first":89,"second":114,"amount":-1},{"first":89,"second":116,"amount":0},{"first":89,"second":121,"amount":0},{"first":89,"second":117,"amount":-1},{"first":89,"second":111,"amount":-1},{"first":89,"second":112,"amount":-1},{"first":89,"second":113,"amount":-1},{"first":89,"second":115,"amount":-1},{"first":89,"second":100,"amount":-1},{"first":89,"second":102,"amount":0},{"first":89,"second":103,"amount":-1},{"first":89,"second":109,"amount":-1},{"first":89,"second":120,"amount":0},{"first":89,"second":99,"amount":-1},{"first":89,"second":118,"amount":0},{"first":89,"second":110,"amount":-1},{"first":89,"second":65,"amount":-2},{"first":89,"second":84,"amount":0},{"first":89,"second":89,"amount":0},{"first":89,"second":85,"amount":-2},{"first":89,"second":79,"amount":-1},{"first":89,"second":81,"amount":-1},{"first":89,"second":83,"amount":0},{"first":89,"second":71,"amount":-1},{"first":89,"second":74,"amount":-2},{"first":89,"second":87,"amount":0},{"first":89,"second":88,"amount":0},{"first":89,"second":67,"amount":-1},{"first":89,"second":86,"amount":0},{"first":89,"second":42,"amount":-1},{"first":89,"second":45,"amount":-1},{"first":89,"second":8211,"amount":-1},{"first":89,"second":44,"amount":-4},{"first":89,"second":46,"amount":-4},{"first":89,"second":125,"amount":0},{"first":89,"second":41,"amount":0},{"first":89,"second":93,"amount":0},{"first":89,"second":38,"amount":-1},{"first":89,"second":1040,"amount":-2},{"first":89,"second":1072,"amount":-1},{"first":89,"second":1075,"amount":-1},{"first":89,"second":1077,"amount":-1},{"first":89,"second":1105,"amount":-1},{"first":89,"second":1046,"amount":0},{"first":89,"second":1078,"amount":0},{"first":89,"second":1080,"amount":-1},{"first":89,"second":1081,"amount":-1},{"first":89,"second":1082,"amount":-1},{"first":89,"second":1084,"amount":-1},{"first":89,"second":1085,"amount":-1},{"first":89,"second":1054,"amount":-1},{"first":89,"second":1086,"amount":-1},{"first":89,"second":1087,"amount":-1},{"first":89,"second":1088,"amount":-1},{"first":89,"second":1057,"amount":-1},{"first":89,"second":1089,"amount":-1},{"first":89,"second":1058,"amount":0},{"first":89,"second":1091,"amount":0},{"first":89,"second":1092,"amount":-1},{"first":89,"second":1061,"amount":0},{"first":89,"second":1093,"amount":0},{"first":89,"second":1094,"amount":-1},{"first":89,"second":1096,"amount":-1},{"first":89,"second":1097,"amount":-1},{"first":89,"second":1100,"amount":-1},{"first":89,"second":1102,"amount":-1},{"first":89,"second":252,"amount":-1},{"first":89,"second":220,"amount":-2},{"first":89,"second":246,"amount":-1},{"first":89,"second":214,"amount":-1},{"first":89,"second":228,"amount":-1},{"first":89,"second":196,"amount":-2},{"first":89,"second":241,"amount":-1},{"first":89,"second":962,"amount":-1},{"first":89,"second":949,"amount":-1},{"first":89,"second":961,"amount":-1},{"first":89,"second":964,"amount":0},{"first":89,"second":965,"amount":-1},{"first":89,"second":952,"amount":0},{"first":89,"second":953,"amount":-1},{"first":89,"second":959,"amount":-1},{"first":89,"second":960,"amount":0},{"first":89,"second":945,"amount":-1},{"first":89,"second":963,"amount":-1},{"first":89,"second":948,"amount":0},{"first":89,"second":966,"amount":-1},{"first":89,"second":947,"amount":0},{"first":89,"second":951,"amount":-1},{"first":89,"second":950,"amount":0},{"first":89,"second":968,"amount":-1},{"first":89,"second":969,"amount":-1},{"first":89,"second":946,"amount":0},{"first":89,"second":957,"amount":0},{"first":89,"second":933,"amount":0},{"first":89,"second":920,"amount":-1},{"first":89,"second":927,"amount":-1},{"first":89,"second":913,"amount":-2},{"first":89,"second":916,"amount":-2},{"first":89,"second":934,"amount":-1},{"first":89,"second":923,"amount":-2},{"first":89,"second":935,"amount":0},{"first":89,"second":229,"amount":-1},{"first":89,"second":197,"amount":-2},{"first":89,"second":230,"amount":-1},{"first":89,"second":198,"amount":-2},{"first":89,"second":248,"amount":-1},{"first":89,"second":216,"amount":-1},{"first":85,"second":65,"amount":0},{"first":85,"second":1040,"amount":0},{"first":85,"second":196,"amount":0},{"first":85,"second":913,"amount":0},{"first":85,"second":916,"amount":0},{"first":85,"second":923,"amount":0},{"first":85,"second":197,"amount":0},{"first":73,"second":65,"amount":0},{"first":73,"second":84,"amount":-1},{"first":73,"second":89,"amount":-1},{"first":73,"second":88,"amount":0},{"first":73,"second":1040,"amount":0},{"first":73,"second":1044,"amount":0},{"first":73,"second":1076,"amount":0},{"first":73,"second":1046,"amount":0},{"first":73,"second":1051,"amount":0},{"first":73,"second":1083,"amount":0},{"first":73,"second":1058,"amount":-1},{"first":73,"second":1061,"amount":0},{"first":73,"second":1063,"amount":-1},{"first":73,"second":1095,"amount":-1},{"first":73,"second":196,"amount":0},{"first":73,"second":933,"amount":-1},{"first":73,"second":913,"amount":0},{"first":73,"second":916,"amount":0},{"first":73,"second":923,"amount":0},{"first":73,"second":935,"amount":0},{"first":73,"second":197,"amount":0},{"first":79,"second":65,"amount":0},{"first":79,"second":90,"amount":0},{"first":79,"second":84,"amount":-1},{"first":79,"second":89,"amount":-1},{"first":79,"second":88,"amount":0},{"first":79,"second":86,"amount":0},{"first":79,"second":44,"amount":-2},{"first":79,"second":46,"amount":-2},{"first":79,"second":1040,"amount":0},{"first":79,"second":1044,"amount":-1},{"first":79,"second":1046,"amount":0},{"first":79,"second":1051,"amount":-1},{"first":79,"second":1058,"amount":-1},{"first":79,"second":1061,"amount":0},{"first":79,"second":1068,"amount":-1},{"first":79,"second":196,"amount":0},{"first":79,"second":955,"amount":0},{"first":79,"second":933,"amount":-1},{"first":79,"second":913,"amount":0},{"first":79,"second":931,"amount":0},{"first":79,"second":916,"amount":0},{"first":79,"second":926,"amount":0},{"first":79,"second":923,"amount":0},{"first":79,"second":918,"amount":0},{"first":79,"second":935,"amount":0},{"first":79,"second":197,"amount":0},{"first":79,"second":198,"amount":-1},{"first":80,"second":97,"amount":0},{"first":80,"second":101,"amount":0},{"first":80,"second":116,"amount":0},{"first":80,"second":121,"amount":0},{"first":80,"second":111,"amount":0},{"first":80,"second":113,"amount":0},{"first":80,"second":100,"amount":0},{"first":80,"second":103,"amount":0},{"first":80,"second":99,"amount":0},{"first":80,"second":118,"amount":0},{"first":80,"second":65,"amount":-3},{"first":80,"second":90,"amount":-1},{"first":80,"second":74,"amount":-4},{"first":80,"second":88,"amount":-1},{"first":80,"second":44,"amount":-7},{"first":80,"second":46,"amount":-7},{"first":80,"second":1040,"amount":-3},{"first":80,"second":1072,"amount":0},{"first":80,"second":1044,"amount":-2},{"first":80,"second":1076,"amount":-1},{"first":80,"second":1077,"amount":0},{"first":80,"second":1105,"amount":0},{"first":80,"second":1046,"amount":-1},{"first":80,"second":1051,"amount":-1},{"first":80,"second":1083,"amount":-1},{"first":80,"second":1086,"amount":0},{"first":80,"second":1089,"amount":0},{"first":80,"second":1091,"amount":0},{"first":80,"second":1092,"amount":0},{"first":80,"second":1061,"amount":-1},{"first":80,"second":246,"amount":0},{"first":80,"second":228,"amount":0},{"first":80,"second":196,"amount":-3},{"first":80,"second":962,"amount":0},{"first":80,"second":961,"amount":-1},{"first":80,"second":959,"amount":0},{"first":80,"second":945,"amount":0},{"first":80,"second":963,"amount":0},{"first":80,"second":948,"amount":0},{"first":80,"second":947,"amount":0},{"first":80,"second":955,"amount":-1},{"first":80,"second":957,"amount":0},{"first":80,"second":913,"amount":-3},{"first":80,"second":916,"amount":-3},{"first":80,"second":923,"amount":-3},{"first":80,"second":918,"amount":-1},{"first":80,"second":935,"amount":-1},{"first":80,"second":229,"amount":0},{"first":80,"second":197,"amount":-3},{"first":80,"second":198,"amount":-2},{"first":81,"second":84,"amount":-1},{"first":81,"second":89,"amount":-1},{"first":81,"second":87,"amount":0},{"first":81,"second":86,"amount":-1},{"first":81,"second":1058,"amount":-1},{"first":81,"second":933,"amount":-1},{"first":68,"second":65,"amount":0},{"first":68,"second":90,"amount":0},{"first":68,"second":84,"amount":-1},{"first":68,"second":89,"amount":-1},{"first":68,"second":88,"amount":0},{"first":68,"second":86,"amount":0},{"first":68,"second":44,"amount":-2},{"first":68,"second":46,"amount":-2},{"first":68,"second":1040,"amount":0},{"first":68,"second":1044,"amount":-1},{"first":68,"second":1046,"amount":0},{"first":68,"second":1051,"amount":-1},{"first":68,"second":1058,"amount":-1},{"first":68,"second":1061,"amount":0},{"first":68,"second":1068,"amount":-1},{"first":68,"second":196,"amount":0},{"first":68,"second":955,"amount":0},{"first":68,"second":933,"amount":-1},{"first":68,"second":913,"amount":0},{"first":68,"second":931,"amount":0},{"first":68,"second":916,"amount":0},{"first":68,"second":926,"amount":0},{"first":68,"second":923,"amount":0},{"first":68,"second":918,"amount":0},{"first":68,"second":935,"amount":0},{"first":68,"second":197,"amount":0},{"first":68,"second":198,"amount":-1},{"first":70,"second":97,"amount":-1},{"first":70,"second":101,"amount":0},{"first":70,"second":114,"amount":-1},{"first":70,"second":121,"amount":0},{"first":70,"second":117,"amount":0},{"first":70,"second":111,"amount":0},{"first":70,"second":113,"amount":0},{"first":70,"second":100,"amount":0},{"first":70,"second":103,"amount":0},{"first":70,"second":99,"amount":0},{"first":70,"second":118,"amount":0},{"first":70,"second":65,"amount":-3},{"first":70,"second":84,"amount":0},{"first":70,"second":74,"amount":-5},{"first":70,"second":44,"amount":-5},{"first":70,"second":46,"amount":-5},{"first":70,"second":1040,"amount":-3},{"first":70,"second":1072,"amount":-1},{"first":70,"second":1077,"amount":0},{"first":70,"second":1105,"amount":0},{"first":70,"second":1086,"amount":0},{"first":70,"second":1089,"amount":0},{"first":70,"second":1058,"amount":0},{"first":70,"second":1091,"amount":0},{"first":70,"second":1092,"amount":0},{"first":70,"second":252,"amount":0},{"first":70,"second":246,"amount":0},{"first":70,"second":228,"amount":-1},{"first":70,"second":196,"amount":-3},{"first":70,"second":962,"amount":0},{"first":70,"second":965,"amount":0},{"first":70,"second":959,"amount":0},{"first":70,"second":945,"amount":0},{"first":70,"second":963,"amount":0},{"first":70,"second":947,"amount":0},{"first":70,"second":957,"amount":0},{"first":70,"second":913,"amount":-3},{"first":70,"second":916,"amount":-3},{"first":70,"second":923,"amount":-3},{"first":70,"second":229,"amount":-1},{"first":70,"second":197,"amount":-3},{"first":72,"second":65,"amount":0},{"first":72,"second":84,"amount":-1},{"first":72,"second":89,"amount":-1},{"first":72,"second":88,"amount":0},{"first":72,"second":1040,"amount":0},{"first":72,"second":1044,"amount":0},{"first":72,"second":1076,"amount":0},{"first":72,"second":1046,"amount":0},{"first":72,"second":1051,"amount":0},{"first":72,"second":1083,"amount":0},{"first":72,"second":1058,"amount":-1},{"first":72,"second":1061,"amount":0},{"first":72,"second":1063,"amount":-1},{"first":72,"second":1095,"amount":-1},{"first":72,"second":196,"amount":0},{"first":72,"second":933,"amount":-1},{"first":72,"second":913,"amount":0},{"first":72,"second":916,"amount":0},{"first":72,"second":923,"amount":0},{"first":72,"second":935,"amount":0},{"first":72,"second":197,"amount":0},{"first":74,"second":65,"amount":0},{"first":74,"second":1040,"amount":0},{"first":74,"second":196,"amount":0},{"first":74,"second":913,"amount":0},{"first":74,"second":916,"amount":0},{"first":74,"second":923,"amount":0},{"first":74,"second":197,"amount":0},{"first":75,"second":101,"amount":-1},{"first":75,"second":121,"amount":-1},{"first":75,"second":117,"amount":0},{"first":75,"second":111,"amount":-1},{"first":75,"second":112,"amount":0},{"first":75,"second":113,"amount":-1},{"first":75,"second":100,"amount":-1},{"first":75,"second":103,"amount":-1},{"first":75,"second":109,"amount":0},{"first":75,"second":119,"amount":-1},{"first":75,"second":99,"amount":-1},{"first":75,"second":118,"amount":-1},{"first":75,"second":110,"amount":0},{"first":75,"second":79,"amount":-1},{"first":75,"second":81,"amount":-1},{"first":75,"second":71,"amount":-1},{"first":75,"second":67,"amount":-1},{"first":75,"second":45,"amount":-1},{"first":75,"second":8211,"amount":-1},{"first":75,"second":1073,"amount":-1},{"first":75,"second":1075,"amount":0},{"first":75,"second":1077,"amount":-1},{"first":75,"second":1105,"amount":-1},{"first":75,"second":1080,"amount":0},{"first":75,"second":1081,"amount":0},{"first":75,"second":1082,"amount":0},{"first":75,"second":1084,"amount":0},{"first":75,"second":1085,"amount":0},{"first":75,"second":1054,"amount":-1},{"first":75,"second":1086,"amount":-1},{"first":75,"second":1087,"amount":0},{"first":75,"second":1088,"amount":0},{"first":75,"second":1057,"amount":-1},{"first":75,"second":1089,"amount":-1},{"first":75,"second":1090,"amount":-1},{"first":75,"second":1091,"amount":-1},{"first":75,"second":1092,"amount":-1},{"first":75,"second":1094,"amount":0},{"first":75,"second":1095,"amount":-2},{"first":75,"second":1096,"amount":0},{"first":75,"second":1097,"amount":0},{"first":75,"second":1100,"amount":0},{"first":75,"second":1102,"amount":0},{"first":75,"second":252,"amount":0},{"first":75,"second":246,"amount":-1},{"first":75,"second":214,"amount":-1},{"first":75,"second":241,"amount":0},{"first":75,"second":962,"amount":-1},{"first":75,"second":964,"amount":-2},{"first":75,"second":965,"amount":0},{"first":75,"second":959,"amount":-1},{"first":75,"second":945,"amount":-1},{"first":75,"second":963,"amount":-1},{"first":75,"second":947,"amount":-1},{"first":75,"second":951,"amount":0},{"first":75,"second":957,"amount":-1},{"first":75,"second":920,"amount":-1},{"first":75,"second":927,"amount":-1},{"first":75,"second":934,"amount":-1},{"first":75,"second":216,"amount":-1},{"first":76,"second":121,"amount":-3},{"first":76,"second":117,"amount":-1},{"first":76,"second":119,"amount":-2},{"first":76,"second":118,"amount":-3},{"first":76,"second":65,"amount":0},{"first":76,"second":84,"amount":-6},{"first":76,"second":89,"amount":-5},{"first":76,"second":85,"amount":-1},{"first":76,"second":79,"amount":-1},{"first":76,"second":81,"amount":-1},{"first":76,"second":71,"amount":-1},{"first":76,"second":87,"amount":-3},{"first":76,"second":67,"amount":-1},{"first":76,"second":86,"amount":-4},{"first":76,"second":34,"amount":-7},{"first":76,"second":39,"amount":-7},{"first":76,"second":1040,"amount":0},{"first":76,"second":1054,"amount":-1},{"first":76,"second":1057,"amount":-1},{"first":76,"second":1058,"amount":-6},{"first":76,"second":1091,"amount":-3},{"first":76,"second":252,"amount":-1},{"first":76,"second":220,"amount":-1},{"first":76,"second":214,"amount":-1},{"first":76,"second":196,"amount":0},{"first":76,"second":965,"amount":-1},{"first":76,"second":947,"amount":-3},{"first":76,"second":957,"amount":-3},{"first":76,"second":933,"amount":-5},{"first":76,"second":920,"amount":-1},{"first":76,"second":927,"amount":-1},{"first":76,"second":913,"amount":0},{"first":76,"second":916,"amount":0},{"first":76,"second":923,"amount":0},{"first":76,"second":197,"amount":0},{"first":76,"second":216,"amount":-1},{"first":77,"second":65,"amount":0},{"first":77,"second":84,"amount":-1},{"first":77,"second":89,"amount":-1},{"first":77,"second":88,"amount":0},{"first":77,"second":1040,"amount":0},{"first":77,"second":1044,"amount":0},{"first":77,"second":1076,"amount":0},{"first":77,"second":1046,"amount":0},{"first":77,"second":1051,"amount":0},{"first":77,"second":1083,"amount":0},{"first":77,"second":1058,"amount":-1},{"first":77,"second":1061,"amount":0},{"first":77,"second":1063,"amount":-1},{"first":77,"second":1095,"amount":-1},{"first":77,"second":196,"amount":0},{"first":77,"second":933,"amount":-1},{"first":77,"second":913,"amount":0},{"first":77,"second":916,"amount":0},{"first":77,"second":923,"amount":0},{"first":77,"second":935,"amount":0},{"first":77,"second":197,"amount":0},{"first":87,"second":97,"amount":-1},{"first":87,"second":101,"amount":-1},{"first":87,"second":114,"amount":0},{"first":87,"second":117,"amount":0},{"first":87,"second":111,"amount":-1},{"first":87,"second":113,"amount":-1},{"first":87,"second":100,"amount":-1},{"first":87,"second":103,"amount":-1},{"first":87,"second":99,"amount":-1},{"first":87,"second":65,"amount":-1},{"first":87,"second":84,"amount":0},{"first":87,"second":45,"amount":-1},{"first":87,"second":8211,"amount":-1},{"first":87,"second":44,"amount":-3},{"first":87,"second":46,"amount":-3},{"first":87,"second":125,"amount":0},{"first":87,"second":41,"amount":0},{"first":87,"second":93,"amount":0},{"first":87,"second":1040,"amount":-1},{"first":87,"second":1072,"amount":-1},{"first":87,"second":1077,"amount":-1},{"first":87,"second":1105,"amount":-1},{"first":87,"second":1086,"amount":-1},{"first":87,"second":1089,"amount":-1},{"first":87,"second":1058,"amount":0},{"first":87,"second":1092,"amount":-1},{"first":87,"second":252,"amount":0},{"first":87,"second":246,"amount":-1},{"first":87,"second":228,"amount":-1},{"first":87,"second":196,"amount":-1},{"first":87,"second":962,"amount":-1},{"first":87,"second":965,"amount":0},{"first":87,"second":959,"amount":-1},{"first":87,"second":945,"amount":-1},{"first":87,"second":963,"amount":-1},{"first":87,"second":913,"amount":-1},{"first":87,"second":916,"amount":-1},{"first":87,"second":923,"amount":-1},{"first":87,"second":229,"amount":-1},{"first":87,"second":197,"amount":-1},{"first":88,"second":101,"amount":-1},{"first":88,"second":121,"amount":-1},{"first":88,"second":117,"amount":0},{"first":88,"second":111,"amount":0},{"first":88,"second":113,"amount":-1},{"first":88,"second":100,"amount":-1},{"first":88,"second":103,"amount":-1},{"first":88,"second":99,"amount":-1},{"first":88,"second":118,"amount":-1},{"first":88,"second":79,"amount":-1},{"first":88,"second":81,"amount":-1},{"first":88,"second":71,"amount":-1},{"first":88,"second":67,"amount":-1},{"first":88,"second":86,"amount":0},{"first":88,"second":45,"amount":-1},{"first":88,"second":8211,"amount":-1},{"first":88,"second":1073,"amount":0},{"first":88,"second":1044,"amount":0},{"first":88,"second":1077,"amount":-1},{"first":88,"second":1105,"amount":-1},{"first":88,"second":1051,"amount":0},{"first":88,"second":1083,"amount":0},{"first":88,"second":1054,"amount":-1},{"first":88,"second":1086,"amount":0},{"first":88,"second":1057,"amount":-1},{"first":88,"second":1089,"amount":-1},{"first":88,"second":1090,"amount":-1},{"first":88,"second":1091,"amount":-1},{"first":88,"second":1092,"amount":-1},{"first":88,"second":1095,"amount":-1},{"first":88,"second":252,"amount":0},{"first":88,"second":246,"amount":0},{"first":88,"second":214,"amount":-1},{"first":88,"second":962,"amount":-1},{"first":88,"second":964,"amount":-1},{"first":88,"second":965,"amount":0},{"first":88,"second":952,"amount":0},{"first":88,"second":959,"amount":0},{"first":88,"second":945,"amount":-1},{"first":88,"second":963,"amount":-1},{"first":88,"second":948,"amount":0},{"first":88,"second":966,"amount":-1},{"first":88,"second":947,"amount":-1},{"first":88,"second":955,"amount":0},{"first":88,"second":968,"amount":-1},{"first":88,"second":969,"amount":0},{"first":88,"second":957,"amount":-1},{"first":88,"second":920,"amount":-1},{"first":88,"second":927,"amount":-1},{"first":88,"second":934,"amount":-1},{"first":88,"second":216,"amount":-1},{"first":67,"second":84,"amount":-1},{"first":67,"second":125,"amount":0},{"first":67,"second":41,"amount":-1},{"first":67,"second":93,"amount":0},{"first":67,"second":1058,"amount":-1},{"first":86,"second":97,"amount":-1},{"first":86,"second":101,"amount":-1},{"first":86,"second":114,"amount":-1},{"first":86,"second":121,"amount":0},{"first":86,"second":117,"amount":-1},{"first":86,"second":111,"amount":-1},{"first":86,"second":113,"amount":-1},{"first":86,"second":100,"amount":-1},{"first":86,"second":103,"amount":-1},{"first":86,"second":99,"amount":-1},{"first":86,"second":118,"amount":0},{"first":86,"second":65,"amount":-2},{"first":86,"second":79,"amount":0},{"first":86,"second":81,"amount":0},{"first":86,"second":71,"amount":0},{"first":86,"second":67,"amount":0},{"first":86,"second":45,"amount":-1},{"first":86,"second":8211,"amount":-1},{"first":86,"second":44,"amount":-5},{"first":86,"second":46,"amount":-5},{"first":86,"second":125,"amount":0},{"first":86,"second":41,"amount":0},{"first":86,"second":93,"amount":0},{"first":86,"second":1040,"amount":-2},{"first":86,"second":1072,"amount":-1},{"first":86,"second":1077,"amount":-1},{"first":86,"second":1105,"amount":-1},{"first":86,"second":1054,"amount":0},{"first":86,"second":1086,"amount":-1},{"first":86,"second":1057,"amount":0},{"first":86,"second":1089,"amount":-1},{"first":86,"second":1091,"amount":0},{"first":86,"second":1092,"amount":-1},{"first":86,"second":252,"amount":-1},{"first":86,"second":246,"amount":-1},{"first":86,"second":214,"amount":0},{"first":86,"second":228,"amount":-1},{"first":86,"second":196,"amount":-2},{"first":86,"second":962,"amount":-1},{"first":86,"second":965,"amount":-1},{"first":86,"second":959,"amount":-1},{"first":86,"second":945,"amount":-1},{"first":86,"second":963,"amount":-1},{"first":86,"second":947,"amount":0},{"first":86,"second":957,"amount":0},{"first":86,"second":920,"amount":0},{"first":86,"second":927,"amount":0},{"first":86,"second":913,"amount":-2},{"first":86,"second":916,"amount":-2},{"first":86,"second":923,"amount":-2},{"first":86,"second":229,"amount":-1},{"first":86,"second":197,"amount":-2},{"first":86,"second":216,"amount":0},{"first":66,"second":84,"amount":-1},{"first":66,"second":89,"amount":-1},{"first":66,"second":86,"amount":0},{"first":66,"second":1058,"amount":-1},{"first":66,"second":1059,"amount":0},{"first":66,"second":933,"amount":-1},{"first":78,"second":65,"amount":0},{"first":78,"second":84,"amount":-1},{"first":78,"second":89,"amount":-1},{"first":78,"second":88,"amount":0},{"first":78,"second":1040,"amount":0},{"first":78,"second":1044,"amount":0},{"first":78,"second":1076,"amount":0},{"first":78,"second":1046,"amount":0},{"first":78,"second":1051,"amount":0},{"first":78,"second":1083,"amount":0},{"first":78,"second":1058,"amount":-1},{"first":78,"second":1061,"amount":0},{"first":78,"second":1063,"amount":-1},{"first":78,"second":1095,"amount":-1},{"first":78,"second":196,"amount":0},{"first":78,"second":933,"amount":-1},{"first":78,"second":913,"amount":0},{"first":78,"second":916,"amount":0},{"first":78,"second":923,"amount":0},{"first":78,"second":935,"amount":0},{"first":78,"second":197,"amount":0},{"first":47,"second":47,"amount":-5},{"first":44,"second":34,"amount":-3},{"first":44,"second":39,"amount":-3},{"first":46,"second":34,"amount":-3},{"first":46,"second":39,"amount":-3},{"first":123,"second":85,"amount":0},{"first":123,"second":74,"amount":0},{"first":123,"second":220,"amount":0},{"first":40,"second":89,"amount":0},{"first":40,"second":87,"amount":0},{"first":40,"second":86,"amount":0},{"first":40,"second":933,"amount":0},{"first":91,"second":85,"amount":0},{"first":91,"second":74,"amount":0},{"first":91,"second":220,"amount":0},{"first":34,"second":97,"amount":-1},{"first":34,"second":101,"amount":-1},{"first":34,"second":111,"amount":-1},{"first":34,"second":112,"amount":0},{"first":34,"second":113,"amount":-1},{"first":34,"second":115,"amount":-2},{"first":34,"second":100,"amount":-1},{"first":34,"second":103,"amount":-1},{"first":34,"second":109,"amount":0},{"first":34,"second":119,"amount":0},{"first":34,"second":99,"amount":-1},{"first":34,"second":110,"amount":0},{"first":34,"second":65,"amount":-2},{"first":34,"second":34,"amount":-2},{"first":34,"second":39,"amount":-2},{"first":34,"second":1040,"amount":-2},{"first":34,"second":1072,"amount":-1},{"first":34,"second":1075,"amount":0},{"first":34,"second":1077,"amount":-1},{"first":34,"second":1105,"amount":-1},{"first":34,"second":1080,"amount":0},{"first":34,"second":1081,"amount":0},{"first":34,"second":1082,"amount":0},{"first":34,"second":1084,"amount":0},{"first":34,"second":1085,"amount":0},{"first":34,"second":1086,"amount":-1},{"first":34,"second":1087,"amount":0},{"first":34,"second":1088,"amount":0},{"first":34,"second":1089,"amount":-1},{"first":34,"second":1092,"amount":-1},{"first":34,"second":1094,"amount":0},{"first":34,"second":1096,"amount":0},{"first":34,"second":1097,"amount":0},{"first":34,"second":1100,"amount":0},{"first":34,"second":1102,"amount":0},{"first":34,"second":246,"amount":-1},{"first":34,"second":228,"amount":-1},{"first":34,"second":196,"amount":-2},{"first":34,"second":241,"amount":0},{"first":34,"second":962,"amount":-1},{"first":34,"second":959,"amount":-1},{"first":34,"second":945,"amount":-1},{"first":34,"second":963,"amount":-1},{"first":34,"second":951,"amount":0},{"first":34,"second":913,"amount":-2},{"first":34,"second":916,"amount":-2},{"first":34,"second":923,"amount":-2},{"first":34,"second":229,"amount":-1},{"first":34,"second":197,"amount":-2},{"first":39,"second":97,"amount":-1},{"first":39,"second":101,"amount":-1},{"first":39,"second":111,"amount":-1},{"first":39,"second":112,"amount":0},{"first":39,"second":113,"amount":-1},{"first":39,"second":115,"amount":-2},{"first":39,"second":100,"amount":-1},{"first":39,"second":103,"amount":-1},{"first":39,"second":109,"amount":0},{"first":39,"second":119,"amount":0},{"first":39,"second":99,"amount":-1},{"first":39,"second":110,"amount":0},{"first":39,"second":65,"amount":-2},{"first":39,"second":34,"amount":-2},{"first":39,"second":39,"amount":-2},{"first":39,"second":1040,"amount":-2},{"first":39,"second":1072,"amount":-1},{"first":39,"second":1075,"amount":0},{"first":39,"second":1077,"amount":-1},{"first":39,"second":1105,"amount":-1},{"first":39,"second":1080,"amount":0},{"first":39,"second":1081,"amount":0},{"first":39,"second":1082,"amount":0},{"first":39,"second":1084,"amount":0},{"first":39,"second":1085,"amount":0},{"first":39,"second":1086,"amount":-1},{"first":39,"second":1087,"amount":0},{"first":39,"second":1088,"amount":0},{"first":39,"second":1089,"amount":-1},{"first":39,"second":1092,"amount":-1},{"first":39,"second":1094,"amount":0},{"first":39,"second":1096,"amount":0},{"first":39,"second":1097,"amount":0},{"first":39,"second":1100,"amount":0},{"first":39,"second":1102,"amount":0},{"first":39,"second":246,"amount":-1},{"first":39,"second":228,"amount":-1},{"first":39,"second":196,"amount":-2},{"first":39,"second":241,"amount":0},{"first":39,"second":962,"amount":-1},{"first":39,"second":959,"amount":-1},{"first":39,"second":945,"amount":-1},{"first":39,"second":963,"amount":-1},{"first":39,"second":951,"amount":0},{"first":39,"second":913,"amount":-2},{"first":39,"second":916,"amount":-2},{"first":39,"second":923,"amount":-2},{"first":39,"second":229,"amount":-1},{"first":39,"second":197,"amount":-2},{"first":1040,"second":122,"amount":0},{"first":1040,"second":116,"amount":0},{"first":1040,"second":121,"amount":-1},{"first":1040,"second":117,"amount":0},{"first":1040,"second":111,"amount":0},{"first":1040,"second":119,"amount":-1},{"first":1040,"second":118,"amount":-1},{"first":1040,"second":84,"amount":-3},{"first":1040,"second":89,"amount":-2},{"first":1040,"second":85,"amount":0},{"first":1040,"second":79,"amount":0},{"first":1040,"second":81,"amount":0},{"first":1040,"second":71,"amount":0},{"first":1040,"second":87,"amount":-1},{"first":1040,"second":67,"amount":0},{"first":1040,"second":86,"amount":-2},{"first":1040,"second":63,"amount":-1},{"first":1040,"second":34,"amount":-2},{"first":1040,"second":39,"amount":-2},{"first":1040,"second":1044,"amount":0},{"first":1040,"second":1051,"amount":0},{"first":1040,"second":1083,"amount":0},{"first":1040,"second":1054,"amount":0},{"first":1040,"second":1086,"amount":0},{"first":1040,"second":1057,"amount":0},{"first":1040,"second":1058,"amount":-3},{"first":1040,"second":1090,"amount":-1},{"first":1040,"second":1091,"amount":-1},{"first":1040,"second":1063,"amount":-1},{"first":1040,"second":1095,"amount":-2},{"first":1040,"second":1068,"amount":-1},{"first":1040,"second":252,"amount":0},{"first":1040,"second":220,"amount":0},{"first":1040,"second":246,"amount":0},{"first":1040,"second":214,"amount":0},{"first":1040,"second":964,"amount":-1},{"first":1040,"second":965,"amount":0},{"first":1040,"second":959,"amount":0},{"first":1040,"second":947,"amount":-1},{"first":1040,"second":955,"amount":0},{"first":1040,"second":957,"amount":-1},{"first":1040,"second":933,"amount":-2},{"first":1040,"second":920,"amount":0},{"first":1040,"second":927,"amount":0},{"first":1040,"second":934,"amount":-1},{"first":1040,"second":936,"amount":-1},{"first":1040,"second":216,"amount":0},{"first":1072,"second":121,"amount":0},{"first":1072,"second":118,"amount":0},{"first":1072,"second":34,"amount":-1},{"first":1072,"second":39,"amount":-1},{"first":1072,"second":1090,"amount":0},{"first":1072,"second":1091,"amount":0},{"first":1072,"second":947,"amount":0},{"first":1072,"second":957,"amount":0},{"first":1041,"second":120,"amount":0},{"first":1041,"second":84,"amount":-1},{"first":1041,"second":89,"amount":-1},{"first":1041,"second":88,"amount":0},{"first":1041,"second":86,"amount":-1},{"first":1041,"second":1046,"amount":0},{"first":1041,"second":1078,"amount":0},{"first":1041,"second":1058,"amount":-1},{"first":1041,"second":1090,"amount":-1},{"first":1041,"second":1059,"amount":0},{"first":1041,"second":1061,"amount":0},{"first":1041,"second":1093,"amount":0},{"first":1041,"second":1063,"amount":0},{"first":1041,"second":1068,"amount":-1},{"first":1041,"second":933,"amount":-1},{"first":1041,"second":935,"amount":0},{"first":1073,"second":112,"amount":0},{"first":1073,"second":109,"amount":0},{"first":1073,"second":120,"amount":0},{"first":1073,"second":110,"amount":0},{"first":1073,"second":1075,"amount":0},{"first":1073,"second":1076,"amount":0},{"first":1073,"second":1078,"amount":0},{"first":1073,"second":1080,"amount":0},{"first":1073,"second":1081,"amount":0},{"first":1073,"second":1082,"amount":0},{"first":1073,"second":1084,"amount":0},{"first":1073,"second":1085,"amount":0},{"first":1073,"second":1087,"amount":0},{"first":1073,"second":1088,"amount":0},{"first":1073,"second":1090,"amount":0},{"first":1073,"second":1093,"amount":0},{"first":1073,"second":1094,"amount":0},{"first":1073,"second":1096,"amount":0},{"first":1073,"second":1097,"amount":0},{"first":1073,"second":1100,"amount":0},{"first":1073,"second":1102,"amount":0},{"first":1073,"second":241,"amount":0},{"first":1073,"second":951,"amount":0},{"first":1042,"second":84,"amount":-1},{"first":1042,"second":89,"amount":-1},{"first":1042,"second":86,"amount":0},{"first":1042,"second":1058,"amount":-1},{"first":1042,"second":1059,"amount":0},{"first":1042,"second":933,"amount":-1},{"first":1074,"second":121,"amount":0},{"first":1074,"second":118,"amount":0},{"first":1074,"second":34,"amount":0},{"first":1074,"second":39,"amount":0},{"first":1074,"second":1090,"amount":0},{"first":1074,"second":1091,"amount":0},{"first":1074,"second":947,"amount":0},{"first":1074,"second":957,"amount":0},{"first":1043,"second":97,"amount":-4},{"first":1043,"second":122,"amount":-3},{"first":1043,"second":101,"amount":-4},{"first":1043,"second":114,"amount":-3},{"first":1043,"second":121,"amount":-3},{"first":1043,"second":117,"amount":-4},{"first":1043,"second":111,"amount":-4},{"first":1043,"second":112,"amount":-4},{"first":1043,"second":113,"amount":-4},{"first":1043,"second":115,"amount":-4},{"first":1043,"second":100,"amount":-4},{"first":1043,"second":103,"amount":-4},{"first":1043,"second":109,"amount":-4},{"first":1043,"second":119,"amount":-2},{"first":1043,"second":120,"amount":-3},{"first":1043,"second":99,"amount":-4},{"first":1043,"second":118,"amount":-3},{"first":1043,"second":110,"amount":-4},{"first":1043,"second":65,"amount":-4},{"first":1043,"second":84,"amount":0},{"first":1043,"second":89,"amount":0},{"first":1043,"second":79,"amount":-1},{"first":1043,"second":81,"amount":-1},{"first":1043,"second":83,"amount":-1},{"first":1043,"second":71,"amount":-1},{"first":1043,"second":87,"amount":0},{"first":1043,"second":67,"amount":-1},{"first":1043,"second":86,"amount":0},{"first":1043,"second":45,"amount":-8},{"first":1043,"second":8211,"amount":-8},{"first":1043,"second":44,"amount":-8},{"first":1043,"second":46,"amount":-8},{"first":1043,"second":1040,"amount":-4},{"first":1043,"second":1072,"amount":-4},{"first":1043,"second":1073,"amount":-1},{"first":1043,"second":1074,"amount":-4},{"first":1043,"second":1075,"amount":-4},{"first":1043,"second":1044,"amount":-4},{"first":1043,"second":1076,"amount":-5},{"first":1043,"second":1077,"amount":-4},{"first":1043,"second":1105,"amount":-4},{"first":1043,"second":1078,"amount":-3},{"first":1043,"second":1079,"amount":-5},{"first":1043,"second":1080,"amount":-4},{"first":1043,"second":1081,"amount":-4},{"first":1043,"second":1082,"amount":-4},{"first":1043,"second":1051,"amount":-2},{"first":1043,"second":1083,"amount":-5},{"first":1043,"second":1084,"amount":-4},{"first":1043,"second":1085,"amount":-4},{"first":1043,"second":1054,"amount":-1},{"first":1043,"second":1086,"amount":-4},{"first":1043,"second":1087,"amount":-4},{"first":1043,"second":1088,"amount":-4},{"first":1043,"second":1057,"amount":-1},{"first":1043,"second":1089,"amount":-4},{"first":1043,"second":1058,"amount":0},{"first":1043,"second":1090,"amount":-3},{"first":1043,"second":1091,"amount":-3},{"first":1043,"second":1092,"amount":-4},{"first":1043,"second":1093,"amount":-3},{"first":1043,"second":1094,"amount":-4},{"first":1043,"second":1095,"amount":-5},{"first":1043,"second":1096,"amount":-4},{"first":1043,"second":1097,"amount":-4},{"first":1043,"second":1099,"amount":-5},{"first":1043,"second":1068,"amount":0},{"first":1043,"second":1100,"amount":-4},{"first":1043,"second":1101,"amount":-5},{"first":1043,"second":1102,"amount":-4},{"first":1043,"second":1103,"amount":-5},{"first":1043,"second":252,"amount":-4},{"first":1043,"second":246,"amount":-4},{"first":1043,"second":214,"amount":-1},{"first":1043,"second":228,"amount":-4},{"first":1043,"second":196,"amount":-4},{"first":1043,"second":241,"amount":-4},{"first":1043,"second":962,"amount":-4},{"first":1043,"second":949,"amount":-5},{"first":1043,"second":961,"amount":-6},{"first":1043,"second":964,"amount":-4},{"first":1043,"second":965,"amount":-4},{"first":1043,"second":953,"amount":-6},{"first":1043,"second":959,"amount":-4},{"first":1043,"second":960,"amount":-5},{"first":1043,"second":945,"amount":-4},{"first":1043,"second":963,"amount":-4},{"first":1043,"second":948,"amount":-2},{"first":1043,"second":966,"amount":-6},{"first":1043,"second":947,"amount":-3},{"first":1043,"second":951,"amount":-4},{"first":1043,"second":968,"amount":-5},{"first":1043,"second":969,"amount":-6},{"first":1043,"second":957,"amount":-3},{"first":1043,"second":933,"amount":0},{"first":1043,"second":920,"amount":-1},{"first":1043,"second":927,"amount":-1},{"first":1043,"second":913,"amount":-4},{"first":1043,"second":916,"amount":-4},{"first":1043,"second":934,"amount":-3},{"first":1043,"second":923,"amount":-4},{"first":1043,"second":229,"amount":-4},{"first":1043,"second":197,"amount":-4},{"first":1043,"second":230,"amount":-4},{"first":1043,"second":198,"amount":-7},{"first":1043,"second":248,"amount":-4},{"first":1043,"second":216,"amount":-1},{"first":1075,"second":101,"amount":0},{"first":1075,"second":111,"amount":0},{"first":1075,"second":113,"amount":0},{"first":1075,"second":100,"amount":0},{"first":1075,"second":103,"amount":0},{"first":1075,"second":99,"amount":0},{"first":1075,"second":1076,"amount":-1},{"first":1075,"second":1077,"amount":0},{"first":1075,"second":1105,"amount":0},{"first":1075,"second":1083,"amount":-1},{"first":1075,"second":1086,"amount":0},{"first":1075,"second":1089,"amount":0},{"first":1075,"second":1092,"amount":0},{"first":1075,"second":246,"amount":0},{"first":1075,"second":962,"amount":0},{"first":1075,"second":959,"amount":0},{"first":1075,"second":945,"amount":0},{"first":1075,"second":963,"amount":0},{"first":1044,"second":65,"amount":0},{"first":1044,"second":84,"amount":-1},{"first":1044,"second":89,"amount":-1},{"first":1044,"second":79,"amount":0},{"first":1044,"second":81,"amount":0},{"first":1044,"second":71,"amount":0},{"first":1044,"second":67,"amount":0},{"first":1044,"second":86,"amount":-1},{"first":1044,"second":1040,"amount":0},{"first":1044,"second":1044,"amount":0},{"first":1044,"second":1076,"amount":0},{"first":1044,"second":1051,"amount":0},{"first":1044,"second":1083,"amount":0},{"first":1044,"second":1054,"amount":0},{"first":1044,"second":1057,"amount":0},{"first":1044,"second":1058,"amount":-1},{"first":1044,"second":1063,"amount":-1},{"first":1044,"second":1095,"amount":-1},{"first":1044,"second":1068,"amount":-1},{"first":1044,"second":214,"amount":0},{"first":1044,"second":196,"amount":0},{"first":1044,"second":933,"amount":-1},{"first":1044,"second":920,"amount":0},{"first":1044,"second":927,"amount":0},{"first":1044,"second":913,"amount":0},{"first":1044,"second":916,"amount":0},{"first":1044,"second":923,"amount":0},{"first":1044,"second":197,"amount":0},{"first":1044,"second":216,"amount":0},{"first":1076,"second":1076,"amount":0},{"first":1076,"second":1090,"amount":0},{"first":1076,"second":1095,"amount":0},{"first":1076,"second":1098,"amount":-1},{"first":1045,"second":101,"amount":0},{"first":1045,"second":121,"amount":-1},{"first":1045,"second":117,"amount":0},{"first":1045,"second":111,"amount":0},{"first":1045,"second":113,"amount":0},{"first":1045,"second":100,"amount":0},{"first":1045,"second":102,"amount":0},{"first":1045,"second":103,"amount":0},{"first":1045,"second":119,"amount":0},{"first":1045,"second":99,"amount":0},{"first":1045,"second":118,"amount":-1},{"first":1045,"second":84,"amount":0},{"first":1045,"second":1077,"amount":0},{"first":1045,"second":1105,"amount":0},{"first":1045,"second":1086,"amount":0},{"first":1045,"second":1089,"amount":0},{"first":1045,"second":1058,"amount":0},{"first":1045,"second":1091,"amount":-1},{"first":1045,"second":1092,"amount":0},{"first":1045,"second":252,"amount":0},{"first":1045,"second":246,"amount":0},{"first":1045,"second":962,"amount":0},{"first":1045,"second":965,"amount":0},{"first":1045,"second":959,"amount":0},{"first":1045,"second":945,"amount":0},{"first":1045,"second":963,"amount":0},{"first":1045,"second":947,"amount":-1},{"first":1045,"second":957,"amount":-1},{"first":1077,"second":121,"amount":0},{"first":1077,"second":118,"amount":0},{"first":1077,"second":34,"amount":0},{"first":1077,"second":39,"amount":0},{"first":1077,"second":1090,"amount":0},{"first":1077,"second":1091,"amount":0},{"first":1077,"second":947,"amount":0},{"first":1077,"second":957,"amount":0},{"first":1025,"second":101,"amount":0},{"first":1025,"second":121,"amount":-1},{"first":1025,"second":117,"amount":0},{"first":1025,"second":111,"amount":0},{"first":1025,"second":113,"amount":0},{"first":1025,"second":100,"amount":0},{"first":1025,"second":102,"amount":0},{"first":1025,"second":103,"amount":0},{"first":1025,"second":119,"amount":0},{"first":1025,"second":99,"amount":0},{"first":1025,"second":118,"amount":-1},{"first":1025,"second":84,"amount":0},{"first":1025,"second":1077,"amount":0},{"first":1025,"second":1105,"amount":0},{"first":1025,"second":1086,"amount":0},{"first":1025,"second":1089,"amount":0},{"first":1025,"second":1058,"amount":0},{"first":1025,"second":1091,"amount":-1},{"first":1025,"second":1092,"amount":0},{"first":1025,"second":252,"amount":0},{"first":1025,"second":246,"amount":0},{"first":1025,"second":962,"amount":0},{"first":1025,"second":965,"amount":0},{"first":1025,"second":959,"amount":0},{"first":1025,"second":945,"amount":0},{"first":1025,"second":963,"amount":0},{"first":1025,"second":947,"amount":-1},{"first":1025,"second":957,"amount":-1},{"first":1105,"second":121,"amount":0},{"first":1105,"second":118,"amount":0},{"first":1105,"second":34,"amount":0},{"first":1105,"second":39,"amount":0},{"first":1105,"second":1090,"amount":0},{"first":1105,"second":1091,"amount":0},{"first":1105,"second":947,"amount":0},{"first":1105,"second":957,"amount":0},{"first":1046,"second":101,"amount":-1},{"first":1046,"second":121,"amount":-1},{"first":1046,"second":117,"amount":0},{"first":1046,"second":111,"amount":0},{"first":1046,"second":113,"amount":-1},{"first":1046,"second":100,"amount":-1},{"first":1046,"second":103,"amount":-1},{"first":1046,"second":99,"amount":-1},{"first":1046,"second":118,"amount":-1},{"first":1046,"second":79,"amount":-1},{"first":1046,"second":81,"amount":-1},{"first":1046,"second":71,"amount":-1},{"first":1046,"second":67,"amount":-1},{"first":1046,"second":86,"amount":0},{"first":1046,"second":45,"amount":-1},{"first":1046,"second":8211,"amount":-1},{"first":1046,"second":1073,"amount":0},{"first":1046,"second":1044,"amount":0},{"first":1046,"second":1077,"amount":-1},{"first":1046,"second":1105,"amount":-1},{"first":1046,"second":1051,"amount":0},{"first":1046,"second":1083,"amount":0},{"first":1046,"second":1054,"amount":-1},{"first":1046,"second":1086,"amount":0},{"first":1046,"second":1057,"amount":-1},{"first":1046,"second":1089,"amount":-1},{"first":1046,"second":1090,"amount":-1},{"first":1046,"second":1091,"amount":-1},{"first":1046,"second":1092,"amount":-1},{"first":1046,"second":1095,"amount":-1},{"first":1046,"second":252,"amount":0},{"first":1046,"second":246,"amount":0},{"first":1046,"second":214,"amount":-1},{"first":1046,"second":962,"amount":-1},{"first":1046,"second":964,"amount":-1},{"first":1046,"second":965,"amount":0},{"first":1046,"second":952,"amount":0},{"first":1046,"second":959,"amount":0},{"first":1046,"second":945,"amount":-1},{"first":1046,"second":963,"amount":-1},{"first":1046,"second":948,"amount":0},{"first":1046,"second":966,"amount":-1},{"first":1046,"second":947,"amount":-1},{"first":1046,"second":955,"amount":0},{"first":1046,"second":968,"amount":-1},{"first":1046,"second":969,"amount":0},{"first":1046,"second":957,"amount":-1},{"first":1046,"second":920,"amount":-1},{"first":1046,"second":927,"amount":-1},{"first":1046,"second":934,"amount":-1},{"first":1046,"second":216,"amount":-1},{"first":1078,"second":101,"amount":0},{"first":1078,"second":111,"amount":0},{"first":1078,"second":113,"amount":0},{"first":1078,"second":100,"amount":0},{"first":1078,"second":103,"amount":0},{"first":1078,"second":99,"amount":0},{"first":1078,"second":1077,"amount":0},{"first":1078,"second":1105,"amount":0},{"first":1078,"second":1086,"amount":0},{"first":1078,"second":1089,"amount":0},{"first":1078,"second":1092,"amount":0},{"first":1078,"second":246,"amount":0},{"first":1078,"second":962,"amount":0},{"first":1078,"second":959,"amount":0},{"first":1078,"second":945,"amount":0},{"first":1078,"second":963,"amount":0},{"first":1047,"second":84,"amount":0},{"first":1047,"second":89,"amount":0},{"first":1047,"second":88,"amount":0},{"first":1047,"second":86,"amount":0},{"first":1047,"second":55,"amount":0},{"first":1047,"second":1046,"amount":0},{"first":1047,"second":1051,"amount":0},{"first":1047,"second":1058,"amount":0},{"first":1047,"second":1059,"amount":0},{"first":1047,"second":1061,"amount":0},{"first":1047,"second":1068,"amount":0},{"first":1047,"second":933,"amount":0},{"first":1047,"second":935,"amount":0},{"first":1079,"second":34,"amount":0},{"first":1079,"second":39,"amount":0},{"first":1048,"second":65,"amount":0},{"first":1048,"second":84,"amount":-1},{"first":1048,"second":89,"amount":-1},{"first":1048,"second":88,"amount":0},{"first":1048,"second":1040,"amount":0},{"first":1048,"second":1044,"amount":0},{"first":1048,"second":1076,"amount":0},{"first":1048,"second":1046,"amount":0},{"first":1048,"second":1051,"amount":0},{"first":1048,"second":1083,"amount":0},{"first":1048,"second":1058,"amount":-1},{"first":1048,"second":1061,"amount":0},{"first":1048,"second":1063,"amount":-1},{"first":1048,"second":1095,"amount":-1},{"first":1048,"second":196,"amount":0},{"first":1048,"second":933,"amount":-1},{"first":1048,"second":913,"amount":0},{"first":1048,"second":916,"amount":0},{"first":1048,"second":923,"amount":0},{"first":1048,"second":935,"amount":0},{"first":1048,"second":197,"amount":0},{"first":1050,"second":101,"amount":-1},{"first":1050,"second":121,"amount":-1},{"first":1050,"second":117,"amount":0},{"first":1050,"second":111,"amount":-1},{"first":1050,"second":112,"amount":0},{"first":1050,"second":113,"amount":-1},{"first":1050,"second":100,"amount":-1},{"first":1050,"second":103,"amount":-1},{"first":1050,"second":109,"amount":0},{"first":1050,"second":119,"amount":-1},{"first":1050,"second":99,"amount":-1},{"first":1050,"second":118,"amount":-1},{"first":1050,"second":110,"amount":0},{"first":1050,"second":79,"amount":-1},{"first":1050,"second":81,"amount":-1},{"first":1050,"second":71,"amount":-1},{"first":1050,"second":67,"amount":-1},{"first":1050,"second":45,"amount":-1},{"first":1050,"second":8211,"amount":-1},{"first":1050,"second":1073,"amount":-1},{"first":1050,"second":1075,"amount":0},{"first":1050,"second":1077,"amount":-1},{"first":1050,"second":1105,"amount":-1},{"first":1050,"second":1080,"amount":0},{"first":1050,"second":1081,"amount":0},{"first":1050,"second":1082,"amount":0},{"first":1050,"second":1084,"amount":0},{"first":1050,"second":1085,"amount":0},{"first":1050,"second":1054,"amount":-1},{"first":1050,"second":1086,"amount":-1},{"first":1050,"second":1087,"amount":0},{"first":1050,"second":1088,"amount":0},{"first":1050,"second":1057,"amount":-1},{"first":1050,"second":1089,"amount":-1},{"first":1050,"second":1090,"amount":-1},{"first":1050,"second":1091,"amount":-1},{"first":1050,"second":1092,"amount":-1},{"first":1050,"second":1094,"amount":0},{"first":1050,"second":1095,"amount":-2},{"first":1050,"second":1096,"amount":0},{"first":1050,"second":1097,"amount":0},{"first":1050,"second":1100,"amount":0},{"first":1050,"second":1102,"amount":0},{"first":1050,"second":252,"amount":0},{"first":1050,"second":246,"amount":-1},{"first":1050,"second":214,"amount":-1},{"first":1050,"second":241,"amount":0},{"first":1050,"second":962,"amount":-1},{"first":1050,"second":964,"amount":-2},{"first":1050,"second":965,"amount":0},{"first":1050,"second":959,"amount":-1},{"first":1050,"second":945,"amount":-1},{"first":1050,"second":963,"amount":-1},{"first":1050,"second":947,"amount":-1},{"first":1050,"second":951,"amount":0},{"first":1050,"second":957,"amount":-1},{"first":1050,"second":920,"amount":-1},{"first":1050,"second":927,"amount":-1},{"first":1050,"second":934,"amount":-1},{"first":1050,"second":216,"amount":-1},{"first":1082,"second":101,"amount":0},{"first":1082,"second":111,"amount":0},{"first":1082,"second":113,"amount":0},{"first":1082,"second":100,"amount":0},{"first":1082,"second":103,"amount":0},{"first":1082,"second":99,"amount":0},{"first":1082,"second":1077,"amount":0},{"first":1082,"second":1105,"amount":0},{"first":1082,"second":1086,"amount":0},{"first":1082,"second":1089,"amount":0},{"first":1082,"second":1092,"amount":0},{"first":1082,"second":246,"amount":0},{"first":1082,"second":962,"amount":0},{"first":1082,"second":959,"amount":0},{"first":1082,"second":945,"amount":0},{"first":1082,"second":963,"amount":0},{"first":1051,"second":65,"amount":0},{"first":1051,"second":84,"amount":-1},{"first":1051,"second":89,"amount":-1},{"first":1051,"second":88,"amount":0},{"first":1051,"second":1040,"amount":0},{"first":1051,"second":1044,"amount":0},{"first":1051,"second":1076,"amount":0},{"first":1051,"second":1046,"amount":0},{"first":1051,"second":1051,"amount":0},{"first":1051,"second":1083,"amount":0},{"first":1051,"second":1058,"amount":-1},{"first":1051,"second":1061,"amount":0},{"first":1051,"second":1063,"amount":-1},{"first":1051,"second":1095,"amount":-1},{"first":1051,"second":196,"amount":0},{"first":1051,"second":933,"amount":-1},{"first":1051,"second":913,"amount":0},{"first":1051,"second":916,"amount":0},{"first":1051,"second":923,"amount":0},{"first":1051,"second":935,"amount":0},{"first":1051,"second":197,"amount":0},{"first":1052,"second":65,"amount":0},{"first":1052,"second":84,"amount":-1},{"first":1052,"second":89,"amount":-1},{"first":1052,"second":88,"amount":0},{"first":1052,"second":1040,"amount":0},{"first":1052,"second":1044,"amount":0},{"first":1052,"second":1076,"amount":0},{"first":1052,"second":1046,"amount":0},{"first":1052,"second":1051,"amount":0},{"first":1052,"second":1083,"amount":0},{"first":1052,"second":1058,"amount":-1},{"first":1052,"second":1061,"amount":0},{"first":1052,"second":1063,"amount":-1},{"first":1052,"second":1095,"amount":-1},{"first":1052,"second":196,"amount":0},{"first":1052,"second":933,"amount":-1},{"first":1052,"second":913,"amount":0},{"first":1052,"second":916,"amount":0},{"first":1052,"second":923,"amount":0},{"first":1052,"second":935,"amount":0},{"first":1052,"second":197,"amount":0},{"first":1053,"second":65,"amount":0},{"first":1053,"second":84,"amount":-1},{"first":1053,"second":89,"amount":-1},{"first":1053,"second":88,"amount":0},{"first":1053,"second":1040,"amount":0},{"first":1053,"second":1044,"amount":0},{"first":1053,"second":1076,"amount":0},{"first":1053,"second":1046,"amount":0},{"first":1053,"second":1051,"amount":0},{"first":1053,"second":1083,"amount":0},{"first":1053,"second":1058,"amount":-1},{"first":1053,"second":1061,"amount":0},{"first":1053,"second":1063,"amount":-1},{"first":1053,"second":1095,"amount":-1},{"first":1053,"second":196,"amount":0},{"first":1053,"second":933,"amount":-1},{"first":1053,"second":913,"amount":0},{"first":1053,"second":916,"amount":0},{"first":1053,"second":923,"amount":0},{"first":1053,"second":935,"amount":0},{"first":1053,"second":197,"amount":0},{"first":1054,"second":65,"amount":0},{"first":1054,"second":90,"amount":0},{"first":1054,"second":84,"amount":-1},{"first":1054,"second":89,"amount":-1},{"first":1054,"second":88,"amount":0},{"first":1054,"second":86,"amount":0},{"first":1054,"second":44,"amount":-2},{"first":1054,"second":46,"amount":-2},{"first":1054,"second":1040,"amount":0},{"first":1054,"second":1044,"amount":-1},{"first":1054,"second":1046,"amount":0},{"first":1054,"second":1051,"amount":-1},{"first":1054,"second":1058,"amount":-1},{"first":1054,"second":1061,"amount":0},{"first":1054,"second":1068,"amount":-1},{"first":1054,"second":196,"amount":0},{"first":1054,"second":955,"amount":0},{"first":1054,"second":933,"amount":-1},{"first":1054,"second":913,"amount":0},{"first":1054,"second":931,"amount":0},{"first":1054,"second":916,"amount":0},{"first":1054,"second":926,"amount":0},{"first":1054,"second":923,"amount":0},{"first":1054,"second":918,"amount":0},{"first":1054,"second":935,"amount":0},{"first":1054,"second":197,"amount":0},{"first":1054,"second":198,"amount":-1},{"first":1086,"second":122,"amount":0},{"first":1086,"second":121,"amount":0},{"first":1086,"second":120,"amount":0},{"first":1086,"second":118,"amount":0},{"first":1086,"second":34,"amount":-3},{"first":1086,"second":39,"amount":-3},{"first":1086,"second":1076,"amount":-1},{"first":1086,"second":1078,"amount":0},{"first":1086,"second":1083,"amount":0},{"first":1086,"second":1090,"amount":0},{"first":1086,"second":1091,"amount":0},{"first":1086,"second":1093,"amount":0},{"first":1086,"second":964,"amount":0},{"first":1086,"second":947,"amount":0},{"first":1086,"second":957,"amount":0},{"first":1056,"second":97,"amount":0},{"first":1056,"second":101,"amount":0},{"first":1056,"second":116,"amount":0},{"first":1056,"second":121,"amount":0},{"first":1056,"second":111,"amount":0},{"first":1056,"second":113,"amount":0},{"first":1056,"second":100,"amount":0},{"first":1056,"second":103,"amount":0},{"first":1056,"second":99,"amount":0},{"first":1056,"second":118,"amount":0},{"first":1056,"second":65,"amount":-3},{"first":1056,"second":90,"amount":-1},{"first":1056,"second":74,"amount":-4},{"first":1056,"second":88,"amount":-1},{"first":1056,"second":44,"amount":-7},{"first":1056,"second":46,"amount":-7},{"first":1056,"second":1040,"amount":-3},{"first":1056,"second":1072,"amount":0},{"first":1056,"second":1044,"amount":-2},{"first":1056,"second":1076,"amount":-1},{"first":1056,"second":1077,"amount":0},{"first":1056,"second":1105,"amount":0},{"first":1056,"second":1046,"amount":-1},{"first":1056,"second":1051,"amount":-1},{"first":1056,"second":1083,"amount":-1},{"first":1056,"second":1086,"amount":0},{"first":1056,"second":1089,"amount":0},{"first":1056,"second":1091,"amount":0},{"first":1056,"second":1092,"amount":0},{"first":1056,"second":1061,"amount":-1},{"first":1056,"second":246,"amount":0},{"first":1056,"second":228,"amount":0},{"first":1056,"second":196,"amount":-3},{"first":1056,"second":962,"amount":0},{"first":1056,"second":961,"amount":-1},{"first":1056,"second":959,"amount":0},{"first":1056,"second":945,"amount":0},{"first":1056,"second":963,"amount":0},{"first":1056,"second":948,"amount":0},{"first":1056,"second":947,"amount":0},{"first":1056,"second":955,"amount":-1},{"first":1056,"second":957,"amount":0},{"first":1056,"second":913,"amount":-3},{"first":1056,"second":916,"amount":-3},{"first":1056,"second":923,"amount":-3},{"first":1056,"second":918,"amount":-1},{"first":1056,"second":935,"amount":-1},{"first":1056,"second":229,"amount":0},{"first":1056,"second":197,"amount":-3},{"first":1056,"second":198,"amount":-2},{"first":1088,"second":122,"amount":0},{"first":1088,"second":121,"amount":0},{"first":1088,"second":120,"amount":0},{"first":1088,"second":118,"amount":0},{"first":1088,"second":34,"amount":-1},{"first":1088,"second":39,"amount":-1},{"first":1088,"second":1076,"amount":0},{"first":1088,"second":1078,"amount":0},{"first":1088,"second":1083,"amount":0},{"first":1088,"second":1090,"amount":-2},{"first":1088,"second":1091,"amount":0},{"first":1088,"second":1093,"amount":0},{"first":1088,"second":964,"amount":0},{"first":1088,"second":947,"amount":0},{"first":1088,"second":957,"amount":0},{"first":1057,"second":84,"amount":-1},{"first":1057,"second":125,"amount":0},{"first":1057,"second":41,"amount":-1},{"first":1057,"second":93,"amount":0},{"first":1057,"second":1058,"amount":-1},{"first":1089,"second":34,"amount":0},{"first":1089,"second":39,"amount":0},{"first":1058,"second":97,"amount":-2},{"first":1058,"second":122,"amount":-1},{"first":1058,"second":101,"amount":-2},{"first":1058,"second":114,"amount":-2},{"first":1058,"second":121,"amount":-1},{"first":1058,"second":117,"amount":-2},{"first":1058,"second":111,"amount":-2},{"first":1058,"second":112,"amount":-2},{"first":1058,"second":113,"amount":-2},{"first":1058,"second":115,"amount":-2},{"first":1058,"second":100,"amount":-2},{"first":1058,"second":103,"amount":-2},{"first":1058,"second":109,"amount":-2},{"first":1058,"second":119,"amount":-1},{"first":1058,"second":120,"amount":-2},{"first":1058,"second":99,"amount":-2},{"first":1058,"second":118,"amount":-1},{"first":1058,"second":110,"amount":-2},{"first":1058,"second":65,"amount":-2},{"first":1058,"second":84,"amount":0},{"first":1058,"second":89,"amount":0},{"first":1058,"second":79,"amount":-1},{"first":1058,"second":81,"amount":-1},{"first":1058,"second":83,"amount":0},{"first":1058,"second":71,"amount":-1},{"first":1058,"second":74,"amount":-5},{"first":1058,"second":87,"amount":0},{"first":1058,"second":67,"amount":-1},{"first":1058,"second":86,"amount":0},{"first":1058,"second":45,"amount":-5},{"first":1058,"second":8211,"amount":-5},{"first":1058,"second":44,"amount":-4},{"first":1058,"second":46,"amount":-4},{"first":1058,"second":1040,"amount":-2},{"first":1058,"second":1072,"amount":-2},{"first":1058,"second":1073,"amount":-1},{"first":1058,"second":1074,"amount":-2},{"first":1058,"second":1075,"amount":-2},{"first":1058,"second":1044,"amount":-2},{"first":1058,"second":1076,"amount":-3},{"first":1058,"second":1077,"amount":-2},{"first":1058,"second":1105,"amount":-2},{"first":1058,"second":1078,"amount":-2},{"first":1058,"second":1079,"amount":-3},{"first":1058,"second":1080,"amount":-2},{"first":1058,"second":1081,"amount":-2},{"first":1058,"second":1082,"amount":-2},{"first":1058,"second":1051,"amount":-1},{"first":1058,"second":1083,"amount":-3},{"first":1058,"second":1084,"amount":-2},{"first":1058,"second":1085,"amount":-2},{"first":1058,"second":1054,"amount":-1},{"first":1058,"second":1086,"amount":-2},{"first":1058,"second":1087,"amount":-2},{"first":1058,"second":1088,"amount":-2},{"first":1058,"second":1057,"amount":-1},{"first":1058,"second":1089,"amount":-2},{"first":1058,"second":1058,"amount":0},{"first":1058,"second":1090,"amount":-2},{"first":1058,"second":1091,"amount":-1},{"first":1058,"second":1092,"amount":-2},{"first":1058,"second":1093,"amount":-2},{"first":1058,"second":1094,"amount":-2},{"first":1058,"second":1095,"amount":-3},{"first":1058,"second":1096,"amount":-2},{"first":1058,"second":1097,"amount":-2},{"first":1058,"second":1099,"amount":-3},{"first":1058,"second":1068,"amount":0},{"first":1058,"second":1100,"amount":-2},{"first":1058,"second":1101,"amount":-3},{"first":1058,"second":1102,"amount":-2},{"first":1058,"second":1103,"amount":-3},{"first":1058,"second":252,"amount":-2},{"first":1058,"second":246,"amount":-2},{"first":1058,"second":214,"amount":-1},{"first":1058,"second":228,"amount":-2},{"first":1058,"second":196,"amount":-2},{"first":1058,"second":241,"amount":-2},{"first":1058,"second":962,"amount":-2},{"first":1058,"second":949,"amount":-3},{"first":1058,"second":961,"amount":-3},{"first":1058,"second":964,"amount":-2},{"first":1058,"second":965,"amount":-2},{"first":1058,"second":953,"amount":-3},{"first":1058,"second":959,"amount":-2},{"first":1058,"second":960,"amount":-2},{"first":1058,"second":945,"amount":-2},{"first":1058,"second":963,"amount":-2},{"first":1058,"second":948,"amount":-1},{"first":1058,"second":966,"amount":-3},{"first":1058,"second":947,"amount":-1},{"first":1058,"second":951,"amount":-2},{"first":1058,"second":968,"amount":-3},{"first":1058,"second":969,"amount":-3},{"first":1058,"second":957,"amount":-1},{"first":1058,"second":933,"amount":0},{"first":1058,"second":920,"amount":-1},{"first":1058,"second":927,"amount":-1},{"first":1058,"second":913,"amount":-2},{"first":1058,"second":916,"amount":-2},{"first":1058,"second":934,"amount":-2},{"first":1058,"second":923,"amount":-2},{"first":1058,"second":229,"amount":-2},{"first":1058,"second":197,"amount":-2},{"first":1058,"second":230,"amount":-2},{"first":1058,"second":198,"amount":-4},{"first":1058,"second":248,"amount":-2},{"first":1058,"second":216,"amount":-1},{"first":1090,"second":97,"amount":0},{"first":1090,"second":101,"amount":-2},{"first":1090,"second":121,"amount":0},{"first":1090,"second":111,"amount":-1},{"first":1090,"second":113,"amount":-2},{"first":1090,"second":100,"amount":-2},{"first":1090,"second":102,"amount":0},{"first":1090,"second":103,"amount":-2},{"first":1090,"second":99,"amount":-2},{"first":1090,"second":118,"amount":0},{"first":1090,"second":34,"amount":0},{"first":1090,"second":39,"amount":0},{"first":1090,"second":1072,"amount":0},{"first":1090,"second":1076,"amount":-2},{"first":1090,"second":1077,"amount":-2},{"first":1090,"second":1105,"amount":-2},{"first":1090,"second":1083,"amount":-2},{"first":1090,"second":1086,"amount":-1},{"first":1090,"second":1089,"amount":-2},{"first":1090,"second":1091,"amount":0},{"first":1090,"second":1092,"amount":-2},{"first":1090,"second":246,"amount":-1},{"first":1090,"second":228,"amount":0},{"first":1090,"second":962,"amount":-1},{"first":1090,"second":961,"amount":-2},{"first":1090,"second":959,"amount":-1},{"first":1090,"second":945,"amount":-2},{"first":1090,"second":963,"amount":-2},{"first":1090,"second":948,"amount":-2},{"first":1090,"second":966,"amount":-1},{"first":1090,"second":947,"amount":0},{"first":1090,"second":957,"amount":0},{"first":1090,"second":229,"amount":0},{"first":1059,"second":97,"amount":-2},{"first":1059,"second":101,"amount":-1},{"first":1059,"second":111,"amount":-1},{"first":1059,"second":112,"amount":-2},{"first":1059,"second":113,"amount":-1},{"first":1059,"second":115,"amount":-1},{"first":1059,"second":100,"amount":-1},{"first":1059,"second":103,"amount":-1},{"first":1059,"second":109,"amount":-2},{"first":1059,"second":99,"amount":-1},{"first":1059,"second":110,"amount":-2},{"first":1059,"second":65,"amount":-2},{"first":1059,"second":84,"amount":0},{"first":1059,"second":89,"amount":0},{"first":1059,"second":79,"amount":0},{"first":1059,"second":81,"amount":0},{"first":1059,"second":71,"amount":0},{"first":1059,"second":67,"amount":0},{"first":1059,"second":45,"amount":-2},{"first":1059,"second":8211,"amount":-2},{"first":1059,"second":44,"amount":-8},{"first":1059,"second":46,"amount":-8},{"first":1059,"second":1040,"amount":-2},{"first":1059,"second":1072,"amount":-2},{"first":1059,"second":1074,"amount":-1},{"first":1059,"second":1075,"amount":-2},{"first":1059,"second":1044,"amount":-2},{"first":1059,"second":1076,"amount":-2},{"first":1059,"second":1077,"amount":-1},{"first":1059,"second":1105,"amount":-1},{"first":1059,"second":1079,"amount":-1},{"first":1059,"second":1080,"amount":-2},{"first":1059,"second":1081,"amount":-2},{"first":1059,"second":1082,"amount":-2},{"first":1059,"second":1051,"amount":-1},{"first":1059,"second":1083,"amount":-1},{"first":1059,"second":1084,"amount":-2},{"first":1059,"second":1085,"amount":-2},{"first":1059,"second":1054,"amount":0},{"first":1059,"second":1086,"amount":-1},{"first":1059,"second":1087,"amount":-2},{"first":1059,"second":1088,"amount":-2},{"first":1059,"second":1057,"amount":0},{"first":1059,"second":1089,"amount":-1},{"first":1059,"second":1058,"amount":0},{"first":1059,"second":1092,"amount":-1},{"first":1059,"second":1094,"amount":-2},{"first":1059,"second":1095,"amount":0},{"first":1059,"second":1096,"amount":-2},{"first":1059,"second":1097,"amount":-2},{"first":1059,"second":1099,"amount":-1},{"first":1059,"second":1068,"amount":0},{"first":1059,"second":1100,"amount":-2},{"first":1059,"second":1102,"amount":-2},{"first":1059,"second":1103,"amount":-1},{"first":1059,"second":246,"amount":-1},{"first":1059,"second":214,"amount":0},{"first":1059,"second":228,"amount":-2},{"first":1059,"second":196,"amount":-2},{"first":1059,"second":241,"amount":-2},{"first":1059,"second":962,"amount":-1},{"first":1059,"second":959,"amount":-1},{"first":1059,"second":945,"amount":-1},{"first":1059,"second":963,"amount":-1},{"first":1059,"second":951,"amount":-2},{"first":1059,"second":933,"amount":0},{"first":1059,"second":920,"amount":0},{"first":1059,"second":927,"amount":0},{"first":1059,"second":913,"amount":-2},{"first":1059,"second":916,"amount":-2},{"first":1059,"second":923,"amount":-2},{"first":1059,"second":229,"amount":-2},{"first":1059,"second":197,"amount":-2},{"first":1059,"second":216,"amount":0},{"first":1091,"second":97,"amount":0},{"first":1091,"second":101,"amount":0},{"first":1091,"second":111,"amount":0},{"first":1091,"second":113,"amount":0},{"first":1091,"second":100,"amount":0},{"first":1091,"second":102,"amount":0},{"first":1091,"second":103,"amount":0},{"first":1091,"second":99,"amount":0},{"first":1091,"second":44,"amount":-2},{"first":1091,"second":46,"amount":-2},{"first":1091,"second":34,"amount":0},{"first":1091,"second":39,"amount":0},{"first":1091,"second":1072,"amount":0},{"first":1091,"second":1076,"amount":-1},{"first":1091,"second":1077,"amount":0},{"first":1091,"second":1105,"amount":0},{"first":1091,"second":1083,"amount":-1},{"first":1091,"second":1086,"amount":0},{"first":1091,"second":1089,"amount":0},{"first":1091,"second":1092,"amount":0},{"first":1091,"second":246,"amount":0},{"first":1091,"second":228,"amount":0},{"first":1091,"second":962,"amount":0},{"first":1091,"second":961,"amount":0},{"first":1091,"second":964,"amount":0},{"first":1091,"second":959,"amount":0},{"first":1091,"second":960,"amount":0},{"first":1091,"second":945,"amount":0},{"first":1091,"second":963,"amount":0},{"first":1091,"second":948,"amount":0},{"first":1091,"second":229,"amount":0},{"first":1092,"second":122,"amount":0},{"first":1092,"second":121,"amount":0},{"first":1092,"second":120,"amount":0},{"first":1092,"second":118,"amount":0},{"first":1092,"second":34,"amount":-1},{"first":1092,"second":39,"amount":-1},{"first":1092,"second":1076,"amount":0},{"first":1092,"second":1078,"amount":0},{"first":1092,"second":1083,"amount":0},{"first":1092,"second":1090,"amount":-2},{"first":1092,"second":1091,"amount":0},{"first":1092,"second":1093,"amount":0},{"first":1092,"second":964,"amount":0},{"first":1092,"second":947,"amount":0},{"first":1092,"second":957,"amount":0},{"first":1061,"second":101,"amount":-1},{"first":1061,"second":121,"amount":-1},{"first":1061,"second":117,"amount":0},{"first":1061,"second":111,"amount":0},{"first":1061,"second":113,"amount":-1},{"first":1061,"second":100,"amount":-1},{"first":1061,"second":103,"amount":-1},{"first":1061,"second":99,"amount":-1},{"first":1061,"second":118,"amount":-1},{"first":1061,"second":79,"amount":-1},{"first":1061,"second":81,"amount":-1},{"first":1061,"second":71,"amount":-1},{"first":1061,"second":67,"amount":-1},{"first":1061,"second":86,"amount":0},{"first":1061,"second":45,"amount":-1},{"first":1061,"second":8211,"amount":-1},{"first":1061,"second":1073,"amount":0},{"first":1061,"second":1044,"amount":0},{"first":1061,"second":1077,"amount":-1},{"first":1061,"second":1105,"amount":-1},{"first":1061,"second":1051,"amount":0},{"first":1061,"second":1083,"amount":0},{"first":1061,"second":1054,"amount":-1},{"first":1061,"second":1086,"amount":0},{"first":1061,"second":1057,"amount":-1},{"first":1061,"second":1089,"amount":-1},{"first":1061,"second":1090,"amount":-1},{"first":1061,"second":1091,"amount":-1},{"first":1061,"second":1092,"amount":-1},{"first":1061,"second":1095,"amount":-1},{"first":1061,"second":252,"amount":0},{"first":1061,"second":246,"amount":0},{"first":1061,"second":214,"amount":-1},{"first":1061,"second":962,"amount":-1},{"first":1061,"second":964,"amount":-1},{"first":1061,"second":965,"amount":0},{"first":1061,"second":952,"amount":0},{"first":1061,"second":959,"amount":0},{"first":1061,"second":945,"amount":-1},{"first":1061,"second":963,"amount":-1},{"first":1061,"second":948,"amount":0},{"first":1061,"second":966,"amount":-1},{"first":1061,"second":947,"amount":-1},{"first":1061,"second":955,"amount":0},{"first":1061,"second":968,"amount":-1},{"first":1061,"second":969,"amount":0},{"first":1061,"second":957,"amount":-1},{"first":1061,"second":920,"amount":-1},{"first":1061,"second":927,"amount":-1},{"first":1061,"second":934,"amount":-1},{"first":1061,"second":216,"amount":-1},{"first":1093,"second":101,"amount":0},{"first":1093,"second":111,"amount":0},{"first":1093,"second":113,"amount":0},{"first":1093,"second":100,"amount":0},{"first":1093,"second":103,"amount":0},{"first":1093,"second":99,"amount":0},{"first":1093,"second":1077,"amount":0},{"first":1093,"second":1105,"amount":0},{"first":1093,"second":1086,"amount":0},{"first":1093,"second":1089,"amount":0},{"first":1093,"second":1092,"amount":0},{"first":1093,"second":246,"amount":0},{"first":1093,"second":962,"amount":0},{"first":1093,"second":959,"amount":0},{"first":1093,"second":945,"amount":0},{"first":1093,"second":963,"amount":0},{"first":1062,"second":65,"amount":0},{"first":1062,"second":84,"amount":-1},{"first":1062,"second":89,"amount":-1},{"first":1062,"second":88,"amount":0},{"first":1062,"second":1040,"amount":0},{"first":1062,"second":1044,"amount":0},{"first":1062,"second":1076,"amount":0},{"first":1062,"second":1046,"amount":0},{"first":1062,"second":1051,"amount":0},{"first":1062,"second":1083,"amount":0},{"first":1062,"second":1058,"amount":-1},{"first":1062,"second":1061,"amount":0},{"first":1062,"second":1063,"amount":-1},{"first":1062,"second":1095,"amount":-1},{"first":1062,"second":196,"amount":0},{"first":1062,"second":933,"amount":-1},{"first":1062,"second":913,"amount":0},{"first":1062,"second":916,"amount":0},{"first":1062,"second":923,"amount":0},{"first":1062,"second":935,"amount":0},{"first":1062,"second":197,"amount":0},{"first":1094,"second":1076,"amount":0},{"first":1094,"second":1083,"amount":0},{"first":1094,"second":1090,"amount":0},{"first":1094,"second":1095,"amount":0},{"first":1094,"second":1103,"amount":0},{"first":1063,"second":65,"amount":0},{"first":1063,"second":84,"amount":-1},{"first":1063,"second":89,"amount":-1},{"first":1063,"second":88,"amount":0},{"first":1063,"second":1040,"amount":0},{"first":1063,"second":1044,"amount":0},{"first":1063,"second":1076,"amount":0},{"first":1063,"second":1046,"amount":0},{"first":1063,"second":1051,"amount":0},{"first":1063,"second":1083,"amount":0},{"first":1063,"second":1058,"amount":-1},{"first":1063,"second":1061,"amount":0},{"first":1063,"second":1063,"amount":-1},{"first":1063,"second":1095,"amount":-1},{"first":1063,"second":196,"amount":0},{"first":1063,"second":933,"amount":-1},{"first":1063,"second":913,"amount":0},{"first":1063,"second":916,"amount":0},{"first":1063,"second":923,"amount":0},{"first":1063,"second":935,"amount":0},{"first":1063,"second":197,"amount":0},{"first":1064,"second":65,"amount":0},{"first":1064,"second":84,"amount":-1},{"first":1064,"second":89,"amount":-1},{"first":1064,"second":88,"amount":0},{"first":1064,"second":1040,"amount":0},{"first":1064,"second":1044,"amount":0},{"first":1064,"second":1076,"amount":0},{"first":1064,"second":1046,"amount":0},{"first":1064,"second":1051,"amount":0},{"first":1064,"second":1083,"amount":0},{"first":1064,"second":1058,"amount":-1},{"first":1064,"second":1061,"amount":0},{"first":1064,"second":1063,"amount":-1},{"first":1064,"second":1095,"amount":-1},{"first":1064,"second":196,"amount":0},{"first":1064,"second":933,"amount":-1},{"first":1064,"second":913,"amount":0},{"first":1064,"second":916,"amount":0},{"first":1064,"second":923,"amount":0},{"first":1064,"second":935,"amount":0},{"first":1064,"second":197,"amount":0},{"first":1065,"second":65,"amount":0},{"first":1065,"second":84,"amount":-1},{"first":1065,"second":89,"amount":-1},{"first":1065,"second":88,"amount":0},{"first":1065,"second":86,"amount":-1},{"first":1065,"second":1040,"amount":0},{"first":1065,"second":1044,"amount":0},{"first":1065,"second":1076,"amount":0},{"first":1065,"second":1046,"amount":0},{"first":1065,"second":1051,"amount":0},{"first":1065,"second":1083,"amount":0},{"first":1065,"second":1058,"amount":-1},{"first":1065,"second":1090,"amount":-1},{"first":1065,"second":1059,"amount":0},{"first":1065,"second":1061,"amount":0},{"first":1065,"second":1063,"amount":-1},{"first":1065,"second":1095,"amount":0},{"first":1065,"second":1068,"amount":-1},{"first":1065,"second":1069,"amount":0},{"first":1065,"second":196,"amount":0},{"first":1065,"second":933,"amount":-1},{"first":1065,"second":913,"amount":0},{"first":1065,"second":916,"amount":0},{"first":1065,"second":923,"amount":0},{"first":1065,"second":935,"amount":0},{"first":1065,"second":197,"amount":0},{"first":1097,"second":101,"amount":0},{"first":1097,"second":113,"amount":0},{"first":1097,"second":100,"amount":0},{"first":1097,"second":103,"amount":0},{"first":1097,"second":99,"amount":0},{"first":1097,"second":1076,"amount":1},{"first":1097,"second":1077,"amount":0},{"first":1097,"second":1105,"amount":0},{"first":1097,"second":1083,"amount":0},{"first":1097,"second":1089,"amount":0},{"first":1097,"second":1090,"amount":-1},{"first":1097,"second":1092,"amount":0},{"first":1097,"second":1095,"amount":0},{"first":1097,"second":962,"amount":0},{"first":1097,"second":945,"amount":0},{"first":1097,"second":963,"amount":0},{"first":1066,"second":120,"amount":-1},{"first":1066,"second":84,"amount":-5},{"first":1066,"second":89,"amount":-2},{"first":1066,"second":88,"amount":0},{"first":1066,"second":86,"amount":-1},{"first":1066,"second":34,"amount":-1},{"first":1066,"second":39,"amount":-1},{"first":1066,"second":1046,"amount":0},{"first":1066,"second":1078,"amount":-1},{"first":1066,"second":1051,"amount":0},{"first":1066,"second":1058,"amount":-5},{"first":1066,"second":1090,"amount":-1},{"first":1066,"second":1059,"amount":0},{"first":1066,"second":1061,"amount":0},{"first":1066,"second":1093,"amount":-1},{"first":1066,"second":1063,"amount":-1},{"first":1066,"second":1068,"amount":-1},{"first":1066,"second":933,"amount":-2},{"first":1066,"second":935,"amount":0},{"first":1098,"second":121,"amount":-1},{"first":1098,"second":120,"amount":0},{"first":1098,"second":118,"amount":-1},{"first":1098,"second":34,"amount":-3},{"first":1098,"second":39,"amount":-3},{"first":1098,"second":1078,"amount":0},{"first":1098,"second":1090,"amount":-1},{"first":1098,"second":1091,"amount":-1},{"first":1098,"second":1093,"amount":0},{"first":1098,"second":1095,"amount":-1},{"first":1098,"second":947,"amount":-1},{"first":1098,"second":957,"amount":-1},{"first":1067,"second":65,"amount":0},{"first":1067,"second":84,"amount":-1},{"first":1067,"second":89,"amount":-1},{"first":1067,"second":88,"amount":0},{"first":1067,"second":1040,"amount":0},{"first":1067,"second":1044,"amount":0},{"first":1067,"second":1076,"amount":0},{"first":1067,"second":1046,"amount":0},{"first":1067,"second":1051,"amount":0},{"first":1067,"second":1083,"amount":0},{"first":1067,"second":1058,"amount":-1},{"first":1067,"second":1061,"amount":0},{"first":1067,"second":1063,"amount":-1},{"first":1067,"second":1095,"amount":-1},{"first":1067,"second":196,"amount":0},{"first":1067,"second":933,"amount":-1},{"first":1067,"second":913,"amount":0},{"first":1067,"second":916,"amount":0},{"first":1067,"second":923,"amount":0},{"first":1067,"second":935,"amount":0},{"first":1067,"second":197,"amount":0},{"first":1068,"second":120,"amount":-1},{"first":1068,"second":84,"amount":-5},{"first":1068,"second":89,"amount":-2},{"first":1068,"second":88,"amount":0},{"first":1068,"second":86,"amount":-1},{"first":1068,"second":34,"amount":-1},{"first":1068,"second":39,"amount":-1},{"first":1068,"second":1046,"amount":0},{"first":1068,"second":1078,"amount":-1},{"first":1068,"second":1051,"amount":0},{"first":1068,"second":1058,"amount":-5},{"first":1068,"second":1090,"amount":-1},{"first":1068,"second":1059,"amount":0},{"first":1068,"second":1061,"amount":0},{"first":1068,"second":1093,"amount":-1},{"first":1068,"second":1063,"amount":-1},{"first":1068,"second":1068,"amount":-1},{"first":1068,"second":933,"amount":-2},{"first":1068,"second":935,"amount":0},{"first":1100,"second":121,"amount":-1},{"first":1100,"second":120,"amount":0},{"first":1100,"second":118,"amount":-1},{"first":1100,"second":34,"amount":-3},{"first":1100,"second":39,"amount":-3},{"first":1100,"second":1078,"amount":0},{"first":1100,"second":1090,"amount":-1},{"first":1100,"second":1091,"amount":-1},{"first":1100,"second":1093,"amount":0},{"first":1100,"second":1095,"amount":-1},{"first":1100,"second":947,"amount":-1},{"first":1100,"second":957,"amount":-1},{"first":1069,"second":84,"amount":-1},{"first":1069,"second":89,"amount":-1},{"first":1069,"second":88,"amount":-1},{"first":1069,"second":1044,"amount":-1},{"first":1069,"second":1046,"amount":-1},{"first":1069,"second":1051,"amount":-1},{"first":1069,"second":1083,"amount":0},{"first":1069,"second":1058,"amount":-1},{"first":1069,"second":1059,"amount":0},{"first":1069,"second":1061,"amount":-1},{"first":1069,"second":933,"amount":-1},{"first":1069,"second":935,"amount":-1},{"first":1101,"second":122,"amount":0},{"first":1101,"second":121,"amount":0},{"first":1101,"second":120,"amount":0},{"first":1101,"second":118,"amount":0},{"first":1101,"second":34,"amount":-1},{"first":1101,"second":39,"amount":-1},{"first":1101,"second":1076,"amount":0},{"first":1101,"second":1078,"amount":0},{"first":1101,"second":1083,"amount":0},{"first":1101,"second":1090,"amount":-2},{"first":1101,"second":1091,"amount":0},{"first":1101,"second":1093,"amount":0},{"first":1101,"second":964,"amount":0},{"first":1101,"second":947,"amount":0},{"first":1101,"second":957,"amount":0},{"first":1070,"second":84,"amount":-1},{"first":1070,"second":88,"amount":-1},{"first":1070,"second":1044,"amount":-1},{"first":1070,"second":1076,"amount":-1},{"first":1070,"second":1046,"amount":-1},{"first":1070,"second":1051,"amount":-1},{"first":1070,"second":1083,"amount":0},{"first":1070,"second":1058,"amount":-1},{"first":1070,"second":1059,"amount":0},{"first":1070,"second":1061,"amount":-1},{"first":1070,"second":935,"amount":-1},{"first":1102,"second":121,"amount":0},{"first":1102,"second":120,"amount":0},{"first":1102,"second":118,"amount":0},{"first":1102,"second":1076,"amount":0},{"first":1102,"second":1078,"amount":0},{"first":1102,"second":1083,"amount":0},{"first":1102,"second":1091,"amount":0},{"first":1102,"second":1093,"amount":0},{"first":1102,"second":947,"amount":0},{"first":1102,"second":957,"amount":0},{"first":1071,"second":84,"amount":0},{"first":1071,"second":89,"amount":0},{"first":1071,"second":1058,"amount":0},{"first":1071,"second":933,"amount":0},{"first":220,"second":65,"amount":0},{"first":220,"second":1040,"amount":0},{"first":220,"second":196,"amount":0},{"first":220,"second":913,"amount":0},{"first":220,"second":916,"amount":0},{"first":220,"second":923,"amount":0},{"first":220,"second":197,"amount":0},{"first":246,"second":122,"amount":0},{"first":246,"second":121,"amount":0},{"first":246,"second":120,"amount":0},{"first":246,"second":118,"amount":0},{"first":246,"second":34,"amount":-3},{"first":246,"second":39,"amount":-3},{"first":246,"second":1076,"amount":-1},{"first":246,"second":1078,"amount":0},{"first":246,"second":1083,"amount":0},{"first":246,"second":1090,"amount":0},{"first":246,"second":1091,"amount":0},{"first":246,"second":1093,"amount":0},{"first":246,"second":964,"amount":0},{"first":246,"second":947,"amount":0},{"first":246,"second":957,"amount":0},{"first":214,"second":65,"amount":0},{"first":214,"second":90,"amount":0},{"first":214,"second":84,"amount":-1},{"first":214,"second":89,"amount":-1},{"first":214,"second":88,"amount":0},{"first":214,"second":86,"amount":0},{"first":214,"second":44,"amount":-2},{"first":214,"second":46,"amount":-2},{"first":214,"second":1040,"amount":0},{"first":214,"second":1044,"amount":-1},{"first":214,"second":1046,"amount":0},{"first":214,"second":1051,"amount":-1},{"first":214,"second":1058,"amount":-1},{"first":214,"second":1061,"amount":0},{"first":214,"second":1068,"amount":-1},{"first":214,"second":196,"amount":0},{"first":214,"second":955,"amount":0},{"first":214,"second":933,"amount":-1},{"first":214,"second":913,"amount":0},{"first":214,"second":931,"amount":0},{"first":214,"second":916,"amount":0},{"first":214,"second":926,"amount":0},{"first":214,"second":923,"amount":0},{"first":214,"second":918,"amount":0},{"first":214,"second":935,"amount":0},{"first":214,"second":197,"amount":0},{"first":214,"second":198,"amount":-1},{"first":228,"second":121,"amount":0},{"first":228,"second":118,"amount":0},{"first":228,"second":34,"amount":-1},{"first":228,"second":39,"amount":-1},{"first":228,"second":1090,"amount":0},{"first":228,"second":1091,"amount":0},{"first":228,"second":947,"amount":0},{"first":228,"second":957,"amount":0},{"first":196,"second":122,"amount":0},{"first":196,"second":116,"amount":0},{"first":196,"second":121,"amount":-1},{"first":196,"second":117,"amount":0},{"first":196,"second":111,"amount":0},{"first":196,"second":119,"amount":-1},{"first":196,"second":118,"amount":-1},{"first":196,"second":84,"amount":-3},{"first":196,"second":89,"amount":-2},{"first":196,"second":85,"amount":0},{"first":196,"second":79,"amount":0},{"first":196,"second":81,"amount":0},{"first":196,"second":71,"amount":0},{"first":196,"second":87,"amount":-1},{"first":196,"second":67,"amount":0},{"first":196,"second":86,"amount":-2},{"first":196,"second":63,"amount":-1},{"first":196,"second":34,"amount":-2},{"first":196,"second":39,"amount":-2},{"first":196,"second":1044,"amount":0},{"first":196,"second":1051,"amount":0},{"first":196,"second":1083,"amount":0},{"first":196,"second":1054,"amount":0},{"first":196,"second":1086,"amount":0},{"first":196,"second":1057,"amount":0},{"first":196,"second":1058,"amount":-3},{"first":196,"second":1090,"amount":-1},{"first":196,"second":1091,"amount":-1},{"first":196,"second":1063,"amount":-1},{"first":196,"second":1095,"amount":-2},{"first":196,"second":1068,"amount":-1},{"first":196,"second":252,"amount":0},{"first":196,"second":220,"amount":0},{"first":196,"second":246,"amount":0},{"first":196,"second":214,"amount":0},{"first":196,"second":964,"amount":-1},{"first":196,"second":965,"amount":0},{"first":196,"second":959,"amount":0},{"first":196,"second":947,"amount":-1},{"first":196,"second":955,"amount":0},{"first":196,"second":957,"amount":-1},{"first":196,"second":933,"amount":-2},{"first":196,"second":920,"amount":0},{"first":196,"second":927,"amount":0},{"first":196,"second":934,"amount":-1},{"first":196,"second":936,"amount":-1},{"first":196,"second":216,"amount":0},{"first":241,"second":34,"amount":-2},{"first":241,"second":39,"amount":-2},{"first":241,"second":1090,"amount":-1},{"first":209,"second":65,"amount":0},{"first":209,"second":84,"amount":-1},{"first":209,"second":89,"amount":-1},{"first":209,"second":88,"amount":0},{"first":209,"second":1040,"amount":0},{"first":209,"second":1044,"amount":0},{"first":209,"second":1076,"amount":0},{"first":209,"second":1046,"amount":0},{"first":209,"second":1051,"amount":0},{"first":209,"second":1083,"amount":0},{"first":209,"second":1058,"amount":-1},{"first":209,"second":1061,"amount":0},{"first":209,"second":1063,"amount":-1},{"first":209,"second":1095,"amount":-1},{"first":209,"second":196,"amount":0},{"first":209,"second":933,"amount":-1},{"first":209,"second":913,"amount":0},{"first":209,"second":916,"amount":0},{"first":209,"second":923,"amount":0},{"first":209,"second":935,"amount":0},{"first":209,"second":197,"amount":0},{"first":962,"second":1090,"amount":-1},{"first":961,"second":122,"amount":0},{"first":961,"second":121,"amount":0},{"first":961,"second":120,"amount":0},{"first":961,"second":118,"amount":0},{"first":961,"second":34,"amount":-1},{"first":961,"second":39,"amount":-1},{"first":961,"second":1076,"amount":0},{"first":961,"second":1078,"amount":0},{"first":961,"second":1083,"amount":0},{"first":961,"second":1090,"amount":-2},{"first":961,"second":1091,"amount":0},{"first":961,"second":1093,"amount":0},{"first":961,"second":964,"amount":0},{"first":961,"second":947,"amount":0},{"first":961,"second":957,"amount":0},{"first":964,"second":101,"amount":0},{"first":964,"second":121,"amount":0},{"first":964,"second":111,"amount":0},{"first":964,"second":113,"amount":0},{"first":964,"second":100,"amount":0},{"first":964,"second":102,"amount":0},{"first":964,"second":103,"amount":0},{"first":964,"second":99,"amount":0},{"first":964,"second":118,"amount":0},{"first":964,"second":34,"amount":0},{"first":964,"second":39,"amount":0},{"first":964,"second":1077,"amount":0},{"first":964,"second":1105,"amount":0},{"first":964,"second":1086,"amount":0},{"first":964,"second":1089,"amount":0},{"first":964,"second":1091,"amount":0},{"first":964,"second":1092,"amount":0},{"first":964,"second":246,"amount":0},{"first":964,"second":962,"amount":0},{"first":964,"second":964,"amount":0},{"first":964,"second":959,"amount":0},{"first":964,"second":960,"amount":0},{"first":964,"second":945,"amount":0},{"first":964,"second":963,"amount":0},{"first":964,"second":948,"amount":0},{"first":964,"second":947,"amount":0},{"first":964,"second":957,"amount":0},{"first":965,"second":1090,"amount":-1},{"first":953,"second":101,"amount":0},{"first":953,"second":121,"amount":-1},{"first":953,"second":117,"amount":0},{"first":953,"second":113,"amount":0},{"first":953,"second":100,"amount":0},{"first":953,"second":103,"amount":0},{"first":953,"second":99,"amount":0},{"first":953,"second":118,"amount":-1},{"first":953,"second":34,"amount":-1},{"first":953,"second":39,"amount":-1},{"first":953,"second":1077,"amount":0},{"first":953,"second":1105,"amount":0},{"first":953,"second":1089,"amount":0},{"first":953,"second":1091,"amount":-1},{"first":953,"second":1092,"amount":0},{"first":953,"second":252,"amount":0},{"first":953,"second":962,"amount":0},{"first":953,"second":964,"amount":-1},{"first":953,"second":965,"amount":0},{"first":953,"second":952,"amount":0},{"first":953,"second":960,"amount":0},{"first":953,"second":945,"amount":0},{"first":953,"second":963,"amount":0},{"first":953,"second":966,"amount":-1},{"first":953,"second":947,"amount":-1},{"first":953,"second":955,"amount":0},{"first":953,"second":957,"amount":-1},{"first":959,"second":122,"amount":0},{"first":959,"second":121,"amount":0},{"first":959,"second":120,"amount":0},{"first":959,"second":118,"amount":0},{"first":959,"second":34,"amount":-3},{"first":959,"second":39,"amount":-3},{"first":959,"second":1076,"amount":-1},{"first":959,"second":1078,"amount":0},{"first":959,"second":1083,"amount":0},{"first":959,"second":1090,"amount":0},{"first":959,"second":1091,"amount":0},{"first":959,"second":1093,"amount":0},{"first":959,"second":964,"amount":0},{"first":959,"second":947,"amount":0},{"first":959,"second":957,"amount":0},{"first":945,"second":955,"amount":0},{"first":963,"second":964,"amount":0},{"first":948,"second":1090,"amount":-1},{"first":948,"second":964,"amount":0},{"first":966,"second":122,"amount":0},{"first":966,"second":120,"amount":0},{"first":966,"second":1078,"amount":0},{"first":966,"second":1090,"amount":-2},{"first":966,"second":1093,"amount":0},{"first":947,"second":97,"amount":0},{"first":947,"second":101,"amount":0},{"first":947,"second":111,"amount":0},{"first":947,"second":113,"amount":0},{"first":947,"second":100,"amount":0},{"first":947,"second":102,"amount":0},{"first":947,"second":103,"amount":0},{"first":947,"second":99,"amount":0},{"first":947,"second":44,"amount":-2},{"first":947,"second":46,"amount":-2},{"first":947,"second":34,"amount":0},{"first":947,"second":39,"amount":0},{"first":947,"second":1072,"amount":0},{"first":947,"second":1076,"amount":-1},{"first":947,"second":1077,"amount":0},{"first":947,"second":1105,"amount":0},{"first":947,"second":1083,"amount":-1},{"first":947,"second":1086,"amount":0},{"first":947,"second":1089,"amount":0},{"first":947,"second":1092,"amount":0},{"first":947,"second":246,"amount":0},{"first":947,"second":228,"amount":0},{"first":947,"second":962,"amount":0},{"first":947,"second":961,"amount":0},{"first":947,"second":964,"amount":0},{"first":947,"second":959,"amount":0},{"first":947,"second":960,"amount":0},{"first":947,"second":945,"amount":0},{"first":947,"second":963,"amount":0},{"first":947,"second":948,"amount":0},{"first":947,"second":229,"amount":0},{"first":951,"second":34,"amount":-2},{"first":951,"second":39,"amount":-2},{"first":951,"second":1090,"amount":-1},{"first":958,"second":101,"amount":-1},{"first":958,"second":113,"amount":-1},{"first":958,"second":100,"amount":-1},{"first":958,"second":103,"amount":-1},{"first":958,"second":99,"amount":-1},{"first":958,"second":1077,"amount":-1},{"first":958,"second":1105,"amount":-1},{"first":958,"second":1089,"amount":-1},{"first":958,"second":1092,"amount":-1},{"first":958,"second":962,"amount":-1},{"first":958,"second":945,"amount":-1},{"first":958,"second":963,"amount":-1},{"first":958,"second":955,"amount":0},{"first":955,"second":121,"amount":-1},{"first":955,"second":117,"amount":0},{"first":955,"second":102,"amount":0},{"first":955,"second":118,"amount":-1},{"first":955,"second":34,"amount":-2},{"first":955,"second":39,"amount":-2},{"first":955,"second":1091,"amount":-1},{"first":955,"second":252,"amount":0},{"first":955,"second":964,"amount":-5},{"first":955,"second":965,"amount":0},{"first":955,"second":952,"amount":0},{"first":955,"second":960,"amount":0},{"first":955,"second":947,"amount":-1},{"first":955,"second":955,"amount":0},{"first":955,"second":957,"amount":-1},{"first":950,"second":101,"amount":-1},{"first":950,"second":121,"amount":-1},{"first":950,"second":117,"amount":-1},{"first":950,"second":111,"amount":-1},{"first":950,"second":112,"amount":0},{"first":950,"second":113,"amount":-1},{"first":950,"second":100,"amount":-1},{"first":950,"second":103,"amount":-1},{"first":950,"second":109,"amount":0},{"first":950,"second":99,"amount":-1},{"first":950,"second":118,"amount":-1},{"first":950,"second":110,"amount":0},{"first":950,"second":1075,"amount":0},{"first":950,"second":1077,"amount":-1},{"first":950,"second":1105,"amount":-1},{"first":950,"second":1080,"amount":0},{"first":950,"second":1081,"amount":0},{"first":950,"second":1082,"amount":0},{"first":950,"second":1084,"amount":0},{"first":950,"second":1085,"amount":0},{"first":950,"second":1086,"amount":-1},{"first":950,"second":1087,"amount":0},{"first":950,"second":1088,"amount":0},{"first":950,"second":1089,"amount":-1},{"first":950,"second":1091,"amount":-1},{"first":950,"second":1092,"amount":-1},{"first":950,"second":1094,"amount":0},{"first":950,"second":1096,"amount":0},{"first":950,"second":1097,"amount":0},{"first":950,"second":1100,"amount":0},{"first":950,"second":1102,"amount":0},{"first":950,"second":252,"amount":-1},{"first":950,"second":246,"amount":-1},{"first":950,"second":241,"amount":0},{"first":950,"second":962,"amount":-1},{"first":950,"second":949,"amount":-1},{"first":950,"second":964,"amount":-1},{"first":950,"second":965,"amount":-1},{"first":950,"second":952,"amount":0},{"first":950,"second":953,"amount":0},{"first":950,"second":959,"amount":-1},{"first":950,"second":960,"amount":-1},{"first":950,"second":945,"amount":-1},{"first":950,"second":963,"amount":-1},{"first":950,"second":948,"amount":0},{"first":950,"second":966,"amount":-1},{"first":950,"second":947,"amount":-1},{"first":950,"second":951,"amount":0},{"first":950,"second":958,"amount":0},{"first":950,"second":968,"amount":-1},{"first":950,"second":969,"amount":-1},{"first":950,"second":957,"amount":-1},{"first":968,"second":122,"amount":0},{"first":968,"second":120,"amount":0},{"first":968,"second":1078,"amount":0},{"first":968,"second":1093,"amount":0},{"first":969,"second":122,"amount":0},{"first":969,"second":121,"amount":0},{"first":969,"second":120,"amount":0},{"first":969,"second":118,"amount":0},{"first":969,"second":1078,"amount":0},{"first":969,"second":1091,"amount":0},{"first":969,"second":1093,"amount":0},{"first":969,"second":947,"amount":0},{"first":969,"second":957,"amount":0},{"first":957,"second":97,"amount":0},{"first":957,"second":101,"amount":0},{"first":957,"second":111,"amount":0},{"first":957,"second":113,"amount":0},{"first":957,"second":100,"amount":0},{"first":957,"second":102,"amount":0},{"first":957,"second":103,"amount":0},{"first":957,"second":99,"amount":0},{"first":957,"second":44,"amount":-2},{"first":957,"second":46,"amount":-2},{"first":957,"second":34,"amount":0},{"first":957,"second":39,"amount":0},{"first":957,"second":1072,"amount":0},{"first":957,"second":1076,"amount":-1},{"first":957,"second":1077,"amount":0},{"first":957,"second":1105,"amount":0},{"first":957,"second":1083,"amount":-1},{"first":957,"second":1086,"amount":0},{"first":957,"second":1089,"amount":0},{"first":957,"second":1092,"amount":0},{"first":957,"second":246,"amount":0},{"first":957,"second":228,"amount":0},{"first":957,"second":962,"amount":0},{"first":957,"second":961,"amount":0},{"first":957,"second":964,"amount":0},{"first":957,"second":959,"amount":0},{"first":957,"second":960,"amount":0},{"first":957,"second":945,"amount":0},{"first":957,"second":963,"amount":0},{"first":957,"second":948,"amount":0},{"first":957,"second":229,"amount":0},{"first":917,"second":101,"amount":0},{"first":917,"second":121,"amount":-1},{"first":917,"second":117,"amount":0},{"first":917,"second":111,"amount":0},{"first":917,"second":113,"amount":0},{"first":917,"second":100,"amount":0},{"first":917,"second":102,"amount":0},{"first":917,"second":103,"amount":0},{"first":917,"second":119,"amount":0},{"first":917,"second":99,"amount":0},{"first":917,"second":118,"amount":-1},{"first":917,"second":84,"amount":0},{"first":917,"second":1077,"amount":0},{"first":917,"second":1105,"amount":0},{"first":917,"second":1086,"amount":0},{"first":917,"second":1089,"amount":0},{"first":917,"second":1058,"amount":0},{"first":917,"second":1091,"amount":-1},{"first":917,"second":1092,"amount":0},{"first":917,"second":252,"amount":0},{"first":917,"second":246,"amount":0},{"first":917,"second":962,"amount":0},{"first":917,"second":965,"amount":0},{"first":917,"second":959,"amount":0},{"first":917,"second":945,"amount":0},{"first":917,"second":963,"amount":0},{"first":917,"second":947,"amount":-1},{"first":917,"second":957,"amount":-1},{"first":929,"second":97,"amount":0},{"first":929,"second":101,"amount":0},{"first":929,"second":116,"amount":0},{"first":929,"second":121,"amount":0},{"first":929,"second":111,"amount":0},{"first":929,"second":113,"amount":0},{"first":929,"second":100,"amount":0},{"first":929,"second":103,"amount":0},{"first":929,"second":99,"amount":0},{"first":929,"second":118,"amount":0},{"first":929,"second":65,"amount":-3},{"first":929,"second":90,"amount":-1},{"first":929,"second":74,"amount":-4},{"first":929,"second":88,"amount":-1},{"first":929,"second":44,"amount":-7},{"first":929,"second":46,"amount":-7},{"first":929,"second":1040,"amount":-3},{"first":929,"second":1072,"amount":0},{"first":929,"second":1044,"amount":-2},{"first":929,"second":1076,"amount":-1},{"first":929,"second":1077,"amount":0},{"first":929,"second":1105,"amount":0},{"first":929,"second":1046,"amount":-1},{"first":929,"second":1051,"amount":-1},{"first":929,"second":1083,"amount":-1},{"first":929,"second":1086,"amount":0},{"first":929,"second":1089,"amount":0},{"first":929,"second":1091,"amount":0},{"first":929,"second":1092,"amount":0},{"first":929,"second":1061,"amount":-1},{"first":929,"second":246,"amount":0},{"first":929,"second":228,"amount":0},{"first":929,"second":196,"amount":-3},{"first":929,"second":962,"amount":0},{"first":929,"second":961,"amount":-1},{"first":929,"second":959,"amount":0},{"first":929,"second":945,"amount":0},{"first":929,"second":963,"amount":0},{"first":929,"second":948,"amount":0},{"first":929,"second":947,"amount":0},{"first":929,"second":955,"amount":-1},{"first":929,"second":957,"amount":0},{"first":929,"second":913,"amount":-3},{"first":929,"second":916,"amount":-3},{"first":929,"second":923,"amount":-3},{"first":929,"second":918,"amount":-1},{"first":929,"second":935,"amount":-1},{"first":929,"second":229,"amount":0},{"first":929,"second":197,"amount":-3},{"first":929,"second":198,"amount":-2},{"first":932,"second":97,"amount":-2},{"first":932,"second":122,"amount":-1},{"first":932,"second":101,"amount":-2},{"first":932,"second":114,"amount":-2},{"first":932,"second":121,"amount":-1},{"first":932,"second":117,"amount":-2},{"first":932,"second":111,"amount":-2},{"first":932,"second":112,"amount":-2},{"first":932,"second":113,"amount":-2},{"first":932,"second":115,"amount":-2},{"first":932,"second":100,"amount":-2},{"first":932,"second":103,"amount":-2},{"first":932,"second":109,"amount":-2},{"first":932,"second":119,"amount":-1},{"first":932,"second":120,"amount":-2},{"first":932,"second":99,"amount":-2},{"first":932,"second":118,"amount":-1},{"first":932,"second":110,"amount":-2},{"first":932,"second":65,"amount":-2},{"first":932,"second":84,"amount":0},{"first":932,"second":89,"amount":0},{"first":932,"second":79,"amount":-1},{"first":932,"second":81,"amount":-1},{"first":932,"second":83,"amount":0},{"first":932,"second":71,"amount":-1},{"first":932,"second":74,"amount":-5},{"first":932,"second":87,"amount":0},{"first":932,"second":67,"amount":-1},{"first":932,"second":86,"amount":0},{"first":932,"second":45,"amount":-5},{"first":932,"second":8211,"amount":-5},{"first":932,"second":44,"amount":-4},{"first":932,"second":46,"amount":-4},{"first":932,"second":1040,"amount":-2},{"first":932,"second":1072,"amount":-2},{"first":932,"second":1073,"amount":-1},{"first":932,"second":1074,"amount":-2},{"first":932,"second":1075,"amount":-2},{"first":932,"second":1044,"amount":-2},{"first":932,"second":1076,"amount":-3},{"first":932,"second":1077,"amount":-2},{"first":932,"second":1105,"amount":-2},{"first":932,"second":1078,"amount":-2},{"first":932,"second":1079,"amount":-3},{"first":932,"second":1080,"amount":-2},{"first":932,"second":1081,"amount":-2},{"first":932,"second":1082,"amount":-2},{"first":932,"second":1051,"amount":-1},{"first":932,"second":1083,"amount":-3},{"first":932,"second":1084,"amount":-2},{"first":932,"second":1085,"amount":-2},{"first":932,"second":1054,"amount":-1},{"first":932,"second":1086,"amount":-2},{"first":932,"second":1087,"amount":-2},{"first":932,"second":1088,"amount":-2},{"first":932,"second":1057,"amount":-1},{"first":932,"second":1089,"amount":-2},{"first":932,"second":1058,"amount":0},{"first":932,"second":1090,"amount":-2},{"first":932,"second":1091,"amount":-1},{"first":932,"second":1092,"amount":-2},{"first":932,"second":1093,"amount":-2},{"first":932,"second":1094,"amount":-2},{"first":932,"second":1095,"amount":-3},{"first":932,"second":1096,"amount":-2},{"first":932,"second":1097,"amount":-2},{"first":932,"second":1099,"amount":-3},{"first":932,"second":1068,"amount":0},{"first":932,"second":1100,"amount":-2},{"first":932,"second":1101,"amount":-3},{"first":932,"second":1102,"amount":-2},{"first":932,"second":1103,"amount":-3},{"first":932,"second":252,"amount":-2},{"first":932,"second":246,"amount":-2},{"first":932,"second":214,"amount":-1},{"first":932,"second":228,"amount":-2},{"first":932,"second":196,"amount":-2},{"first":932,"second":241,"amount":-2},{"first":932,"second":962,"amount":-2},{"first":932,"second":949,"amount":-3},{"first":932,"second":961,"amount":-3},{"first":932,"second":964,"amount":-2},{"first":932,"second":965,"amount":-2},{"first":932,"second":953,"amount":-3},{"first":932,"second":959,"amount":-2},{"first":932,"second":960,"amount":-2},{"first":932,"second":945,"amount":-2},{"first":932,"second":963,"amount":-2},{"first":932,"second":948,"amount":-1},{"first":932,"second":966,"amount":-3},{"first":932,"second":947,"amount":-1},{"first":932,"second":951,"amount":-2},{"first":932,"second":968,"amount":-3},{"first":932,"second":969,"amount":-3},{"first":932,"second":957,"amount":-1},{"first":932,"second":933,"amount":0},{"first":932,"second":920,"amount":-1},{"first":932,"second":927,"amount":-1},{"first":932,"second":913,"amount":-2},{"first":932,"second":916,"amount":-2},{"first":932,"second":934,"amount":-2},{"first":932,"second":923,"amount":-2},{"first":932,"second":229,"amount":-2},{"first":932,"second":197,"amount":-2},{"first":932,"second":230,"amount":-2},{"first":932,"second":198,"amount":-4},{"first":932,"second":248,"amount":-2},{"first":932,"second":216,"amount":-1},{"first":933,"second":97,"amount":-1},{"first":933,"second":122,"amount":-1},{"first":933,"second":101,"amount":-1},{"first":933,"second":114,"amount":-1},{"first":933,"second":116,"amount":0},{"first":933,"second":121,"amount":0},{"first":933,"second":117,"amount":-1},{"first":933,"second":111,"amount":-1},{"first":933,"second":112,"amount":-1},{"first":933,"second":113,"amount":-1},{"first":933,"second":115,"amount":-1},{"first":933,"second":100,"amount":-1},{"first":933,"second":102,"amount":0},{"first":933,"second":103,"amount":-1},{"first":933,"second":109,"amount":-1},{"first":933,"second":120,"amount":0},{"first":933,"second":99,"amount":-1},{"first":933,"second":118,"amount":0},{"first":933,"second":110,"amount":-1},{"first":933,"second":65,"amount":-2},{"first":933,"second":84,"amount":0},{"first":933,"second":89,"amount":0},{"first":933,"second":85,"amount":-2},{"first":933,"second":79,"amount":-1},{"first":933,"second":81,"amount":-1},{"first":933,"second":83,"amount":0},{"first":933,"second":71,"amount":-1},{"first":933,"second":74,"amount":-2},{"first":933,"second":87,"amount":0},{"first":933,"second":88,"amount":0},{"first":933,"second":67,"amount":-1},{"first":933,"second":86,"amount":0},{"first":933,"second":42,"amount":-1},{"first":933,"second":45,"amount":-1},{"first":933,"second":8211,"amount":-1},{"first":933,"second":44,"amount":-4},{"first":933,"second":46,"amount":-4},{"first":933,"second":125,"amount":0},{"first":933,"second":41,"amount":0},{"first":933,"second":93,"amount":0},{"first":933,"second":38,"amount":-1},{"first":933,"second":1040,"amount":-2},{"first":933,"second":1072,"amount":-1},{"first":933,"second":1075,"amount":-1},{"first":933,"second":1077,"amount":-1},{"first":933,"second":1105,"amount":-1},{"first":933,"second":1046,"amount":0},{"first":933,"second":1078,"amount":0},{"first":933,"second":1080,"amount":-1},{"first":933,"second":1081,"amount":-1},{"first":933,"second":1082,"amount":-1},{"first":933,"second":1084,"amount":-1},{"first":933,"second":1085,"amount":-1},{"first":933,"second":1054,"amount":-1},{"first":933,"second":1086,"amount":-1},{"first":933,"second":1087,"amount":-1},{"first":933,"second":1088,"amount":-1},{"first":933,"second":1057,"amount":-1},{"first":933,"second":1089,"amount":-1},{"first":933,"second":1058,"amount":0},{"first":933,"second":1091,"amount":0},{"first":933,"second":1092,"amount":-1},{"first":933,"second":1061,"amount":0},{"first":933,"second":1093,"amount":0},{"first":933,"second":1094,"amount":-1},{"first":933,"second":1096,"amount":-1},{"first":933,"second":1097,"amount":-1},{"first":933,"second":1100,"amount":-1},{"first":933,"second":1102,"amount":-1},{"first":933,"second":252,"amount":-1},{"first":933,"second":220,"amount":-2},{"first":933,"second":246,"amount":-1},{"first":933,"second":214,"amount":-1},{"first":933,"second":228,"amount":-1},{"first":933,"second":196,"amount":-2},{"first":933,"second":241,"amount":-1},{"first":933,"second":962,"amount":-1},{"first":933,"second":949,"amount":-1},{"first":933,"second":961,"amount":-1},{"first":933,"second":964,"amount":0},{"first":933,"second":965,"amount":-1},{"first":933,"second":952,"amount":0},{"first":933,"second":953,"amount":-1},{"first":933,"second":959,"amount":-1},{"first":933,"second":960,"amount":0},{"first":933,"second":945,"amount":-1},{"first":933,"second":963,"amount":-1},{"first":933,"second":948,"amount":0},{"first":933,"second":966,"amount":-1},{"first":933,"second":947,"amount":0},{"first":933,"second":951,"amount":-1},{"first":933,"second":950,"amount":0},{"first":933,"second":968,"amount":-1},{"first":933,"second":969,"amount":-1},{"first":933,"second":946,"amount":0},{"first":933,"second":957,"amount":0},{"first":933,"second":933,"amount":0},{"first":933,"second":920,"amount":-1},{"first":933,"second":927,"amount":-1},{"first":933,"second":913,"amount":-2},{"first":933,"second":916,"amount":-2},{"first":933,"second":934,"amount":-1},{"first":933,"second":923,"amount":-2},{"first":933,"second":935,"amount":0},{"first":933,"second":229,"amount":-1},{"first":933,"second":197,"amount":-2},{"first":933,"second":230,"amount":-1},{"first":933,"second":198,"amount":-2},{"first":933,"second":248,"amount":-1},{"first":933,"second":216,"amount":-1},{"first":920,"second":65,"amount":0},{"first":920,"second":90,"amount":0},{"first":920,"second":84,"amount":-1},{"first":920,"second":89,"amount":-1},{"first":920,"second":88,"amount":0},{"first":920,"second":86,"amount":0},{"first":920,"second":44,"amount":-2},{"first":920,"second":46,"amount":-2},{"first":920,"second":1040,"amount":0},{"first":920,"second":1044,"amount":-1},{"first":920,"second":1046,"amount":0},{"first":920,"second":1051,"amount":-1},{"first":920,"second":1058,"amount":-1},{"first":920,"second":1061,"amount":0},{"first":920,"second":1068,"amount":-1},{"first":920,"second":196,"amount":0},{"first":920,"second":955,"amount":0},{"first":920,"second":933,"amount":-1},{"first":920,"second":913,"amount":0},{"first":920,"second":931,"amount":0},{"first":920,"second":916,"amount":0},{"first":920,"second":926,"amount":0},{"first":920,"second":923,"amount":0},{"first":920,"second":918,"amount":0},{"first":920,"second":935,"amount":0},{"first":920,"second":197,"amount":0},{"first":920,"second":198,"amount":-1},{"first":921,"second":65,"amount":0},{"first":921,"second":84,"amount":-1},{"first":921,"second":89,"amount":-1},{"first":921,"second":88,"amount":0},{"first":921,"second":1040,"amount":0},{"first":921,"second":1044,"amount":0},{"first":921,"second":1076,"amount":0},{"first":921,"second":1046,"amount":0},{"first":921,"second":1051,"amount":0},{"first":921,"second":1083,"amount":0},{"first":921,"second":1058,"amount":-1},{"first":921,"second":1061,"amount":0},{"first":921,"second":1063,"amount":-1},{"first":921,"second":1095,"amount":-1},{"first":921,"second":196,"amount":0},{"first":921,"second":933,"amount":-1},{"first":921,"second":913,"amount":0},{"first":921,"second":916,"amount":0},{"first":921,"second":923,"amount":0},{"first":921,"second":935,"amount":0},{"first":921,"second":197,"amount":0},{"first":927,"second":65,"amount":0},{"first":927,"second":90,"amount":0},{"first":927,"second":84,"amount":-1},{"first":927,"second":89,"amount":-1},{"first":927,"second":88,"amount":0},{"first":927,"second":86,"amount":0},{"first":927,"second":44,"amount":-2},{"first":927,"second":46,"amount":-2},{"first":927,"second":1040,"amount":0},{"first":927,"second":1044,"amount":-1},{"first":927,"second":1046,"amount":0},{"first":927,"second":1051,"amount":-1},{"first":927,"second":1058,"amount":-1},{"first":927,"second":1061,"amount":0},{"first":927,"second":1068,"amount":-1},{"first":927,"second":196,"amount":0},{"first":927,"second":955,"amount":0},{"first":927,"second":933,"amount":-1},{"first":927,"second":913,"amount":0},{"first":927,"second":931,"amount":0},{"first":927,"second":916,"amount":0},{"first":927,"second":926,"amount":0},{"first":927,"second":923,"amount":0},{"first":927,"second":918,"amount":0},{"first":927,"second":935,"amount":0},{"first":927,"second":197,"amount":0},{"first":927,"second":198,"amount":-1},{"first":913,"second":122,"amount":0},{"first":913,"second":116,"amount":0},{"first":913,"second":121,"amount":-1},{"first":913,"second":117,"amount":0},{"first":913,"second":111,"amount":0},{"first":913,"second":119,"amount":-1},{"first":913,"second":118,"amount":-1},{"first":913,"second":84,"amount":-3},{"first":913,"second":89,"amount":-2},{"first":913,"second":85,"amount":0},{"first":913,"second":79,"amount":0},{"first":913,"second":81,"amount":0},{"first":913,"second":71,"amount":0},{"first":913,"second":87,"amount":-1},{"first":913,"second":67,"amount":0},{"first":913,"second":86,"amount":-2},{"first":913,"second":63,"amount":-1},{"first":913,"second":34,"amount":-2},{"first":913,"second":39,"amount":-2},{"first":913,"second":1044,"amount":0},{"first":913,"second":1051,"amount":0},{"first":913,"second":1083,"amount":0},{"first":913,"second":1054,"amount":0},{"first":913,"second":1086,"amount":0},{"first":913,"second":1057,"amount":0},{"first":913,"second":1058,"amount":-3},{"first":913,"second":1090,"amount":-1},{"first":913,"second":1091,"amount":-1},{"first":913,"second":1063,"amount":-1},{"first":913,"second":1095,"amount":-2},{"first":913,"second":1068,"amount":-1},{"first":913,"second":252,"amount":0},{"first":913,"second":220,"amount":0},{"first":913,"second":246,"amount":0},{"first":913,"second":214,"amount":0},{"first":913,"second":964,"amount":-1},{"first":913,"second":965,"amount":0},{"first":913,"second":959,"amount":0},{"first":913,"second":947,"amount":-1},{"first":913,"second":955,"amount":0},{"first":913,"second":957,"amount":-1},{"first":913,"second":933,"amount":-2},{"first":913,"second":920,"amount":0},{"first":913,"second":927,"amount":0},{"first":913,"second":934,"amount":-1},{"first":913,"second":936,"amount":-1},{"first":913,"second":216,"amount":0},{"first":931,"second":79,"amount":-1},{"first":931,"second":81,"amount":-1},{"first":931,"second":71,"amount":-1},{"first":931,"second":67,"amount":-1},{"first":931,"second":1054,"amount":-1},{"first":931,"second":1057,"amount":-1},{"first":931,"second":214,"amount":-1},{"first":931,"second":955,"amount":0},{"first":931,"second":920,"amount":-1},{"first":931,"second":927,"amount":-1},{"first":931,"second":934,"amount":-1},{"first":931,"second":216,"amount":-1},{"first":916,"second":122,"amount":0},{"first":916,"second":116,"amount":0},{"first":916,"second":121,"amount":-1},{"first":916,"second":117,"amount":0},{"first":916,"second":111,"amount":0},{"first":916,"second":119,"amount":-1},{"first":916,"second":118,"amount":-1},{"first":916,"second":84,"amount":-3},{"first":916,"second":89,"amount":-2},{"first":916,"second":85,"amount":0},{"first":916,"second":79,"amount":0},{"first":916,"second":81,"amount":0},{"first":916,"second":71,"amount":0},{"first":916,"second":87,"amount":-1},{"first":916,"second":67,"amount":0},{"first":916,"second":86,"amount":-2},{"first":916,"second":63,"amount":-1},{"first":916,"second":34,"amount":-2},{"first":916,"second":39,"amount":-2},{"first":916,"second":1044,"amount":0},{"first":916,"second":1051,"amount":0},{"first":916,"second":1083,"amount":0},{"first":916,"second":1054,"amount":0},{"first":916,"second":1086,"amount":0},{"first":916,"second":1057,"amount":0},{"first":916,"second":1058,"amount":-3},{"first":916,"second":1090,"amount":-1},{"first":916,"second":1091,"amount":-1},{"first":916,"second":1063,"amount":-1},{"first":916,"second":1095,"amount":-2},{"first":916,"second":1068,"amount":-1},{"first":916,"second":252,"amount":0},{"first":916,"second":220,"amount":0},{"first":916,"second":246,"amount":0},{"first":916,"second":214,"amount":0},{"first":916,"second":964,"amount":-1},{"first":916,"second":965,"amount":0},{"first":916,"second":959,"amount":0},{"first":916,"second":947,"amount":-1},{"first":916,"second":955,"amount":0},{"first":916,"second":957,"amount":-1},{"first":916,"second":933,"amount":-2},{"first":916,"second":920,"amount":0},{"first":916,"second":927,"amount":0},{"first":916,"second":934,"amount":-1},{"first":916,"second":936,"amount":-1},{"first":916,"second":216,"amount":0},{"first":934,"second":65,"amount":-1},{"first":934,"second":89,"amount":-1},{"first":934,"second":88,"amount":-1},{"first":934,"second":1040,"amount":-1},{"first":934,"second":1046,"amount":-1},{"first":934,"second":1061,"amount":-1},{"first":934,"second":196,"amount":-1},{"first":934,"second":955,"amount":-1},{"first":934,"second":933,"amount":-1},{"first":934,"second":913,"amount":-1},{"first":934,"second":916,"amount":-1},{"first":934,"second":923,"amount":-1},{"first":934,"second":935,"amount":-1},{"first":934,"second":197,"amount":-1},{"first":915,"second":97,"amount":-4},{"first":915,"second":122,"amount":-3},{"first":915,"second":101,"amount":-4},{"first":915,"second":114,"amount":-3},{"first":915,"second":121,"amount":-3},{"first":915,"second":117,"amount":-4},{"first":915,"second":111,"amount":-4},{"first":915,"second":112,"amount":-4},{"first":915,"second":113,"amount":-4},{"first":915,"second":115,"amount":-4},{"first":915,"second":100,"amount":-4},{"first":915,"second":103,"amount":-4},{"first":915,"second":109,"amount":-4},{"first":915,"second":119,"amount":-2},{"first":915,"second":120,"amount":-3},{"first":915,"second":99,"amount":-4},{"first":915,"second":118,"amount":-3},{"first":915,"second":110,"amount":-4},{"first":915,"second":65,"amount":-4},{"first":915,"second":84,"amount":0},{"first":915,"second":89,"amount":0},{"first":915,"second":79,"amount":-1},{"first":915,"second":81,"amount":-1},{"first":915,"second":83,"amount":-1},{"first":915,"second":71,"amount":-1},{"first":915,"second":87,"amount":0},{"first":915,"second":67,"amount":-1},{"first":915,"second":86,"amount":0},{"first":915,"second":45,"amount":-8},{"first":915,"second":8211,"amount":-8},{"first":915,"second":44,"amount":-8},{"first":915,"second":46,"amount":-8},{"first":915,"second":1040,"amount":-4},{"first":915,"second":1072,"amount":-4},{"first":915,"second":1073,"amount":-1},{"first":915,"second":1074,"amount":-4},{"first":915,"second":1075,"amount":-4},{"first":915,"second":1044,"amount":-4},{"first":915,"second":1076,"amount":-5},{"first":915,"second":1077,"amount":-4},{"first":915,"second":1105,"amount":-4},{"first":915,"second":1078,"amount":-3},{"first":915,"second":1079,"amount":-5},{"first":915,"second":1080,"amount":-4},{"first":915,"second":1081,"amount":-4},{"first":915,"second":1082,"amount":-4},{"first":915,"second":1051,"amount":-2},{"first":915,"second":1083,"amount":-5},{"first":915,"second":1084,"amount":-4},{"first":915,"second":1085,"amount":-4},{"first":915,"second":1054,"amount":-1},{"first":915,"second":1086,"amount":-4},{"first":915,"second":1087,"amount":-4},{"first":915,"second":1088,"amount":-4},{"first":915,"second":1057,"amount":-1},{"first":915,"second":1089,"amount":-4},{"first":915,"second":1058,"amount":0},{"first":915,"second":1090,"amount":-3},{"first":915,"second":1091,"amount":-3},{"first":915,"second":1092,"amount":-4},{"first":915,"second":1093,"amount":-3},{"first":915,"second":1094,"amount":-4},{"first":915,"second":1095,"amount":-5},{"first":915,"second":1096,"amount":-4},{"first":915,"second":1097,"amount":-4},{"first":915,"second":1099,"amount":-5},{"first":915,"second":1068,"amount":0},{"first":915,"second":1100,"amount":-4},{"first":915,"second":1101,"amount":-5},{"first":915,"second":1102,"amount":-4},{"first":915,"second":1103,"amount":-5},{"first":915,"second":252,"amount":-4},{"first":915,"second":246,"amount":-4},{"first":915,"second":214,"amount":-1},{"first":915,"second":228,"amount":-4},{"first":915,"second":196,"amount":-4},{"first":915,"second":241,"amount":-4},{"first":915,"second":962,"amount":-4},{"first":915,"second":949,"amount":-5},{"first":915,"second":961,"amount":-6},{"first":915,"second":964,"amount":-4},{"first":915,"second":965,"amount":-4},{"first":915,"second":953,"amount":-6},{"first":915,"second":959,"amount":-4},{"first":915,"second":960,"amount":-5},{"first":915,"second":945,"amount":-4},{"first":915,"second":963,"amount":-4},{"first":915,"second":948,"amount":-2},{"first":915,"second":966,"amount":-6},{"first":915,"second":947,"amount":-3},{"first":915,"second":951,"amount":-4},{"first":915,"second":968,"amount":-5},{"first":915,"second":969,"amount":-6},{"first":915,"second":957,"amount":-3},{"first":915,"second":933,"amount":0},{"first":915,"second":920,"amount":-1},{"first":915,"second":927,"amount":-1},{"first":915,"second":913,"amount":-4},{"first":915,"second":916,"amount":-4},{"first":915,"second":934,"amount":-3},{"first":915,"second":923,"amount":-4},{"first":915,"second":229,"amount":-4},{"first":915,"second":197,"amount":-4},{"first":915,"second":230,"amount":-4},{"first":915,"second":198,"amount":-7},{"first":915,"second":248,"amount":-4},{"first":915,"second":216,"amount":-1},{"first":919,"second":65,"amount":0},{"first":919,"second":84,"amount":-1},{"first":919,"second":89,"amount":-1},{"first":919,"second":88,"amount":0},{"first":919,"second":1040,"amount":0},{"first":919,"second":1044,"amount":0},{"first":919,"second":1076,"amount":0},{"first":919,"second":1046,"amount":0},{"first":919,"second":1051,"amount":0},{"first":919,"second":1083,"amount":0},{"first":919,"second":1058,"amount":-1},{"first":919,"second":1061,"amount":0},{"first":919,"second":1063,"amount":-1},{"first":919,"second":1095,"amount":-1},{"first":919,"second":196,"amount":0},{"first":919,"second":933,"amount":-1},{"first":919,"second":913,"amount":0},{"first":919,"second":916,"amount":0},{"first":919,"second":923,"amount":0},{"first":919,"second":935,"amount":0},{"first":919,"second":197,"amount":0},{"first":926,"second":79,"amount":0},{"first":926,"second":81,"amount":0},{"first":926,"second":71,"amount":0},{"first":926,"second":67,"amount":0},{"first":926,"second":1054,"amount":0},{"first":926,"second":1057,"amount":0},{"first":926,"second":214,"amount":0},{"first":926,"second":955,"amount":0},{"first":926,"second":920,"amount":0},{"first":926,"second":927,"amount":0},{"first":926,"second":216,"amount":0},{"first":922,"second":101,"amount":-1},{"first":922,"second":121,"amount":-1},{"first":922,"second":117,"amount":0},{"first":922,"second":111,"amount":-1},{"first":922,"second":112,"amount":0},{"first":922,"second":113,"amount":-1},{"first":922,"second":100,"amount":-1},{"first":922,"second":103,"amount":-1},{"first":922,"second":109,"amount":0},{"first":922,"second":119,"amount":-1},{"first":922,"second":99,"amount":-1},{"first":922,"second":118,"amount":-1},{"first":922,"second":110,"amount":0},{"first":922,"second":79,"amount":-1},{"first":922,"second":81,"amount":-1},{"first":922,"second":71,"amount":-1},{"first":922,"second":67,"amount":-1},{"first":922,"second":45,"amount":-1},{"first":922,"second":8211,"amount":-1},{"first":922,"second":1073,"amount":-1},{"first":922,"second":1075,"amount":0},{"first":922,"second":1077,"amount":-1},{"first":922,"second":1105,"amount":-1},{"first":922,"second":1080,"amount":0},{"first":922,"second":1081,"amount":0},{"first":922,"second":1082,"amount":0},{"first":922,"second":1084,"amount":0},{"first":922,"second":1085,"amount":0},{"first":922,"second":1054,"amount":-1},{"first":922,"second":1086,"amount":-1},{"first":922,"second":1087,"amount":0},{"first":922,"second":1088,"amount":0},{"first":922,"second":1057,"amount":-1},{"first":922,"second":1089,"amount":-1},{"first":922,"second":1090,"amount":-1},{"first":922,"second":1091,"amount":-1},{"first":922,"second":1092,"amount":-1},{"first":922,"second":1094,"amount":0},{"first":922,"second":1095,"amount":-2},{"first":922,"second":1096,"amount":0},{"first":922,"second":1097,"amount":0},{"first":922,"second":1100,"amount":0},{"first":922,"second":1102,"amount":0},{"first":922,"second":252,"amount":0},{"first":922,"second":246,"amount":-1},{"first":922,"second":214,"amount":-1},{"first":922,"second":241,"amount":0},{"first":922,"second":962,"amount":-1},{"first":922,"second":964,"amount":-2},{"first":922,"second":965,"amount":0},{"first":922,"second":959,"amount":-1},{"first":922,"second":945,"amount":-1},{"first":922,"second":963,"amount":-1},{"first":922,"second":947,"amount":-1},{"first":922,"second":951,"amount":0},{"first":922,"second":957,"amount":-1},{"first":922,"second":920,"amount":-1},{"first":922,"second":927,"amount":-1},{"first":922,"second":934,"amount":-1},{"first":922,"second":216,"amount":-1},{"first":923,"second":122,"amount":0},{"first":923,"second":116,"amount":0},{"first":923,"second":121,"amount":-1},{"first":923,"second":117,"amount":0},{"first":923,"second":111,"amount":0},{"first":923,"second":119,"amount":-1},{"first":923,"second":118,"amount":-1},{"first":923,"second":84,"amount":-3},{"first":923,"second":89,"amount":-2},{"first":923,"second":85,"amount":0},{"first":923,"second":79,"amount":0},{"first":923,"second":81,"amount":0},{"first":923,"second":71,"amount":0},{"first":923,"second":87,"amount":-1},{"first":923,"second":67,"amount":0},{"first":923,"second":86,"amount":-2},{"first":923,"second":63,"amount":-1},{"first":923,"second":34,"amount":-2},{"first":923,"second":39,"amount":-2},{"first":923,"second":1044,"amount":0},{"first":923,"second":1051,"amount":0},{"first":923,"second":1083,"amount":0},{"first":923,"second":1054,"amount":0},{"first":923,"second":1086,"amount":0},{"first":923,"second":1057,"amount":0},{"first":923,"second":1058,"amount":-3},{"first":923,"second":1090,"amount":-1},{"first":923,"second":1091,"amount":-1},{"first":923,"second":1063,"amount":-1},{"first":923,"second":1095,"amount":-2},{"first":923,"second":1068,"amount":-1},{"first":923,"second":252,"amount":0},{"first":923,"second":220,"amount":0},{"first":923,"second":246,"amount":0},{"first":923,"second":214,"amount":0},{"first":923,"second":964,"amount":-1},{"first":923,"second":965,"amount":0},{"first":923,"second":959,"amount":0},{"first":923,"second":947,"amount":-1},{"first":923,"second":955,"amount":0},{"first":923,"second":957,"amount":-1},{"first":923,"second":933,"amount":-2},{"first":923,"second":920,"amount":0},{"first":923,"second":927,"amount":0},{"first":923,"second":934,"amount":-1},{"first":923,"second":936,"amount":-1},{"first":923,"second":216,"amount":0},{"first":918,"second":101,"amount":0},{"first":918,"second":121,"amount":-1},{"first":918,"second":117,"amount":0},{"first":918,"second":111,"amount":0},{"first":918,"second":113,"amount":0},{"first":918,"second":100,"amount":0},{"first":918,"second":103,"amount":0},{"first":918,"second":119,"amount":-1},{"first":918,"second":99,"amount":0},{"first":918,"second":118,"amount":-1},{"first":918,"second":65,"amount":0},{"first":918,"second":79,"amount":-1},{"first":918,"second":81,"amount":-1},{"first":918,"second":71,"amount":-1},{"first":918,"second":67,"amount":-1},{"first":918,"second":1040,"amount":0},{"first":918,"second":1077,"amount":0},{"first":918,"second":1105,"amount":0},{"first":918,"second":1054,"amount":-1},{"first":918,"second":1086,"amount":0},{"first":918,"second":1057,"amount":-1},{"first":918,"second":1089,"amount":0},{"first":918,"second":1091,"amount":-1},{"first":918,"second":1092,"amount":0},{"first":918,"second":252,"amount":0},{"first":918,"second":246,"amount":0},{"first":918,"second":214,"amount":-1},{"first":918,"second":196,"amount":0},{"first":918,"second":962,"amount":0},{"first":918,"second":965,"amount":0},{"first":918,"second":959,"amount":0},{"first":918,"second":945,"amount":0},{"first":918,"second":963,"amount":0},{"first":918,"second":947,"amount":-1},{"first":918,"second":968,"amount":-1},{"first":918,"second":957,"amount":-1},{"first":918,"second":920,"amount":-1},{"first":918,"second":927,"amount":-1},{"first":918,"second":913,"amount":0},{"first":918,"second":916,"amount":0},{"first":918,"second":934,"amount":-1},{"first":918,"second":923,"amount":0},{"first":918,"second":197,"amount":0},{"first":918,"second":216,"amount":-1},{"first":935,"second":101,"amount":-1},{"first":935,"second":121,"amount":-1},{"first":935,"second":117,"amount":0},{"first":935,"second":111,"amount":0},{"first":935,"second":113,"amount":-1},{"first":935,"second":100,"amount":-1},{"first":935,"second":103,"amount":-1},{"first":935,"second":99,"amount":-1},{"first":935,"second":118,"amount":-1},{"first":935,"second":79,"amount":-1},{"first":935,"second":81,"amount":-1},{"first":935,"second":71,"amount":-1},{"first":935,"second":67,"amount":-1},{"first":935,"second":86,"amount":0},{"first":935,"second":45,"amount":-1},{"first":935,"second":8211,"amount":-1},{"first":935,"second":1073,"amount":0},{"first":935,"second":1044,"amount":0},{"first":935,"second":1077,"amount":-1},{"first":935,"second":1105,"amount":-1},{"first":935,"second":1051,"amount":0},{"first":935,"second":1083,"amount":0},{"first":935,"second":1054,"amount":-1},{"first":935,"second":1086,"amount":0},{"first":935,"second":1057,"amount":-1},{"first":935,"second":1089,"amount":-1},{"first":935,"second":1090,"amount":-1},{"first":935,"second":1091,"amount":-1},{"first":935,"second":1092,"amount":-1},{"first":935,"second":1095,"amount":-1},{"first":935,"second":252,"amount":0},{"first":935,"second":246,"amount":0},{"first":935,"second":214,"amount":-1},{"first":935,"second":962,"amount":-1},{"first":935,"second":964,"amount":-1},{"first":935,"second":965,"amount":0},{"first":935,"second":952,"amount":0},{"first":935,"second":959,"amount":0},{"first":935,"second":945,"amount":-1},{"first":935,"second":963,"amount":-1},{"first":935,"second":948,"amount":0},{"first":935,"second":966,"amount":-1},{"first":935,"second":947,"amount":-1},{"first":935,"second":955,"amount":0},{"first":935,"second":968,"amount":-1},{"first":935,"second":969,"amount":0},{"first":935,"second":957,"amount":-1},{"first":935,"second":920,"amount":-1},{"first":935,"second":927,"amount":-1},{"first":935,"second":934,"amount":-1},{"first":935,"second":216,"amount":-1},{"first":936,"second":65,"amount":-1},{"first":936,"second":44,"amount":-5},{"first":936,"second":46,"amount":-5},{"first":936,"second":1040,"amount":-1},{"first":936,"second":196,"amount":-1},{"first":936,"second":961,"amount":0},{"first":936,"second":913,"amount":-1},{"first":936,"second":916,"amount":-1},{"first":936,"second":923,"amount":-1},{"first":936,"second":197,"amount":-1},{"first":914,"second":84,"amount":-1},{"first":914,"second":89,"amount":-1},{"first":914,"second":86,"amount":0},{"first":914,"second":1058,"amount":-1},{"first":914,"second":1059,"amount":0},{"first":914,"second":933,"amount":-1},{"first":925,"second":65,"amount":0},{"first":925,"second":84,"amount":-1},{"first":925,"second":89,"amount":-1},{"first":925,"second":88,"amount":0},{"first":925,"second":1040,"amount":0},{"first":925,"second":1044,"amount":0},{"first":925,"second":1076,"amount":0},{"first":925,"second":1046,"amount":0},{"first":925,"second":1051,"amount":0},{"first":925,"second":1083,"amount":0},{"first":925,"second":1058,"amount":-1},{"first":925,"second":1061,"amount":0},{"first":925,"second":1063,"amount":-1},{"first":925,"second":1095,"amount":-1},{"first":925,"second":196,"amount":0},{"first":925,"second":933,"amount":-1},{"first":925,"second":913,"amount":0},{"first":925,"second":916,"amount":0},{"first":925,"second":923,"amount":0},{"first":925,"second":935,"amount":0},{"first":925,"second":197,"amount":0},{"first":924,"second":65,"amount":0},{"first":924,"second":84,"amount":-1},{"first":924,"second":89,"amount":-1},{"first":924,"second":88,"amount":0},{"first":924,"second":1040,"amount":0},{"first":924,"second":1044,"amount":0},{"first":924,"second":1076,"amount":0},{"first":924,"second":1046,"amount":0},{"first":924,"second":1051,"amount":0},{"first":924,"second":1083,"amount":0},{"first":924,"second":1058,"amount":-1},{"first":924,"second":1061,"amount":0},{"first":924,"second":1063,"amount":-1},{"first":924,"second":1095,"amount":-1},{"first":924,"second":196,"amount":0},{"first":924,"second":933,"amount":-1},{"first":924,"second":913,"amount":0},{"first":924,"second":916,"amount":0},{"first":924,"second":923,"amount":0},{"first":924,"second":935,"amount":0},{"first":924,"second":197,"amount":0},{"first":229,"second":121,"amount":0},{"first":229,"second":118,"amount":0},{"first":229,"second":34,"amount":-1},{"first":229,"second":39,"amount":-1},{"first":229,"second":1090,"amount":0},{"first":229,"second":1091,"amount":0},{"first":229,"second":947,"amount":0},{"first":229,"second":957,"amount":0},{"first":197,"second":122,"amount":0},{"first":197,"second":116,"amount":0},{"first":197,"second":121,"amount":-1},{"first":197,"second":117,"amount":0},{"first":197,"second":111,"amount":0},{"first":197,"second":119,"amount":-1},{"first":197,"second":118,"amount":-1},{"first":197,"second":84,"amount":-3},{"first":197,"second":89,"amount":-2},{"first":197,"second":85,"amount":0},{"first":197,"second":79,"amount":0},{"first":197,"second":81,"amount":0},{"first":197,"second":71,"amount":0},{"first":197,"second":87,"amount":-1},{"first":197,"second":67,"amount":0},{"first":197,"second":86,"amount":-2},{"first":197,"second":63,"amount":-1},{"first":197,"second":34,"amount":-2},{"first":197,"second":39,"amount":-2},{"first":197,"second":1044,"amount":0},{"first":197,"second":1051,"amount":0},{"first":197,"second":1083,"amount":0},{"first":197,"second":1054,"amount":0},{"first":197,"second":1086,"amount":0},{"first":197,"second":1057,"amount":0},{"first":197,"second":1058,"amount":-3},{"first":197,"second":1090,"amount":-1},{"first":197,"second":1091,"amount":-1},{"first":197,"second":1063,"amount":-1},{"first":197,"second":1095,"amount":-2},{"first":197,"second":1068,"amount":-1},{"first":197,"second":252,"amount":0},{"first":197,"second":220,"amount":0},{"first":197,"second":246,"amount":0},{"first":197,"second":214,"amount":0},{"first":197,"second":964,"amount":-1},{"first":197,"second":965,"amount":0},{"first":197,"second":959,"amount":0},{"first":197,"second":947,"amount":-1},{"first":197,"second":955,"amount":0},{"first":197,"second":957,"amount":-1},{"first":197,"second":933,"amount":-2},{"first":197,"second":920,"amount":0},{"first":197,"second":927,"amount":0},{"first":197,"second":934,"amount":-1},{"first":197,"second":936,"amount":-1},{"first":197,"second":216,"amount":0}]}');
 
 },{}],"bJfGO":[function(require,module,exports) {
 module.exports = require("8e8d1204a77450ba").getBundleURL("JmBdT") + "Roboto-msdf.f8e8e0ad.png" + "?" + Date.now();
@@ -42339,23 +42581,18 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
     }
     // adapted from http://www.graphics.cornell.edu/~bjw/rgbe.html
     parse(buffer) {
-        const /* return codes for rgbe routines */ //RGBE_RETURN_SUCCESS = 0,
-        RGBE_RETURN_FAILURE = -1, /* default error routine.  change this to change error handling */ rgbe_read_error = 1, rgbe_write_error = 2, rgbe_format_error = 3, rgbe_memory_error = 4, rgbe_error = function(rgbe_error_code, msg) {
+        const /* default error routine.  change this to change error handling */ rgbe_read_error = 1, rgbe_write_error = 2, rgbe_format_error = 3, rgbe_memory_error = 4, rgbe_error = function(rgbe_error_code, msg) {
             switch(rgbe_error_code){
                 case rgbe_read_error:
-                    console.error("THREE.RGBELoader Read Error: " + (msg || ""));
-                    break;
+                    throw new Error("THREE.RGBELoader: Read Error: " + (msg || ""));
                 case rgbe_write_error:
-                    console.error("THREE.RGBELoader Write Error: " + (msg || ""));
-                    break;
+                    throw new Error("THREE.RGBELoader: Write Error: " + (msg || ""));
                 case rgbe_format_error:
-                    console.error("THREE.RGBELoader Bad File Format: " + (msg || ""));
-                    break;
+                    throw new Error("THREE.RGBELoader: Bad File Format: " + (msg || ""));
                 default:
                 case rgbe_memory_error:
-                    console.error("THREE.RGBELoader: Error: " + (msg || ""));
+                    throw new Error("THREE.RGBELoader: Memory Error: " + (msg || ""));
             }
-            return RGBE_RETURN_FAILURE;
         }, /* offsets to red, green, and blue components in a data (float) pixel */ //RGBE_DATA_RED = 0,
         //RGBE_DATA_GREEN = 1,
         //RGBE_DATA_BLUE = 2,
@@ -42395,8 +42632,8 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
                 height: 0 /* image dimensions, width/height */ 
             };
             let line, match;
-            if (buffer.pos >= buffer.byteLength || !(line = fgets(buffer))) return rgbe_error(rgbe_read_error, "no header found");
-            /* if you want to require the magic token then uncomment the next line */ if (!(match = line.match(magic_token_re))) return rgbe_error(rgbe_format_error, "bad initial token");
+            if (buffer.pos >= buffer.byteLength || !(line = fgets(buffer))) rgbe_error(rgbe_read_error, "no header found");
+            /* if you want to require the magic token then uncomment the next line */ if (!(match = line.match(magic_token_re))) rgbe_error(rgbe_format_error, "bad initial token");
             header.valid |= RGBE_VALID_PROGRAMTYPE;
             header.programtype = match[1];
             header.string += line + "\n";
@@ -42421,17 +42658,17 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
                 }
                 if (header.valid & RGBE_VALID_FORMAT && header.valid & RGBE_VALID_DIMENSIONS) break;
             }
-            if (!(header.valid & RGBE_VALID_FORMAT)) return rgbe_error(rgbe_format_error, "missing format specifier");
-            if (!(header.valid & RGBE_VALID_DIMENSIONS)) return rgbe_error(rgbe_format_error, "missing image size specifier");
+            if (!(header.valid & RGBE_VALID_FORMAT)) rgbe_error(rgbe_format_error, "missing format specifier");
+            if (!(header.valid & RGBE_VALID_DIMENSIONS)) rgbe_error(rgbe_format_error, "missing image size specifier");
             return header;
         }, RGBE_ReadPixels_RLE = function(buffer, w, h) {
             const scanline_width = w;
             if (scanline_width < 8 || scanline_width > 0x7fff || // this file is not run length encoded
             2 !== buffer[0] || 2 !== buffer[1] || buffer[2] & 0x80) // return the flat buffer
             return new Uint8Array(buffer);
-            if (scanline_width !== (buffer[2] << 8 | buffer[3])) return rgbe_error(rgbe_format_error, "wrong scanline width");
+            if (scanline_width !== (buffer[2] << 8 | buffer[3])) rgbe_error(rgbe_format_error, "wrong scanline width");
             const data_rgba = new Uint8Array(4 * w * h);
-            if (!data_rgba.length) return rgbe_error(rgbe_memory_error, "unable to allocate buffer space");
+            if (!data_rgba.length) rgbe_error(rgbe_memory_error, "unable to allocate buffer space");
             let offset = 0, pos = 0;
             const ptr_end = 4 * scanline_width;
             const rgbeStart = new Uint8Array(4);
@@ -42439,12 +42676,12 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
             let num_scanlines = h;
             // read in each successive scanline
             while(num_scanlines > 0 && pos < buffer.byteLength){
-                if (pos + 4 > buffer.byteLength) return rgbe_error(rgbe_read_error);
+                if (pos + 4 > buffer.byteLength) rgbe_error(rgbe_read_error);
                 rgbeStart[0] = buffer[pos++];
                 rgbeStart[1] = buffer[pos++];
                 rgbeStart[2] = buffer[pos++];
                 rgbeStart[3] = buffer[pos++];
-                if (2 != rgbeStart[0] || 2 != rgbeStart[1] || (rgbeStart[2] << 8 | rgbeStart[3]) != scanline_width) return rgbe_error(rgbe_format_error, "bad rgbe scanline format");
+                if (2 != rgbeStart[0] || 2 != rgbeStart[1] || (rgbeStart[2] << 8 | rgbeStart[3]) != scanline_width) rgbe_error(rgbe_format_error, "bad rgbe scanline format");
                 // read each of the four channels for the scanline into the buffer
                 // first red, then green, then blue, then exponent
                 let ptr = 0, count;
@@ -42452,7 +42689,7 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
                     count = buffer[pos++];
                     const isEncodedRun = count > 128;
                     if (isEncodedRun) count -= 128;
-                    if (0 === count || ptr + count > ptr_end) return rgbe_error(rgbe_format_error, "bad scanline data");
+                    if (0 === count || ptr + count > ptr_end) rgbe_error(rgbe_format_error, "bad scanline data");
                     if (isEncodedRun) {
                         // a (encoded) run of the same value
                         const byteValue = buffer[pos++];
@@ -42503,42 +42740,36 @@ class RGBELoader extends (0, _three.DataTextureLoader) {
         const byteArray = new Uint8Array(buffer);
         byteArray.pos = 0;
         const rgbe_header_info = RGBE_ReadHeader(byteArray);
-        if (RGBE_RETURN_FAILURE !== rgbe_header_info) {
-            const w = rgbe_header_info.width, h = rgbe_header_info.height, image_rgba_data = RGBE_ReadPixels_RLE(byteArray.subarray(byteArray.pos), w, h);
-            if (RGBE_RETURN_FAILURE !== image_rgba_data) {
-                let data, type;
-                let numElements;
-                switch(this.type){
-                    case 0, _three.FloatType:
-                        numElements = image_rgba_data.length / 4;
-                        const floatArray = new Float32Array(numElements * 4);
-                        for(let j = 0; j < numElements; j++)RGBEByteToRGBFloat(image_rgba_data, j * 4, floatArray, j * 4);
-                        data = floatArray;
-                        type = (0, _three.FloatType);
-                        break;
-                    case 0, _three.HalfFloatType:
-                        numElements = image_rgba_data.length / 4;
-                        const halfArray = new Uint16Array(numElements * 4);
-                        for(let j = 0; j < numElements; j++)RGBEByteToRGBHalf(image_rgba_data, j * 4, halfArray, j * 4);
-                        data = halfArray;
-                        type = (0, _three.HalfFloatType);
-                        break;
-                    default:
-                        console.error("THREE.RGBELoader: unsupported type: ", this.type);
-                        break;
-                }
-                return {
-                    width: w,
-                    height: h,
-                    data: data,
-                    header: rgbe_header_info.string,
-                    gamma: rgbe_header_info.gamma,
-                    exposure: rgbe_header_info.exposure,
-                    type: type
-                };
-            }
+        const w = rgbe_header_info.width, h = rgbe_header_info.height, image_rgba_data = RGBE_ReadPixels_RLE(byteArray.subarray(byteArray.pos), w, h);
+        let data, type;
+        let numElements;
+        switch(this.type){
+            case 0, _three.FloatType:
+                numElements = image_rgba_data.length / 4;
+                const floatArray = new Float32Array(numElements * 4);
+                for(let j = 0; j < numElements; j++)RGBEByteToRGBFloat(image_rgba_data, j * 4, floatArray, j * 4);
+                data = floatArray;
+                type = (0, _three.FloatType);
+                break;
+            case 0, _three.HalfFloatType:
+                numElements = image_rgba_data.length / 4;
+                const halfArray = new Uint16Array(numElements * 4);
+                for(let j = 0; j < numElements; j++)RGBEByteToRGBHalf(image_rgba_data, j * 4, halfArray, j * 4);
+                data = halfArray;
+                type = (0, _three.HalfFloatType);
+                break;
+            default:
+                throw new Error("THREE.RGBELoader: Unsupported type: " + this.type);
         }
-        return null;
+        return {
+            width: w,
+            height: h,
+            data: data,
+            header: rgbe_header_info.string,
+            gamma: rgbe_header_info.gamma,
+            exposure: rgbe_header_info.exposure,
+            type: type
+        };
     }
     setDataType(value) {
         this.type = value;
@@ -43712,7 +43943,7 @@ class EXRLoader extends (0, _three.DataTextureLoader) {
         }
         function parseHeader(dataView, buffer, offset) {
             const EXRHeader = {};
-            if (dataView.getUint32(0, true) != 20000630) throw new Error("THREE.EXRLoader: provided file doesn't appear to be in OpenEXR format.");
+            if (dataView.getUint32(0, true) != 20000630) throw new Error("THREE.EXRLoader: Provided file doesn't appear to be in OpenEXR format.");
             EXRHeader.version = dataView.getUint8(4);
             const spec = dataView.getUint8(5); // fullMask
             EXRHeader.spec = {
@@ -43731,13 +43962,13 @@ class EXRLoader extends (0, _three.DataTextureLoader) {
                     const attributeType = parseNullTerminatedString(buffer, offset);
                     const attributeSize = parseUint32(dataView, offset);
                     const attributeValue = parseValue(dataView, buffer, offset, attributeType, attributeSize);
-                    if (attributeValue === undefined) console.warn(`EXRLoader.parse: skipped unknown header attribute type \'${attributeType}\'.`);
+                    if (attributeValue === undefined) console.warn(`THREE.EXRLoader: Skipped unknown header attribute type \'${attributeType}\'.`);
                     else EXRHeader[attributeName] = attributeValue;
                 }
             }
             if ((spec & -5) != 0) {
-                console.error("EXRHeader:", EXRHeader);
-                throw new Error("THREE.EXRLoader: provided file is currently unsupported.");
+                console.error("THREE.EXRHeader:", EXRHeader);
+                throw new Error("THREE.EXRLoader: Provided file is currently unsupported.");
             }
             return EXRHeader;
         }
@@ -46722,18 +46953,18 @@ AFRAME.registerSystem("compositor", {
                 if (this.xr.enabled === true && this.xr.isPresenting === true) {
                     const cameraL = cameraVR.cameras[0];
                     const cameraR = cameraVR.cameras[1];
-                    system.pass.setCameraMats(cameraL, cameraR);
+                    system.pass.setCameraVals(cameraL, cameraR);
                 } else {
-                    system.pass.setCameraMats(camera);
+                    system.pass.setCameraVals(camera);
                     system.remoteLocal.updateRemoteCamera();
-                    system.pass.setCameraMatsRemote(system.remoteCamera);
+                    system.pass.setCameraValsRemote(system.remoteCamera);
                 }
                 // update remote vr camera if in vr
                 if (this.xr.enabled === true && this.xr.isPresenting === true) {
                     this.xr.updateCamera(cameraVR, system.remoteCamera);
                     const remoteL = system.remoteCamera.cameras[0];
                     const remoteR = system.remoteCamera.cameras[1];
-                    system.pass.setCameraMatsRemote(remoteL, remoteR);
+                    system.pass.setCameraValsRemote(remoteL, remoteR);
                 }
                 // render with custom shader (local-remote compositing):
                 // this will internally call renderer.render(), which will execute the code within
@@ -46779,6 +47010,7 @@ class CompositorPass extends (0, _pass.Pass) {
         this.remoteScene = remoteScene;
         this.remoteCamera = remoteCamera;
         this.backgroundScene = backgroundScene;
+        this.raycaster = new THREE.Raycaster();
         this.remoteRenderTarget = remoteRenderTarget;
         this.backgroundRenderTarget = backgroundRenderTarget;
         this.uniforms = THREE.UniformsUtils.clone((0, _compositorShader.CompositorShader).uniforms);
@@ -46828,27 +47060,67 @@ class CompositorPass extends (0, _pass.Pass) {
     setFrozen(frozen) {
         this.frozen = frozen;
     }
-    setCameraMats(cameraL, cameraR) {
+    setCameraVals(cameraL, cameraR) {
         if (cameraL) {
-            this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
-            this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+            // only update if changed
+            if (!this.material.uniforms.cameraLProjectionMatrix.value.equals(cameraL.projectionMatrix)) {
+                this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
+                this.material.uniforms.cameraLProjectionMatrixInverse.value.copy(cameraL.projectionMatrix);
+                this.material.uniforms.cameraLProjectionMatrixInverse.value.invert();
+            }
+            // only update if changed
+            if (!this.material.uniforms.cameraLMatrixWorld.value.equals(cameraL.matrixWorld)) {
+                this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+                this.material.uniforms.cameraLMatrixWorldInverse.value.copy(cameraL.matrixWorld);
+                this.material.uniforms.cameraLMatrixWorldInverse.value.invert();
+            }
             this.material.uniforms.cameraNear.value = cameraL.near;
             this.material.uniforms.cameraFar.value = cameraL.far;
         }
         if (cameraR) {
-            this.material.uniforms.cameraRProjectionMatrix.value.copy(cameraR.projectionMatrix);
-            this.material.uniforms.cameraRMatrixWorld.value.copy(cameraR.matrixWorld);
+            // only update if changed
+            if (!this.material.uniforms.cameraRProjectionMatrix.value.equals(cameraR.projectionMatrix)) {
+                this.material.uniforms.cameraRProjectionMatrix.value.copy(cameraR.projectionMatrix);
+                this.material.uniforms.cameraRProjectionMatrixInverse.value.copy(cameraR.projectionMatrix);
+                this.material.uniforms.cameraRProjectionMatrixInverse.value.invert();
+            }
+            // only update if changed
+            if (!this.material.uniforms.cameraRMatrixWorld.value.equals(cameraR.matrixWorld)) {
+                this.material.uniforms.cameraRMatrixWorld.value.copy(cameraR.matrixWorld);
+                this.material.uniforms.cameraRMatrixWorldInverse.value.copy(cameraR.matrixWorld);
+                this.material.uniforms.cameraRMatrixWorldInverse.value.invert();
+            }
         }
     }
-    setCameraMatsRemote(remoteL, remoteR) {
+    setCameraValsRemote(remoteL, remoteR) {
         if (remoteL) {
-            this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
-            this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+            // only update if changed
+            if (!this.material.uniforms.remoteLProjectionMatrix.value.equals(remoteL.projectionMatrix)) {
+                this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
+                this.material.uniforms.remoteLProjectionMatrixInverse.value.copy(remoteL.projectionMatrix);
+                this.material.uniforms.remoteLProjectionMatrixInverse.value.invert();
+            }
+            // only update if changed
+            if (!this.material.uniforms.remoteLMatrixWorld.value.equals(remoteL.matrixWorld)) {
+                this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+                this.material.uniforms.remoteLMatrixWorldInverse.value.copy(remoteL.matrixWorld);
+                this.material.uniforms.remoteLMatrixWorldInverse.value.invert();
+            }
             remoteL.getWorldDirection(this.material.uniforms.remoteLForward.value);
         }
         if (remoteR) {
-            this.material.uniforms.remoteRProjectionMatrix.value.copy(remoteR.projectionMatrix);
-            this.material.uniforms.remoteRMatrixWorld.value.copy(remoteR.matrixWorld);
+            // only update if changed
+            if (!this.material.uniforms.remoteRProjectionMatrix.value.equals(remoteR.projectionMatrix)) {
+                this.material.uniforms.remoteRProjectionMatrix.value.copy(remoteR.projectionMatrix);
+                this.material.uniforms.remoteRProjectionMatrixInverse.value.copy(remoteR.projectionMatrix);
+                this.material.uniforms.remoteRProjectionMatrixInverse.value.invert();
+            }
+            // only update if changed
+            if (!this.material.uniforms.remoteRMatrixWorld.value.equals(remoteR.matrixWorld)) {
+                this.material.uniforms.remoteRMatrixWorld.value.copy(remoteR.matrixWorld);
+                this.material.uniforms.remoteRMatrixWorldInverse.value.copy(remoteR.matrixWorld);
+                this.material.uniforms.remoteRMatrixWorldInverse.value.invert();
+            }
             remoteR.getWorldDirection(this.material.uniforms.remoteRForward.value);
         }
     }
@@ -47023,6 +47295,14 @@ const CompositorShader = {
             type: "bool",
             value: false
         },
+        remoteLForward: {
+            type: "vec3",
+            value: new THREE.Vector3()
+        },
+        remoteRForward: {
+            type: "vec3",
+            value: new THREE.Vector3()
+        },
         cameraLProjectionMatrix: {
             type: "mat4",
             value: new THREE.Matrix4()
@@ -47055,13 +47335,37 @@ const CompositorShader = {
             type: "mat4",
             value: new THREE.Matrix4()
         },
-        remoteLForward: {
-            type: "vec3",
-            value: new THREE.Vector3()
+        cameraLProjectionMatrixInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
         },
-        remoteRForward: {
-            type: "vec3",
-            value: new THREE.Vector3()
+        cameraLMatrixWorldInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        cameraRProjectionMatrixInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        cameraRMatrixWorldInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        remoteLProjectionMatrixInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        remoteLMatrixWorldInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        remoteRProjectionMatrixInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
+        },
+        remoteRMatrixWorldInverse: {
+            type: "mat4",
+            value: new THREE.Matrix4()
         }
     },
     vertexShader: require("32f865ba2b889bd2"),
@@ -47072,7 +47376,7 @@ const CompositorShader = {
 module.exports = "#define GLSLIFY 1\nvarying vec2 vUv;\n\nvoid main() {\n    vUv = uv;\n    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n    // gl_Position = vec4( position, 1.0 );\n}\n";
 
 },{}],"lMuPJ":[function(require,module,exports) {
-module.exports = "#define GLSLIFY 1\n#include <packing>\n\nvarying vec2 vUv;\n\nuniform sampler2D tLocalColor, tLocalDepth;\nuniform sampler2D tRemoteColor, tRemoteDepth;\nuniform sampler2D tBackgroundColor;\n\nuniform float cameraNear, cameraFar;\n\nuniform bool hasDualCameras;\nuniform bool arMode, vrMode;\n\nuniform bool doAsyncTimeWarp;\nuniform bool stretchBorders;\nuniform bool lowPolyInFill;\nuniform bool reprojectMovement;\nuniform bool preferLocal;\n\nuniform ivec2 localSize, remoteSize, backgroundSize;\n\nuniform vec3 remoteLForward, remoteRForward;\n\nuniform mat4 cameraLProjectionMatrix, cameraLMatrixWorld;\nuniform mat4 remoteLProjectionMatrix, remoteLMatrixWorld;\nuniform mat4 cameraRProjectionMatrix, cameraRMatrixWorld;\nuniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;\n\nconst float onePixel = (1.0 / 255.0);\n\n// adapted from: https://gist.github.com/hecomi/9580605\nfloat linear01Depth(float depth) {\n    float x = 1.0 - cameraFar / cameraNear;\n    float y = cameraFar / cameraNear;\n    float z = x / cameraFar;\n    float w = y / cameraFar;\n    return 1.0 / (x * depth + y);\n}\n\n// adapted from: https://gist.github.com/hecomi/9580605\nfloat linearEyeDepth(float depth) {\n    float x = 1.0 - cameraFar / cameraNear;\n    float y = cameraFar / cameraNear;\n    float z = x / cameraFar;\n    float w = y / cameraFar;\n    return 1.0 / (z * depth + w);\n}\n\nfloat readDepthRemote(sampler2D depthSampler, vec2 coord) {\n    float depth = texture2D( depthSampler, coord ).r;\n    return linear01Depth(depth);\n}\n\nfloat readDepthLocal(sampler2D depthSampler, vec2 coord) {\n    float depth = texture2D( depthSampler, coord ).r;\n    return linear01Depth(depth);\n}\n\nvec3 matrixWorldToPosition(mat4 matrixWorld) {\n    return vec3(matrixWorld[3]);\n}\n\nvec3 cameraToWorld(vec2 uv, mat4 projectionMatrix, mat4 matrixWorld) {\n    vec2 ndc = 2.0 * uv - 1.0;\n    vec4 uv4 = matrixWorld * inverse(projectionMatrix) * vec4(ndc, 1.0, 1.0);\n    vec3 uv3 = vec3(uv4 / uv4.w);\n    return uv3;\n}\n\nvec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorld) {\n    vec4 uv4 = projectionMatrix * inverse(matrixWorld) * vec4(pt, 1.0);\n    vec2 uv2 = vec2(uv4 / uv4.w);\n    return (uv2 + 1.0) / 2.0;\n}\n\nvec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {\n    float d = dot(cameraForward, cameraVector);\n    float sceneDistance = linearEyeDepth(texture2D(tRemoteDepth, uv).r) / d;\n    vec3 worldPos = cameraPos + cameraVector * sceneDistance;\n    return worldPos;\n}\n\nvoid main() {\n    // vec2 remoteSizeF = vec2(remoteSize);\n    // vec2 localSizeF = vec2(localSize);\n\n    // // calculate new dimensions, maintaining aspect ratio\n    // float aspect = remoteSizeF.x / remoteSizeF.y;\n    // int newHeight = localSize.y;\n    // int newWidth = int(aspect * float(newHeight));\n\n    // // calculate left and right padding offset\n    // int totalPad = abs(localSize.x - newWidth);\n    // float padding = float(totalPad / 2);\n    // float paddingLeft = padding / localSizeF.x;\n    // float paddingRight = 1.0 - paddingLeft;\n\n    // bool targetWidthGreater = localSize.x > newWidth;\n\n    vec2 uvLocal = vUv;\n\n    vec2 coordLocalColor = uvLocal;\n    vec2 coordLocalDepth = uvLocal;\n\n    vec4 localColor  = texture2D( tLocalColor, coordLocalColor );\n    float localDepth = readDepthLocal( tLocalDepth, coordLocalDepth );\n\n    vec4 backgroundColor  = lowPolyInFill ? texture2D( tBackgroundColor, coordLocalColor ) : vec4(0.0);\n\n    vec2 coordRemoteColor = uvLocal;\n    vec2 coordRemoteDepth = uvLocal;\n\n    vec4 remoteColor;  // = texture2D( tRemoteColor, coordRemoteColor );\n    float remoteDepth; // = readDepth( tRemoteDepth, coordRemoteDepth );\n\n    bool oneCamera = !hasDualCameras;\n    bool leftEye   = (hasDualCameras && uvLocal.x < 0.5);\n    bool rightEye  = (hasDualCameras && uvLocal.x >= 0.5);\n\n    if (doAsyncTimeWarp) {\n        bool occluded = false;\n\n        vec3 cameraPos              = matrixWorldToPosition(cameraLMatrixWorld);\n        vec3 remotePos              = matrixWorldToPosition(remoteLMatrixWorld);\n        vec3 remoteForward          = remoteLForward;\n        mat4 cameraProjectionMatrix = cameraLProjectionMatrix;\n        mat4 cameraMatrixWorld      = cameraLMatrixWorld;\n        mat4 remoteProjectionMatrix = remoteLProjectionMatrix;\n        mat4 remoteMatrixWorld      = remoteLMatrixWorld;\n\n        if (leftEye) {\n            uvLocal.x = 2.0 * uvLocal.x;\n        }\n        if (rightEye) {\n            uvLocal.x = 2.0 * (uvLocal.x - 0.5);\n            cameraPos              = matrixWorldToPosition(cameraRMatrixWorld);\n            remotePos              = matrixWorldToPosition(remoteRMatrixWorld);\n            cameraProjectionMatrix = cameraRProjectionMatrix;\n            cameraMatrixWorld      = cameraRMatrixWorld;\n            remoteForward          = remoteRForward;\n            remoteProjectionMatrix = remoteRProjectionMatrix;\n            remoteMatrixWorld      = remoteRMatrixWorld;\n        }\n\n        vec3 pt = cameraToWorld(uvLocal, cameraProjectionMatrix, cameraMatrixWorld);\n        vec2 uvRemote = worldToCamera(pt, remoteProjectionMatrix, remoteMatrixWorld);\n\n        if (reprojectMovement) {\n            vec3 cameraVector = normalize(pt - cameraPos);\n\n            vec3 cameraTopLeft  = cameraToWorld(vec2(0.0, 1.0), cameraProjectionMatrix, cameraMatrixWorld);\n            vec3 cameraTopRight = cameraToWorld(vec2(1.0, 1.0), cameraProjectionMatrix, cameraMatrixWorld);\n            vec3 cameraBotLeft  = cameraToWorld(vec2(0.0, 0.0), cameraProjectionMatrix, cameraMatrixWorld);\n            vec3 cameraBotRight = cameraToWorld(vec2(1.0, 0.0), cameraProjectionMatrix, cameraMatrixWorld);\n\n            if (!(arMode || vrMode)) {\n                cameraVector = mix( mix(normalize(cameraTopLeft), normalize(cameraTopRight), uvLocal.x),\n                                    mix(normalize(cameraBotLeft), normalize(cameraBotRight), uvLocal.x),\n                                    1.0 - uvLocal.y );\n            }\n            else {\n                cameraVector = normalize(cameraVector);\n            }\n\n            vec3 currentPos = cameraPos;\n\n            int steps = 100;\n            float stepSize = 30.0 / float(steps);\n\n            float distanceFromWorldToPos;\n            for (int i = 0; i < steps; i++) {\n                currentPos += (cameraVector * stepSize);\n\n                uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorld);\n                vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvRemote);\n\n                float distanceToCurrentPos = distance(remotePos, currentPos);\n                float distanceToWorld = distance(remotePos, tracedPos);\n\n                distanceFromWorldToPos = distanceToCurrentPos - distanceToWorld;\n                if (distanceFromWorldToPos > stepSize) {\n                    occluded = true;\n                }\n                if (distanceFromWorldToPos > 0.0) {\n                    break;\n                }\n            }\n        }\n\n        coordRemoteColor = uvRemote;\n        coordRemoteDepth = coordRemoteColor;\n\n        if (leftEye) {\n            coordRemoteColor.x = coordRemoteColor.x / 2.0;\n            coordRemoteDepth = coordRemoteColor;\n        }\n        if (rightEye) {\n            coordRemoteColor.x = coordRemoteColor.x / 2.0 + 0.5;\n            coordRemoteDepth = coordRemoteColor;\n        }\n\n        float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);\n        float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);\n        if (lowPolyInFill || !stretchBorders) {\n            remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );\n            if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||\n                coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {\n                remoteColor = backgroundColor;\n            }\n        }\n        else {\n            coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax - 0.001);\n            coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);\n            coordRemoteDepth = coordRemoteColor;\n            remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );\n        }\n\n        if (reprojectMovement && occluded) {\n            vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;\n            vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;\n            vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;\n            vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;\n\n            vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );\n            vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);\n            vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );\n            vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );\n\n            float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);\n            float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);\n            float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);\n            float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);\n            float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);\n\n            // find the furthest away one of these five samples\n            float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);\n            if (remoteDepth == remoteDepthLeft) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorLeft);\n            }\n            if (remoteDepth == remoteDepthRight) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorRight);\n            }\n            if (remoteDepth == remoteDepthTop) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorTop);\n            }\n            if (remoteDepth == remoteDepthDown) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorDown);\n            }\n        }\n    }\n    else {\n        remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n        remoteDepth = readDepthLocal( tRemoteDepth, coordRemoteDepth );\n    }\n\n    // force srgb\n#ifdef IS_SRGB\n    localColor = LinearTosRGB(localColor);\n#endif\n\n    vec4 color = localColor;\n    // if (!targetWidthGreater ||\n    //     (targetWidthGreater && paddingLeft <= uvLocal.x && uvLocal.x <= paddingRight)) {\n        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth)) {\n            color = vec4(remoteColor.rgb, 1.0);\n            // handle passthrough\n            if (arMode && remoteDepth >= (1.0-(5.0*onePixel))) {\n                color = localColor;\n            }\n        }\n    // }\n    // else {\n    //     color = localColor;\n    // }\n\n    // const float margin = 0.25;\n    // if (!( (margin < uvLocal.x) && (uvLocal.x < 1.0 - margin) && (margin < uvLocal.y) && (uvLocal.y < 1.0 - margin) ) )\n    //     color = localColor;\n\n    // color = vec4(remoteColor.rgb, 1.0);\n    // color = vec4(localColor.rgb, 1.0);\n    // color = vec4(backgroundColor.rgb, 1.0);\n    gl_FragColor = color;\n\n    // gl_FragColor.rgb = vec3(remoteDepth);\n    // gl_FragColor.a = 1.0;\n}\n";
+module.exports = "#define GLSLIFY 1\n#include <packing>\n\nvarying vec2 vUv;\n\nuniform sampler2D tLocalColor, tLocalDepth;\nuniform sampler2D tRemoteColor, tRemoteDepth;\nuniform sampler2D tBackgroundColor;\n\nuniform float cameraNear, cameraFar;\n\nuniform bool hasDualCameras;\nuniform bool arMode, vrMode;\n\nuniform bool doAsyncTimeWarp;\nuniform bool stretchBorders;\nuniform bool lowPolyInFill;\nuniform bool reprojectMovement;\nuniform bool preferLocal;\n\nuniform ivec2 localSize, remoteSize, backgroundSize;\n\nuniform vec3 remoteLForward, remoteRForward;\n\nuniform mat4 cameraLProjectionMatrix, cameraLMatrixWorld;\nuniform mat4 remoteLProjectionMatrix, remoteLMatrixWorld;\nuniform mat4 cameraRProjectionMatrix, cameraRMatrixWorld;\nuniform mat4 remoteRProjectionMatrix, remoteRMatrixWorld;\n\nuniform mat4 cameraLProjectionMatrixInverse, cameraLMatrixWorldInverse;\nuniform mat4 remoteLProjectionMatrixInverse, remoteLMatrixWorldInverse;\nuniform mat4 cameraRProjectionMatrixInverse, cameraRMatrixWorldInverse;\nuniform mat4 remoteRProjectionMatrixInverse, remoteRMatrixWorldInverse;\n\nconst float onePixel = (1.0 / 255.0);\n\n// adapted from: https://gist.github.com/hecomi/9580605\nfloat linear01Depth(float depth) {\n    float x = 1.0 - cameraFar / cameraNear;\n    float y = cameraFar / cameraNear;\n    float z = x / cameraFar;\n    float w = y / cameraFar;\n    return 1.0 / (x * depth + y);\n}\n\n// adapted from: https://gist.github.com/hecomi/9580605\nfloat linearEyeDepth(float depth) {\n    float x = 1.0 - cameraFar / cameraNear;\n    float y = cameraFar / cameraNear;\n    float z = x / cameraFar;\n    float w = y / cameraFar;\n    return 1.0 / (z * depth + w);\n}\n\nfloat readDepthRemote(sampler2D depthSampler, vec2 coord) {\n    float depth = texture2D( depthSampler, coord ).r;\n    return linear01Depth(depth);\n}\n\nfloat readDepthLocal(sampler2D depthSampler, vec2 coord) {\n    float depth = texture2D( depthSampler, coord ).r;\n    return linear01Depth(depth);\n}\n\nvec3 matrixWorldToPosition(mat4 matrixWorld) {\n    return vec3(matrixWorld[3]);\n}\n\nvec3 cameraToWorld(vec2 uv, mat4 projectionMatrixInverse, mat4 matrixWorld) {\n    vec2 ndc = 2.0 * uv - 1.0;\n    vec4 uv4 = matrixWorld * projectionMatrixInverse * vec4(ndc, 1.0, 1.0);\n    vec3 uv3 = vec3(uv4 / uv4.w);\n    return uv3;\n}\n\nvec2 worldToCamera(vec3 pt, mat4 projectionMatrix, mat4 matrixWorldInverse) {\n    vec4 uv4 = projectionMatrix * matrixWorldInverse * vec4(pt, 1.0);\n    vec2 uv2 = vec2(uv4 / uv4.w);\n    return (uv2 + 1.0) / 2.0;\n}\n\nvec3 getWorldPos(vec3 cameraVector, vec3 cameraForward, vec3 cameraPos, vec2 uv) {\n    float d = dot(cameraForward, cameraVector);\n    float sceneDistance = linearEyeDepth(texture2D(tRemoteDepth, uv).r) / d;\n    vec3 worldPos = cameraPos + cameraVector * sceneDistance;\n    return worldPos;\n}\n\nvoid main() {\n    // vec2 remoteSizeF = vec2(remoteSize);\n    // vec2 localSizeF = vec2(localSize);\n\n    // // calculate new dimensions, maintaining aspect ratio\n    // float aspect = remoteSizeF.x / remoteSizeF.y;\n    // int newHeight = localSize.y;\n    // int newWidth = int(aspect * float(newHeight));\n\n    // // calculate left and right padding offset\n    // int totalPad = abs(localSize.x - newWidth);\n    // float padding = float(totalPad / 2);\n    // float paddingLeft = padding / localSizeF.x;\n    // float paddingRight = 1.0 - paddingLeft;\n\n    // bool targetWidthGreater = localSize.x > newWidth;\n\n    vec2 uvLocal = vUv;\n\n    vec2 coordLocalColor = uvLocal;\n    vec2 coordLocalDepth = uvLocal;\n\n    vec4 localColor  = texture2D( tLocalColor, coordLocalColor );\n    float localDepth = readDepthLocal( tLocalDepth, coordLocalDepth );\n\n    vec4 backgroundColor  = lowPolyInFill ? texture2D( tBackgroundColor, coordLocalColor ) : vec4(0.0);\n\n    vec2 coordRemoteColor = uvLocal;\n    vec2 coordRemoteDepth = uvLocal;\n\n    vec4 remoteColor;  // = texture2D( tRemoteColor, coordRemoteColor );\n    float remoteDepth; // = readDepth( tRemoteDepth, coordRemoteDepth );\n\n    bool oneCamera = !hasDualCameras;\n    bool leftEye   = (hasDualCameras && uvLocal.x < 0.5);\n    bool rightEye  = (hasDualCameras && uvLocal.x >= 0.5);\n\n    if (doAsyncTimeWarp) {\n        bool occluded = false;\n\n        vec3 cameraPos                     = matrixWorldToPosition(cameraLMatrixWorld);\n        vec3 remotePos                     = matrixWorldToPosition(remoteLMatrixWorld);\n        vec3 remoteForward                 = remoteLForward;\n        mat4 cameraProjectionMatrix        = cameraLProjectionMatrix;\n        mat4 cameraMatrixWorld             = cameraLMatrixWorld;\n        mat4 remoteProjectionMatrix        = remoteLProjectionMatrix;\n        mat4 remoteMatrixWorld             = remoteLMatrixWorld;\n        mat4 cameraProjectionMatrixInverse = cameraLProjectionMatrixInverse;\n        mat4 cameraMatrixWorldInverse      = cameraLMatrixWorldInverse;\n        mat4 remoteProjectionMatrixInverse = remoteLProjectionMatrixInverse;\n        mat4 remoteMatrixWorldInverse      = remoteLMatrixWorldInverse;\n\n        if (leftEye) {\n            uvLocal.x = 2.0 * uvLocal.x;\n        }\n        if (rightEye) {\n            uvLocal.x = 2.0 * (uvLocal.x - 0.5);\n            cameraPos                     = matrixWorldToPosition(cameraRMatrixWorld);\n            remotePos                     = matrixWorldToPosition(remoteRMatrixWorld);\n            cameraProjectionMatrix        = cameraRProjectionMatrix;\n            cameraMatrixWorld             = cameraRMatrixWorld;\n            remoteForward                 = remoteRForward;\n            remoteProjectionMatrix        = remoteRProjectionMatrix;\n            remoteMatrixWorld             = remoteRMatrixWorld;\n            cameraProjectionMatrixInverse = cameraRProjectionMatrixInverse;\n            cameraMatrixWorldInverse      = cameraRMatrixWorldInverse;\n            remoteProjectionMatrixInverse = remoteRProjectionMatrixInverse;\n            remoteMatrixWorldInverse      = remoteRMatrixWorldInverse;\n        }\n\n        vec3 pt = cameraToWorld(uvLocal, cameraProjectionMatrixInverse, cameraMatrixWorld);\n        vec2 uvRemote = worldToCamera(pt, remoteProjectionMatrix, remoteMatrixWorldInverse);\n\n        if (reprojectMovement) {\n            vec3 cameraVector = normalize(pt - cameraPos);\n\n            if (!(arMode || vrMode)) {\n                vec3 cameraTopLeft  = normalize(cameraToWorld(vec2(0.0, 1.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);\n                vec3 cameraTopRight = normalize(cameraToWorld(vec2(1.0, 1.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);\n                vec3 cameraBotLeft  = normalize(cameraToWorld(vec2(0.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);\n                vec3 cameraBotRight = normalize(cameraToWorld(vec2(1.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);\n\n                cameraVector = mix( mix((cameraTopLeft), (cameraTopRight), uvLocal.x),\n                                    mix((cameraBotLeft), (cameraBotRight), uvLocal.x),\n                                    1.0 - uvLocal.y );\n            }\n\n            vec3 currentPos = cameraPos;\n\n            int steps = 100;\n            float stepSize = 30.0 / float(steps);\n\n            float distanceFromWorldToPos;\n            for (int i = 0; i < steps; i++) {\n                currentPos += (cameraVector * stepSize);\n\n                uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorldInverse);\n                vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvRemote);\n\n                float distanceToCurrentPos = distance(remotePos, currentPos);\n                float distanceToWorld = distance(remotePos, tracedPos);\n\n                distanceFromWorldToPos = distanceToCurrentPos - distanceToWorld;\n                if (distanceFromWorldToPos > stepSize) {\n                    occluded = true;\n                }\n                if (distanceFromWorldToPos > 0.0) {\n                    break;\n                }\n            }\n        }\n\n        coordRemoteColor = uvRemote;\n        coordRemoteDepth = coordRemoteColor;\n\n        if (leftEye) {\n            coordRemoteColor.x = coordRemoteColor.x / 2.0;\n            coordRemoteDepth = coordRemoteColor;\n        }\n        if (rightEye) {\n            coordRemoteColor.x = coordRemoteColor.x / 2.0 + 0.5;\n            coordRemoteDepth = coordRemoteColor;\n        }\n\n        float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);\n        float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);\n        if (lowPolyInFill || !stretchBorders) {\n            remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );\n            if (coordRemoteColor.x < xMin || coordRemoteColor.x > xMax ||\n                coordRemoteColor.y < 0.0  || coordRemoteColor.y > 1.0) {\n                remoteColor = backgroundColor;\n            }\n        }\n        else {\n            coordRemoteColor.x = min(max(coordRemoteColor.x, xMin), xMax - 0.001);\n            coordRemoteColor.y = min(max(coordRemoteColor.y, 0.0), 1.0);\n            coordRemoteDepth = coordRemoteColor;\n            remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n            remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );\n        }\n\n        if (reprojectMovement && occluded) {\n            vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;\n            vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;\n            vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;\n            vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;\n\n            vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );\n            vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);\n            vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );\n            vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );\n\n            float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);\n            float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);\n            float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);\n            float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);\n            float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);\n\n            // find the furthest away one of these five samples\n            float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);\n            if (remoteDepth == remoteDepthLeft) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorLeft);\n            }\n            if (remoteDepth == remoteDepthRight) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorRight);\n            }\n            if (remoteDepth == remoteDepthTop) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorTop);\n            }\n            if (remoteDepth == remoteDepthDown) {\n                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorDown);\n            }\n        }\n    }\n    else {\n        remoteColor = texture2D( tRemoteColor, coordRemoteColor );\n        remoteDepth = readDepthLocal( tRemoteDepth, coordRemoteDepth );\n    }\n\n    // force srgb\n#ifdef IS_SRGB\n    localColor = LinearTosRGB(localColor);\n#endif\n\n    vec4 color = localColor;\n    // if (!targetWidthGreater ||\n    //     (targetWidthGreater && paddingLeft <= uvLocal.x && uvLocal.x <= paddingRight)) {\n        if ((preferLocal && remoteDepth < localDepth) || (!preferLocal && remoteDepth <= localDepth)) {\n            color = vec4(remoteColor.rgb, 1.0);\n            // handle passthrough\n            if (arMode && remoteDepth >= (1.0-(5.0*onePixel))) {\n                color = localColor;\n            }\n        }\n    // }\n    // else {\n    //     color = localColor;\n    // }\n\n    // const float margin = 0.25;\n    // if (!( (margin < uvLocal.x) && (uvLocal.x < 1.0 - margin) && (margin < uvLocal.y) && (uvLocal.y < 1.0 - margin) ) )\n    //     color = localColor;\n\n    // color = vec4(remoteColor.rgb, 1.0);\n    // color = vec4(localColor.rgb, 1.0);\n    // color = vec4(backgroundColor.rgb, 1.0);\n    gl_FragColor = color;\n\n    // gl_FragColor.rgb = vec3(remoteDepth);\n    // gl_FragColor.a = 1.0;\n}\n";
 
 },{}],"kprlH":[function(require,module,exports) {
 var _constants = require("./constants");
@@ -50335,6 +50639,6 @@ var index = {
 };
 exports.default = index;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}]},["jkW27","69BVl"], "69BVl", "parcelRequirea81d")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"jaA1D"}]},["8vVeR","69BVl"], "69BVl", "parcelRequirea81d")
 
 //# sourceMappingURL=index.js.map

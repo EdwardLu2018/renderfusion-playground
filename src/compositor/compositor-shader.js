@@ -15,18 +15,21 @@ export const CompositorShader = {
         tRemoteDepth: {
             type: 't', value: new THREE.Texture(),
         },
+
         localSize: {
             type: 'i2', value: [0, 0],
         },
         remoteSize: {
             type: 'i2', value: [0, 0],
         },
+
         cameraNear: {
             type: 'f', value: 0.1,
         },
         cameraFar: {
             type: 'f', value: 10000.0,
         },
+
         hasDualCameras: {
             type: 'bool', value: false,
         },
@@ -51,6 +54,14 @@ export const CompositorShader = {
         reprojectMovement: {
             type: 'bool', value: false,
         },
+
+        remoteLForward: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
+        remoteRForward: {
+            type: 'vec3', value: new THREE.Vector3(),
+        },
+
         cameraLProjectionMatrix: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
@@ -75,11 +86,30 @@ export const CompositorShader = {
         remoteRMatrixWorld: {
             type: 'mat4', value: new THREE.Matrix4(),
         },
-        remoteLForward: {
-            type: 'vec3', value: new THREE.Vector3(),
+
+        cameraLProjectionMatrixInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
         },
-        remoteRForward: {
-            type: 'vec3', value: new THREE.Vector3(),
+        cameraLMatrixWorldInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        cameraRProjectionMatrixInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        cameraRMatrixWorldInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteLProjectionMatrixInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteLMatrixWorldInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteRProjectionMatrixInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
+        },
+        remoteRMatrixWorldInverse: {
+            type: 'mat4', value: new THREE.Matrix4(),
         },
     },
 

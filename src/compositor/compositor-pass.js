@@ -13,6 +13,8 @@ export class CompositorPass extends Pass {
 
         this.backgroundScene = backgroundScene;
 
+        this.raycaster = new THREE.Raycaster();
+
         this.remoteRenderTarget = remoteRenderTarget;
         this.backgroundRenderTarget = backgroundRenderTarget;
 
@@ -72,31 +74,85 @@ export class CompositorPass extends Pass {
         this.frozen = frozen;
     }
 
-    setCameraMats(cameraL, cameraR) {
+    setCameraVals(cameraL, cameraR) {
         if (cameraL) {
-            this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
-            this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+            // only update if changed
+            if (!(this.material.uniforms.cameraLProjectionMatrix.value.equals(cameraL.projectionMatrix))) {
+                this.material.uniforms.cameraLProjectionMatrix.value.copy(cameraL.projectionMatrix);
+
+                this.material.uniforms.cameraLProjectionMatrixInverse.value.copy(cameraL.projectionMatrix);
+                this.material.uniforms.cameraLProjectionMatrixInverse.value.invert();
+            }
+
+            // only update if changed
+            if (!(this.material.uniforms.cameraLMatrixWorld.value.equals(cameraL.matrixWorld))) {
+                this.material.uniforms.cameraLMatrixWorld.value.copy(cameraL.matrixWorld);
+
+                this.material.uniforms.cameraLMatrixWorldInverse.value.copy(cameraL.matrixWorld);
+                this.material.uniforms.cameraLMatrixWorldInverse.value.invert();
+            }
 
             this.material.uniforms.cameraNear.value = cameraL.near;
             this.material.uniforms.cameraFar.value = cameraL.far;
         }
 
         if (cameraR) {
-            this.material.uniforms.cameraRProjectionMatrix.value.copy(cameraR.projectionMatrix);
-            this.material.uniforms.cameraRMatrixWorld.value.copy(cameraR.matrixWorld);
+            // only update if changed
+            if (!(this.material.uniforms.cameraRProjectionMatrix.value.equals(cameraR.projectionMatrix))) {
+                this.material.uniforms.cameraRProjectionMatrix.value.copy(cameraR.projectionMatrix);
+
+                this.material.uniforms.cameraRProjectionMatrixInverse.value.copy(cameraR.projectionMatrix);
+                this.material.uniforms.cameraRProjectionMatrixInverse.value.invert();
+            }
+
+            // only update if changed
+            if (!(this.material.uniforms.cameraRMatrixWorld.value.equals(cameraR.matrixWorld))) {
+                this.material.uniforms.cameraRMatrixWorld.value.copy(cameraR.matrixWorld);
+
+                this.material.uniforms.cameraRMatrixWorldInverse.value.copy(cameraR.matrixWorld);
+                this.material.uniforms.cameraRMatrixWorldInverse.value.invert();
+            }
         }
     }
 
-    setCameraMatsRemote(remoteL, remoteR) {
+    setCameraValsRemote(remoteL, remoteR) {
         if (remoteL) {
-            this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
-            this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+            // only update if changed
+            if (!(this.material.uniforms.remoteLProjectionMatrix.value.equals(remoteL.projectionMatrix))) {
+                this.material.uniforms.remoteLProjectionMatrix.value.copy(remoteL.projectionMatrix);
+
+                this.material.uniforms.remoteLProjectionMatrixInverse.value.copy(remoteL.projectionMatrix);
+                this.material.uniforms.remoteLProjectionMatrixInverse.value.invert();
+            }
+
+            // only update if changed
+            if (!(this.material.uniforms.remoteLMatrixWorld.value.equals(remoteL.matrixWorld))) {
+                this.material.uniforms.remoteLMatrixWorld.value.copy(remoteL.matrixWorld);
+
+                this.material.uniforms.remoteLMatrixWorldInverse.value.copy(remoteL.matrixWorld);
+                this.material.uniforms.remoteLMatrixWorldInverse.value.invert();
+            }
+
             remoteL.getWorldDirection(this.material.uniforms.remoteLForward.value);
         }
 
         if (remoteR) {
-            this.material.uniforms.remoteRProjectionMatrix.value.copy(remoteR.projectionMatrix);
-            this.material.uniforms.remoteRMatrixWorld.value.copy(remoteR.matrixWorld);
+            // only update if changed
+            if (!(this.material.uniforms.remoteRProjectionMatrix.value.equals(remoteR.projectionMatrix))) {
+                this.material.uniforms.remoteRProjectionMatrix.value.copy(remoteR.projectionMatrix);
+
+                this.material.uniforms.remoteRProjectionMatrixInverse.value.copy(remoteR.projectionMatrix);
+                this.material.uniforms.remoteRProjectionMatrixInverse.value.invert();
+            }
+
+            // only update if changed
+            if (!(this.material.uniforms.remoteRMatrixWorld.value.equals(remoteR.matrixWorld))) {
+                this.material.uniforms.remoteRMatrixWorld.value.copy(remoteR.matrixWorld);
+
+                this.material.uniforms.remoteRMatrixWorldInverse.value.copy(remoteR.matrixWorld);
+                this.material.uniforms.remoteRMatrixWorldInverse.value.invert();
+            }
+
             remoteR.getWorldDirection(this.material.uniforms.remoteRForward.value);
         }
     }
