@@ -167,8 +167,8 @@ void main() {
                 vec3 cameraBotLeft  = normalize(cameraToWorld(vec2(0.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
                 vec3 cameraBotRight = normalize(cameraToWorld(vec2(1.0, 0.0), cameraProjectionMatrixInverse, cameraMatrixWorld) - cameraPos);
 
-                cameraVector = mix( mix((cameraTopLeft), (cameraTopRight), uvLocal.x),
-                                    mix((cameraBotLeft), (cameraBotRight), uvLocal.x),
+                cameraVector = mix( mix(cameraTopLeft, cameraTopRight, uvLocal.x),
+                                    mix(cameraBotLeft, cameraBotRight, uvLocal.x),
                                     1.0 - uvLocal.y );
             }
 
@@ -182,7 +182,14 @@ void main() {
                 currentPos += (cameraVector * stepSize);
 
                 uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorldInverse);
-                vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvRemote);
+                vec2 uvDepth = uvRemote;
+                if (leftEye) {
+                    uvDepth.x = uvDepth.x / 2.0;
+                }
+                if (rightEye) {
+                    uvDepth.x = uvDepth.x / 2.0 + 0.5;
+                }
+                vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvDepth);
 
                 float distanceToCurrentPos = distance(remotePos, currentPos);
                 float distanceToWorld = distance(remotePos, tracedPos);
@@ -228,35 +235,38 @@ void main() {
         }
 
         if (reprojectMovement && occluded) {
-            vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
-            vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
-            vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
-            vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
+            remoteColor = vec4(0.0);
+            if (stretchBorders || lowPolyInFill) {
+                vec2 offsetUVLeft      = coordRemoteColor + vec2(1.0, 0.0)  * 0.01;
+                vec2 offsetUVRight     = coordRemoteColor + vec2(0.0, 1.0)  * 0.01;
+                vec2 offsetUVTop       = coordRemoteColor + vec2(-1.0, 0.0) * 0.01;
+                vec2 offsetUVDown      = coordRemoteColor + vec2(0.0, -1.0) * 0.01;
 
-            vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );
-            vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);
-            vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );
-            vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );
+                vec4 remoteColorLeft   = texture2D(tRemoteColor, offsetUVLeft );
+                vec4 remoteColorRight  = texture2D(tRemoteColor, offsetUVRight);
+                vec4 remoteColorTop    = texture2D(tRemoteColor, offsetUVTop  );
+                vec4 remoteColorDown   = texture2D(tRemoteColor, offsetUVDown );
 
-            float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
-            float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);
-            float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);
-            float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);
-            float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);
+                float remoteDepth0     = linearEyeDepth(texture2D(tRemoteDepth, coordRemoteColor).r);
+                float remoteDepthLeft  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVLeft    ).r);
+                float remoteDepthRight = linearEyeDepth(texture2D(tRemoteDepth, offsetUVRight   ).r);
+                float remoteDepthTop   = linearEyeDepth(texture2D(tRemoteDepth, offsetUVTop     ).r);
+                float remoteDepthDown  = linearEyeDepth(texture2D(tRemoteDepth, offsetUVDown    ).r);
 
-            // find the furthest away one of these five samples
-            float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
-            if (remoteDepth == remoteDepthLeft) {
-                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorLeft);
-            }
-            if (remoteDepth == remoteDepthRight) {
-                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorRight);
-            }
-            if (remoteDepth == remoteDepthTop) {
-                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorTop);
-            }
-            if (remoteDepth == remoteDepthDown) {
-                remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorDown);
+                // find the furthest away one of these five samples
+                float remoteDepth = max(max(max(max(remoteDepth0, remoteDepthLeft), remoteDepthRight), remoteDepthTop), remoteDepthDown);
+                if (remoteDepth == remoteDepthLeft) {
+                    remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorLeft);
+                }
+                if (remoteDepth == remoteDepthRight) {
+                    remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorRight);
+                }
+                if (remoteDepth == remoteDepthTop) {
+                    remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorTop);
+                }
+                if (remoteDepth == remoteDepthDown) {
+                    remoteColor = preferLocal ? localColor : (lowPolyInFill ? backgroundColor : remoteColorDown);
+                }
             }
         }
     }
