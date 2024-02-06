@@ -30,6 +30,10 @@ export const CompositorShader = {
             type: 'f', value: 10000.0,
         },
 
+        isLeftEye: {
+            type: 'bool',
+            value: true,
+        },
         hasDualCameras: {
             type: 'bool', value: false,
         },

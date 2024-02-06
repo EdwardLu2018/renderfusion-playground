@@ -9,6 +9,7 @@ uniform sampler2D tBackgroundColor;
 uniform float cameraNear, cameraFar;
 
 uniform bool hasDualCameras;
+uniform bool isLeftEye;
 uniform bool arMode, vrMode;
 
 uniform bool doAsyncTimeWarp;
@@ -118,10 +119,6 @@ void main() {
     vec4 remoteColor;  // = texture2D( tRemoteColor, coordRemoteColor );
     float remoteDepth; // = readDepth( tRemoteDepth, coordRemoteDepth );
 
-    bool oneCamera = !hasDualCameras;
-    bool leftEye   = (hasDualCameras && uvLocal.x < 0.5);
-    bool rightEye  = (hasDualCameras && uvLocal.x >= 0.5);
-
     if (doAsyncTimeWarp) {
         bool occluded = false;
 
@@ -137,11 +134,7 @@ void main() {
         mat4 remoteProjectionMatrixInverse = remoteLProjectionMatrixInverse;
         mat4 remoteMatrixWorldInverse      = remoteLMatrixWorldInverse;
 
-        if (leftEye) {
-            uvLocal.x = 2.0 * uvLocal.x;
-        }
-        if (rightEye) {
-            uvLocal.x = 2.0 * (uvLocal.x - 0.5);
+        if (!isLeftEye) {
             cameraPos                     = matrixWorldToPosition(cameraRMatrixWorld);
             remotePos                     = matrixWorldToPosition(remoteRMatrixWorld);
             cameraProjectionMatrix        = cameraRProjectionMatrix;
@@ -183,12 +176,6 @@ void main() {
 
                 uvRemote = worldToCamera(currentPos, remoteProjectionMatrix, remoteMatrixWorldInverse);
                 vec2 uvDepth = uvRemote;
-                if (leftEye) {
-                    uvDepth.x = uvDepth.x / 2.0;
-                }
-                if (rightEye) {
-                    uvDepth.x = uvDepth.x / 2.0 + 0.5;
-                }
                 vec3 tracedPos = getWorldPos(normalize(currentPos - remotePos), remoteForward, remotePos, uvDepth);
 
                 float distanceToCurrentPos = distance(remotePos, currentPos);
@@ -207,17 +194,8 @@ void main() {
         coordRemoteColor = uvRemote;
         coordRemoteDepth = coordRemoteColor;
 
-        if (leftEye) {
-            coordRemoteColor.x = coordRemoteColor.x / 2.0;
-            coordRemoteDepth = coordRemoteColor;
-        }
-        if (rightEye) {
-            coordRemoteColor.x = coordRemoteColor.x / 2.0 + 0.5;
-            coordRemoteDepth = coordRemoteColor;
-        }
-
-        float xMin = ((oneCamera || leftEye)  ? 0.0 : 0.5);
-        float xMax = ((oneCamera || rightEye) ? 1.0 : 0.5);
+        float xMin = ((!hasDualCameras || isLeftEye)  ? 0.0 : 0.5);
+        float xMax = ((!hasDualCameras || !isLeftEye) ? 1.0 : 0.5);
         if (lowPolyInFill || !stretchBorders) {
             remoteColor = texture2D( tRemoteColor, coordRemoteColor );
             remoteDepth = readDepthRemote( tRemoteDepth, coordRemoteDepth );
@@ -303,6 +281,22 @@ void main() {
     // color = vec4(localColor.rgb, 1.0);
     // color = vec4(backgroundColor.rgb, 1.0);
     gl_FragColor = color;
+
+    // if (!hasDualCameras) {
+
+    // }
+    // else if (isLeftEye) {
+    //     if (vUv.x <= 0.5)
+    //         gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //     else
+    //         gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+    // }
+    // else {
+    //     if (vUv.x <= 0.5)
+    //         gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    //     else
+    //         gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
+    // }
 
     // gl_FragColor.rgb = vec3(remoteDepth);
     // gl_FragColor.a = 1.0;

@@ -37,6 +37,11 @@ export class CompositorPass extends Pass {
         this.needsSwap = false;
 
         this.fsQuad = new FullScreenQuad(this.material);
+        // _geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
+        this.fsQuadLeft = new FullScreenQuad(this.material);
+        this.fsQuadLeft._mesh.geometry.attributes.uv.array.set([0, 2, 0, 0, 1, 0]);
+        this.fsQuadRight = new FullScreenQuad(this.material);
+        this.fsQuadRight._mesh.geometry.attributes.uv.array.set([0.5, 2, 0.5, 0, 1.5, 0]);
 
         window.addEventListener('enter-vr', this.onEnterVR.bind(this));
         window.addEventListener('exit-vr', this.onExitVR.bind(this));
@@ -179,6 +184,21 @@ export class CompositorPass extends Pass {
         this.material.uniforms.tLocalColor.value = readBuffer.texture;
         this.material.uniforms.tLocalDepth.value = readBuffer.depthTexture;
 
+        const sizeVector = new THREE.Vector2();
+        const s = renderer.getSize(sizeVector);
+        if (writeBuffer) {
+            s.set(writeBuffer.width, writeBuffer.height);
+        }
+
+        function setView(renderTarget, x, y, w, h) {
+            if (renderTarget) {
+                renderTarget.viewport.set(x, y, w, h);
+                renderTarget.scissor.set(x, y, w, h);
+            }
+            renderer.setViewport(x, y, w, h);
+            renderer.setScissor(x, y, w, h);
+        }
+
         renderer.setRenderTarget(this.remoteRenderTarget);
         renderer.render(this.remoteScene, this.remoteCamera);
 
@@ -190,7 +210,23 @@ export class CompositorPass extends Pass {
         const currentXREnabled = renderer.xr.enabled;
         renderer.xr.enabled = false;
         renderer.setRenderTarget(writeBuffer);
-        this.fsQuad.render(renderer);
+        if (this.getHasDualCameras()) {
+            renderer.setScissorTest(true);
+
+            this.material.uniforms.isLeftEye.value = true;
+            setView(writeBuffer, 0, 0, Math.round(s.width * 0.5), s.height);
+            this.fsQuadLeft.render(renderer);
+
+            this.material.uniforms.isLeftEye.value = false;
+            setView(writeBuffer, Math.round(s.width * 0.5), 0, Math.round(s.width * 0.5), s.height);
+            this.fsQuadRight.render(renderer);
+
+            setView(writeBuffer, 0, 0, s.width, s.height);
+            renderer.setScissorTest(false);
+        } else {
+            this.material.uniforms.isLeftEye.value = true;
+            this.fsQuad.render(renderer);
+        }
         renderer.xr.enabled = currentXREnabled;
     }
 }

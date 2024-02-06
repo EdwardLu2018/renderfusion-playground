@@ -4,15 +4,14 @@ const _camera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
 
 // https://github.com/mrdoob/three.js/pull/21358
 
-const _geometry = new THREE.BufferGeometry();
-_geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( [ - 1, 3, 0, - 1, - 1, 0, 3, - 1, 0 ], 3 ) );
-_geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( [ 0, 2, 0, 0, 2, 0 ], 2 ) );
-
 class FullScreenQuad {
 
 	constructor( material ) {
+		this._geometry = new THREE.BufferGeometry();
+		this._geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( [ - 1, 3, 0, - 1, - 1, 0, 3, - 1, 0 ], 3 ) );
+		this._geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( [ 0, 2, 0, 0, 2, 0 ], 2 ) );
 
-		this._mesh = new THREE.Mesh( _geometry, material );
+		this._mesh = new THREE.Mesh( this._geometry, material );
 
 	}
 
